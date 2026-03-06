@@ -3,7 +3,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import Papa from 'papaparse';
-import { keyframes } from '@chakra-ui/react';
+import { keyframes } from '@emotion/react';
 
 type QueryData = {
   status: boolean;
