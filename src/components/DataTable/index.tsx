@@ -12,10 +12,12 @@ import {
   Th,
   Thead,
   Tr,
-  keyframes,
   Checkbox,
   Flex
 } from '@chakra-ui/react';
+
+import { keyframes } from '@emotion/react';
+
 import Pagination from '@/components/Pagination';
 import {
   Row,
