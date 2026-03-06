@@ -72,6 +72,7 @@ export const AdminUserMaster = () => {
       header: "Actions",
       type: "actions",
       // isDisabled: (row) => row.is_fixed,
+      
       actions: [
         {
           label: "View",
