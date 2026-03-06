@@ -86,6 +86,9 @@ importers:
       froala-editor:
         specifier: ^4.5.0
         version: 4.7.1
+      html2canvas:
+        specifier: ^1.4.1
+        version: 1.4.1
       jspdf:
         specifier: ^2.5.2
         version: 2.5.2
@@ -135,7 +138,7 @@ importers:
         specifier: ^4.5.0
         version: 4.7.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react-icons:
-        specifier: ^5.0.1
+        specifier: ^5.6.0
         version: 5.6.0(react@18.3.1)
       react-phone-number-input:
         specifier: ^3.4.16
@@ -4457,8 +4460,7 @@ snapshots:
 
   balanced-match@4.0.4: {}
 
-  base64-arraybuffer@1.0.2:
-    optional: true
+  base64-arraybuffer@1.0.2: {}
 
   baseline-browser-mapping@2.10.0: {}
 
@@ -4633,7 +4635,6 @@ snapshots:
   css-line-break@2.1.0:
     dependencies:
       utrie: 1.0.2
-    optional: true
 
   cssesc@3.0.0: {}
 
@@ -5256,7 +5257,6 @@ snapshots:
     dependencies:
       css-line-break: 2.1.0
       text-segmentation: 1.0.3
-    optional: true
 
   ignore@5.3.2: {}
 
@@ -6319,7 +6319,6 @@ snapshots:
   text-segmentation@1.0.3:
     dependencies:
       utrie: 1.0.2
-    optional: true
 
   text-table@0.2.0: {}
 
@@ -6458,7 +6457,6 @@ snapshots:
   utrie@1.0.2:
     dependencies:
       base64-arraybuffer: 1.0.2
-    optional: true
 
   vite@7.3.1(@types/node@20.19.37)(jiti@1.21.7):
     dependencies:
