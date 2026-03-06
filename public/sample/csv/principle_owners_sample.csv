@@ -1,0 +1,3 @@
+customer_id,owner,phone,email,id_passport_copy,remarks
+PUR0001,John Doe,+1-555-1234,john.doe@example.com,path/to/id_passport_1.pdf,Primary shareholder
+PUR0002,Jane Doe,+1-555-4321,jane.doe@example.com,path/to/id_passport_2.pdf,Co-owner and director

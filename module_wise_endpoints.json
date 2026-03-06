@@ -1,0 +1,18 @@
+{
+  "admin_user" : {
+    "pages" : {
+      "list" : [
+        "list.departments", "list.roles", "index.user"
+      ],
+      "create" : [
+        "list.departments", "list.roles", "index.user"
+      ],
+      "update" : [
+        "list.departments", "list.roles", "index.user"
+      ],
+      "view" : [
+        "list.departments", "list.roles", "index.user"
+      ]
+    }
+  }
+}

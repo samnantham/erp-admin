@@ -1,0 +1,3 @@
+customer_id,beneficiary_name,bank_name,bank_address,bank_branch,bank_ac_iban_no,type_of_ac,bank_swift,aba_routing_no,contact_name,bank_phone,bank_fax,bank_mobile,bank_email
+PUR0001,John Doe,ABC Bank,"123 Main Street, New York, USA",Downtown Branch,US1234567890123456,Savings,ABCDEF12345,123456789,Michael Smith,+1-555-1234,+1-555-5678,+1-555-9876,support@abcbank.com
+PUR0002,Jane Doe,XYZ Bank,"456 Elm Street, Los Angeles, USA",Uptown Branch,US9876543210987654,Current,XYZABC54321,,Sarah Johnson,+1-555-4321,,,info@xyzbank.com

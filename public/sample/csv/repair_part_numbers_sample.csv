@@ -1,0 +1,4 @@
+Part Number,Condition,Quantity,Defect,BC,RP,OH,Remarks
+NAS76A3-006,OH,10,Broken,Yes,No,Yes,Try it
+PART001,NS,11,Size not fit,Yes,Yes,Yes,Yes
+3T3T23,OH,8,leakage,NO,Yes,No,Test remark

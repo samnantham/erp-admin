@@ -1,0 +1,5 @@
+business_name,business_type_id,business_from,contact_type_id,is_foreign_entity,nature_of_business,license_trade_no,email,currency_id,payment_mode_id,payment_term_id,total_credit_amount,total_credit_period
+ABC Corporation,OTHER,2010,Supplier,FALSE,Trading Business,12345XYZ,abc@example.com,US Dollar,CASH,NET30,50000,30
+Global Industries,PUBLIC,2015,Customer,FALSE,Manufacturing,12345XYZ,global@example.com,DIRHAM,WIRE TRANSFER,CIA,75000,60
+Freight Solutions,OTHER,2018,Freight Forwarder,TRUE,Logistics Support,12345XYZ,freight@example.com,Euro,CHEQUE,NET30,20000,45
+Repair Experts,PRIVATE,2017,Repair Vendor,TRUE,Repair and Maintenance,12345XYZ,repair@example.com,AUSTRALIAN DOLLAR,CC,CIA,35000,15
