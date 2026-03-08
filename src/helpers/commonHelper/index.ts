@@ -4,6 +4,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import Papa from 'papaparse';
 import { keyframes } from '@emotion/react';
+import pluralize from "pluralize";
 
 type QueryData = {
   status: boolean;
@@ -742,5 +743,15 @@ export const blinkRowBg = keyframes`
   50%      { background-color: var(--chakra-colors-red-300); }
 `;
 
+export const formatModelTitle = (model?: string) => {
+  if (!model) return "";
 
+  return model
+    .split("-")
+    .map(word => {
+      const singular = pluralize.singular(word);
+      return singular.charAt(0).toUpperCase() + singular.slice(1);
+    })
+    .join(" ");
+};
  

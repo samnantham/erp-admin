@@ -10,9 +10,8 @@ import {
   zListPayload,
   zDetailsPayload,
   zCreatePayload,
+  QueryParams
 } from '@/services/global-schema';
-
-import { QueryParams } from '@/services/submaster/schema';
 
 /* ================= Role List ================= */
 

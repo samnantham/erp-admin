@@ -9,11 +9,10 @@ import {
   zListPayload,
   zDetailsPayload,
   zCreatePayload,
+  QueryParams
 } from '@/services/global-schema';
 
 import { zIndexPayload } from '@/services/user-access/department/schema'
-
-import { QueryParams } from '@/services/submaster/schema';
 
 /* ================= Department List ================= */
 

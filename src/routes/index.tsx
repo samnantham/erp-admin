@@ -13,7 +13,10 @@ import Login from '@/pages/Auth/Login';
 import Logout from '@/pages/Auth/Logout';
 import PublicRouteGuard from '@/pages/Auth/PublicRouteGuard';
 
-//Admin User Routes
+//Dashboard
+import Dashboard from '@/pages/Dashboard';
+
+// !<-- !!User Access Routes Start !!-->!
 import { AdminUserMaster } from '@/pages/User-Access/AdminUsers/AdminUserMaster';
 import { AdminUserForm } from '@/pages/User-Access/AdminUsers/AdminUserForm';
 //Department Routes
@@ -21,9 +24,12 @@ import { DepartmentList } from '@/pages/User-Access/Departments/DepartmentList';
 //User Role Routes
 import { RoleList } from '@/pages/User-Access/Roles/RoleList';
 import AuthenticatedRouteGuard from '@/pages/Auth/AuthenticatedRouteGuard';
+// !<--!! User Access Routes Ends !!-->!
 
-//Dashboard
-import Dashboard from '@/pages/Dashboard';
+// !<--!! Submaster Routes Starts !!-->!
+import { SubmasterPage } from '@/pages/Submaster';
+import { SubmasterForm } from '@/pages/Submaster/SubmasterForm';
+// !<--!! Submaster Routes Ends !!-->!
 
 export const routes = [
   {
@@ -91,6 +97,13 @@ export const routes = [
               }
             ],
           },
+          {
+            path: "submaster/:model",
+             children: [
+              { path: '', element: <SubmasterPage /> },
+              { path: 'form', element: <SubmasterForm /> },
+            ]
+          }
         ],
       },
 

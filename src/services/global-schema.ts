@@ -91,3 +91,7 @@ export const zCreatePayload = z.object({
   status: z.boolean(),
   message: z.string(),
 });
+
+export interface QueryParams {
+  status?: string;
+}

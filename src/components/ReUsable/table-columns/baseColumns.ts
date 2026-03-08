@@ -42,15 +42,23 @@ export const getBaseColumns = <T extends BaseRow>() => {
         columnHelper.accessor((row) => row.created_at, {
             id: 'created_at',
             header: 'Created At',
-            cell: (info) =>
-                format(new Date(info.getValue()), 'dd-MMM-yyyy HH:mm'),
+            cell: (info) => format(new Date(info.getValue()), 'dd-MMM-yyyy HH:mm'),
+            meta: {
+                sortable: true,
+                searchable: true,
+                sortType: 'string',
+            },
         }),
 
         columnHelper.accessor((row) => row.updated_at, {
             id: 'updated_at',
             header: 'Modified At',
-            cell: (info) =>
-                format(new Date(info.getValue()), 'dd-MMM-yyyy HH:mm'),
+            cell: (info) => format(new Date(info.getValue()), 'dd-MMM-yyyy HH:mm'),
+            meta: {
+                sortable: true,
+                searchable: true,
+                sortType: 'string',
+            },
         }),
     ];
 };

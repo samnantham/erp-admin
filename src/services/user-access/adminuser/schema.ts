@@ -58,7 +58,6 @@ export const zAdminUserDetailsPayload = z.object({
   status: z.boolean(),
 });
 
-
 /* ================= Types ================= */
 
 export type User = z.infer<typeof zUser>;

@@ -26,12 +26,34 @@ import {
 } from '@chakra-ui/react';
 import Axios from 'axios';
 import { IconType } from 'react-icons';
-import { FaHome } from 'react-icons/fa';
 import {
+  FaCalendarAlt,
+  FaCheckCircle,
+  FaCog,
+  FaGlobeAmericas,
+  FaHome,
+  FaUserFriends
+} from 'react-icons/fa';
+import {
+  FaBox,
+  FaBoxOpen,
+  FaBriefcase,
   FaBuildingUser,
+  FaCreditCard,
+  FaDollarSign,
+  FaFlag,
+  FaLayerGroup,
+  FaPlane,
+  FaSailboat,
+  FaShip,
   FaTableList,
+  FaTruck,
+  FaUserPlus,
+  FaUserShield,
   FaUsersGear,
-  FaUserPlus
+  FaWarehouse,
+  FaWrench,
+  FaReceipt
 } from 'react-icons/fa6';
 import { FiBell, FiChevronDown, FiMenu } from 'react-icons/fi';
 // import { LuMail } from 'react-icons/lu';
@@ -93,9 +115,9 @@ const NavigationSections: Array<SectionProps> = [
       ]
     }],
   },
-  // {
-  //   sectionName: "Master's Menu",
-  //   items: [
+  {
+    sectionName: "Master's Menu",
+    items: [
   //     {
   //       name: 'Customer Master',
   //       icon: FaGraduationCap,
@@ -132,114 +154,119 @@ const NavigationSections: Array<SectionProps> = [
   //         },
   //       ],
   //     },
-  //     {
-  //       name: 'Submaster',
-  //       icon: FaUserShield,
-  //       subItems: [
-  //         {
-  //           name: 'Business Type',
-  //           icon: FaBriefcase,
-  //           link: '/submaster/business-type',
-  //         },
-  //         {
-  //           name: 'Contact Type',
-  //           icon: FaUserFriends,
-  //           link: '/submaster/contact-type',
-  //         },
-  //         {
-  //           name: 'Currency',
-  //           icon: FaDollarSign,
-  //           link: '/submaster/currencies',
-  //         },
-  //         {
-  //           name: 'Payment Mode',
-  //           icon: FaCreditCard,
-  //           link: '/submaster/payment-mode',
-  //         },
-  //         {
-  //           name: 'Payment Terms',
-  //           icon: FaCalendarAlt,
-  //           link: '/submaster/payment-terms',
-  //         },
-  //         {
-  //           name: 'Spare Class',
-  //           icon: FaCog,
-  //           link: '/submaster/spare-class',
-  //         },
-  //         {
-  //           name: 'Spare Type',
-  //           icon: FaBox,
-  //           link: '/submaster/spare-type',
-  //         },
-  //         {
-  //           name: 'Spare Model',
-  //           icon: FaWrench,
-  //           link: '/submaster/spare-model',
-  //         },
-  //         {
-  //           name: 'Priorities',
-  //           icon: FaFlag,
-  //           link: '/submaster/priorities',
-  //         },
-  //         {
-  //           name: 'Conditions',
-  //           icon: FaCheckCircle,
-  //           link: '/submaster/conditions',
-  //         },
-  //         {
-  //           name: 'FOB',
-  //           icon: FaWarehouse,
-  //           link: '/submaster/fob',
-  //         },
-  //         {
-  //           name: 'Ship Accounts',
-  //           icon: FaShip,
-  //           link: '/submaster/ship-accounts',
-  //         },
-  //         {
-  //           name: 'Ship Modes',
-  //           icon: FaTruck,
-  //           link: '/submaster/ship-modes',
-  //         },
-  //         {
-  //           name: 'Ship Via',
-  //           icon: FaPlane,
-  //           link: '/submaster/ship-via',
-  //         },
-  //         {
-  //           name: 'Custom Entry',
-  //           icon: FaGlobeAmericas,
-  //           link: '/submaster/custom-entry',
-  //         },
-  //         {
-  //           name: 'Package Type',
-  //           icon: FaBox,
-  //           link: '/submaster/package-type',
-  //         },
-  //         {
-  //           name: 'Ship Type',
-  //           icon: FaSailboat,
-  //           link: '/submaster/ship-type',
-  //         },
-  //         {
-  //           name: 'Warehouse',
-  //           icon: FaWarehouse,
-  //           link: '/submaster/warehouse',
-  //         },
-  //         {
-  //           name: 'Rack',
-  //           icon: FaLayerGroup,
-  //           link: '/submaster/rack',
-  //         },
-  //         {
-  //           name: 'Bin Location',
-  //           icon: FaBoxOpen,
-  //           link: '/submaster/bin-location',
-  //         },
-  //       ],
-  //     },
-  //   ],
-  // },
+      {
+        name: 'Submaster',
+        icon: FaUserShield,
+        subItems: [
+          {
+            name: 'Business Type',
+            icon: FaBriefcase,
+            link: '/submaster/business-types',
+          },
+          {
+            name: 'Contact Type',
+            icon: FaUserFriends,
+            link: '/submaster/contact-types',
+          },
+          {
+            name: 'Currency',
+            icon: FaDollarSign,
+            link: '/submaster/currencies',
+          },
+          {
+            name: 'Payment Mode',
+            icon: FaCreditCard,
+            link: '/submaster/payment-modes',
+          },
+          {
+            name: 'Payment Terms',
+            icon: FaCalendarAlt,
+            link: '/submaster/payment-terms',
+          },
+          {
+            name: 'Spare Class',
+            icon: FaCog,
+            link: '/submaster/spare-classes',
+          },
+          {
+            name: 'Spare Type',
+            icon: FaBox,
+            link: '/submaster/spare-types',
+          },
+          {
+            name: 'Spare Model',
+            icon: FaWrench,
+            link: '/submaster/spare-models',
+          },
+          {
+            name: 'Priorities',
+            icon: FaFlag,
+            link: '/submaster/priorities',
+          },
+          {
+            name: 'Conditions',
+            icon: FaCheckCircle,
+            link: '/submaster/conditions',
+          },
+          {
+            name: 'FOB',
+            icon: FaWarehouse,
+            link: '/submaster/fobs',
+          },
+          {
+            name: 'Ship Accounts',
+            icon: FaShip,
+            link: '/submaster/ship-accounts',
+          },
+          {
+            name: 'Ship Modes',
+            icon: FaTruck,
+            link: '/submaster/ship-modes',
+          },
+          {
+            name: 'Ship Via',
+            icon: FaPlane,
+            link: '/submaster/ship-vias',
+          },
+          {
+            name: 'Custom Entry',
+            icon: FaGlobeAmericas,
+            link: '/submaster/custom-entries',
+          },
+          {
+            name: 'Package Type',
+            icon: FaBox,
+            link: '/submaster/package-types',
+          },
+          {
+            name: 'Ship Type',
+            icon: FaSailboat,
+            link: '/submaster/ship-types',
+          },
+          {
+            name: 'Warehouse',
+            icon: FaWarehouse,
+            link: '/submaster/warehouses',
+          },
+          {
+            name: 'Rack',
+            icon: FaLayerGroup,
+            link: '/submaster/racks',
+          },
+          {
+            name: 'Bin Location',
+            icon: FaBoxOpen,
+            link: '/submaster/bin-locations',
+          },
+          {
+            name: 'Mode of Receipt',
+            icon: FaReceipt,
+            link: '/submaster/mode-of-receipts',
+          }
+        ],
+      },
+    ],
+  },
   // {
   //   sectionName: 'Other Menus',
   //   items: [

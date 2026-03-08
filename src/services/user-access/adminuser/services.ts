@@ -6,7 +6,8 @@ import { useApiMutation } from '@/api/hooks/useApiMutation';
 
 import {
   zDropdownPayload,
-  DropdownPayload
+  DropdownPayload,
+  QueryParams
 } from '@/services/global-schema';
 
 import {
@@ -18,7 +19,6 @@ import {
   zCreateAdminUserPayload,
 } from './schema';
 
-import { QueryParams } from '@/services/submaster/schema';
 
 /* ================= Admin User List ================= */
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Center,
@@ -14,11 +14,12 @@ import {
   Tr,
   Checkbox,
   Flex
-} from '@chakra-ui/react';
+} from "@chakra-ui/react";
 
-import { keyframes } from '@emotion/react';
+import { keyframes } from "@emotion/react";
 
-import Pagination from '@/components/Pagination';
+import Pagination from "@/components/Pagination";
+
 import {
   Row,
   ColumnDef,
@@ -31,16 +32,16 @@ import {
   sortingFns,
   useReactTable,
   RowSelectionState,
-} from '@tanstack/react-table';
+} from "@tanstack/react-table";
 
-import { LuArrowUpDown, LuMoveDown, LuMoveUp } from 'react-icons/lu';
+import { LuArrowUpDown, LuMoveDown, LuMoveUp } from "react-icons/lu";
 
 type ColumnMeta = {
   sortable?: boolean;
   isNumeric?: boolean;
   sortParam?: string;
   searchable?: boolean;
-  sortType?: 'string' | 'number' | 'timestamp' | 'date';
+  sortType?: "string" | "number" | "timestamp" | "date";
 };
 
 const blink = keyframes`
@@ -62,11 +63,11 @@ const dateSort: SortingFn<any> = (rowA, rowB, columnId) => {
 };
 
 const caseInsensitiveTextSort: SortingFn<any> = (rowA, rowB, columnId) => {
-  const a = String(rowA.getValue(columnId) ?? '').trim();
-  const b = String(rowB.getValue(columnId) ?? '').trim();
+  const a = String(rowA.getValue(columnId) ?? "").trim();
+  const b = String(rowB.getValue(columnId) ?? "").trim();
 
   return a.localeCompare(b, undefined, {
-    sensitivity: 'base',
+    sensitivity: "base",
     numeric: true,
     ignorePunctuation: true,
   });
@@ -84,19 +85,23 @@ export type DataTableProps<Data extends object> = {
 
   containerProps?: TableContainerProps;
   tableProps?: TableProps;
+
   sortBy?: string;
-  sortDirection?: 'asc' | 'desc';
-  onSortChange?: (columnId: string, direction: 'asc' | 'desc') => void;
+  sortDirection?: "asc" | "desc";
+  onSortChange?: (columnId: string, direction: "asc" | "desc") => void;
+
   searchValue?: string;
   enableClientSideSearch?: boolean;
+
   getRowProps?: (row: Row<Data>) => React.ComponentProps<typeof Tr>;
 
-  /** Pagination */
   enablePagination?: boolean;
   currentPage?: number;
   totalCount?: number;
   pageSize?: number;
   onPageChange?: (page: number) => void;
+
+  stickyColumns?: number;
 };
 
 export function DataTable<Data extends object>({
@@ -112,7 +117,7 @@ export function DataTable<Data extends object>({
   sortBy,
   sortDirection,
   onSortChange,
-  searchValue = '',
+  searchValue = "",
   enableClientSideSearch = false,
   getRowProps,
   enablePagination = false,
@@ -120,34 +125,34 @@ export function DataTable<Data extends object>({
   totalCount = 0,
   pageSize = 10,
   onPageChange,
+  stickyColumns = 0
 }: DataTableProps<Data>) {
-  const [globalFilter, setGlobalFilter] = useState('');
+
+  const [globalFilter, setGlobalFilter] = useState("");
   const [sorting, setSorting] = useState<SortingState>(
-    sortBy ? [{ id: sortBy, desc: sortDirection === 'desc' }] : []
+    sortBy ? [{ id: sortBy, desc: sortDirection === "desc" }] : []
   );
 
-  /* ===============================
-     Sorting Enhancement
-  =============================== */
+  /* ================= Sorting Enhancement ================= */
 
   const processedColumns = useMemo(() => {
     return columns.map((column) => {
       const meta = column.meta as ColumnMeta | undefined;
       const sortType =
-        meta?.sortType || (meta?.sortable ? 'string' : undefined);
+        meta?.sortType || (meta?.sortable ? "string" : undefined);
 
       if (!sortType) return column;
 
       let sortingFn: SortingFn<Data>;
 
       switch (sortType) {
-        case 'timestamp':
+        case "timestamp":
           sortingFn = timestampSort;
           break;
-        case 'date':
+        case "date":
           sortingFn = dateSort;
           break;
-        case 'number':
+        case "number":
           sortingFn = sortingFns.alphanumeric;
           break;
         default:
@@ -163,15 +168,13 @@ export function DataTable<Data extends object>({
     });
   }, [columns]);
 
-  /* ===============================
-     Inject Row Selection Column
-  =============================== */
+  /* ================= Row Selection ================= */
 
   const finalColumns = useMemo(() => {
     if (!enableRowSelection) return processedColumns;
 
     const selectionColumn: ColumnDef<Data> = {
-      id: 'select',
+      id: "select",
       size: 50,
       header: ({ table }) => (
         <Checkbox
@@ -194,9 +197,7 @@ export function DataTable<Data extends object>({
     return [selectionColumn, ...processedColumns];
   }, [enableRowSelection, processedColumns]);
 
-  /* ===============================
-     Search Logic
-  =============================== */
+  /* ================= Search ================= */
 
   const searchableColumns = processedColumns.filter(
     (col) => (col.meta as ColumnMeta)?.searchable
@@ -210,56 +211,40 @@ export function DataTable<Data extends object>({
     searchableColumns.some((col) => {
       const columnId = col.id || (col as any).accessorKey;
       const value = row.getValue(columnId);
-      return String(value ?? '')
+      return String(value ?? "")
         .toLowerCase()
         .includes(filterValue.toLowerCase());
     });
 
-  /* ===============================
-     Table Instance
-  =============================== */
+  /* ================= Table Instance ================= */
 
   const table = useReactTable({
     data,
     columns: finalColumns,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: enableClientSideSearch
-      ? getFilteredRowModel()
-      : undefined,
-    getSortedRowModel: enableClientSideSearch
-      ? getSortedRowModel()
-      : undefined,
+    getFilteredRowModel: enableClientSideSearch ? getFilteredRowModel() : undefined,
+    getSortedRowModel: enableClientSideSearch ? getSortedRowModel() : undefined,
     manualSorting: !enableClientSideSearch,
     manualFiltering: !enableClientSideSearch,
-    globalFilterFn: enableClientSideSearch
-      ? globalFuzzyFilter
-      : undefined,
-    onSortingChange: enableClientSideSearch
-      ? setSorting
-      : undefined,
-    onGlobalFilterChange: enableClientSideSearch
-      ? setGlobalFilter
-      : undefined,
+    globalFilterFn: enableClientSideSearch ? globalFuzzyFilter : undefined,
+    onSortingChange: enableClientSideSearch ? setSorting : undefined,
+    onGlobalFilterChange: enableClientSideSearch ? setGlobalFilter : undefined,
 
     enableRowSelection: enableRowSelection
-      ? (row) =>
-        isRowSelectable
-          ? isRowSelectable(row.original)
-          : true
+      ? (row) => (isRowSelectable ? isRowSelectable(row.original) : true)
       : false,
 
     onRowSelectionChange,
+
     state: {
       sorting: enableClientSideSearch
         ? sorting
         : sortBy
-          ? [{ id: sortBy, desc: sortDirection === 'desc' }]
+          ? [{ id: sortBy, desc: sortDirection === "desc" }]
           : [],
-      globalFilter: enableClientSideSearch ? globalFilter : '',
+      globalFilter: enableClientSideSearch ? globalFilter : "",
       rowSelection: rowSelection ?? {},
-      columnVisibility: {
-        id: false,   // hide id column
-      },
+      columnVisibility: { id: false },
     },
   });
 
@@ -271,34 +256,16 @@ export function DataTable<Data extends object>({
 
   const handleSort = (columnId: string) => {
     if (enableClientSideSearch) {
-      console.log(columnId);
       const column = table.getColumn(columnId);
-      if (column?.getCanSort()) {
-        column.toggleSorting();
-      }
+      if (column?.getCanSort()) column.toggleSorting();
     } else if (onSortChange) {
-      const column = processedColumns.find((col) => {
-        const colId = (col as any).id;
-        const accessorKey = (col as any).accessorKey;
-        const sortParam = (col.meta as ColumnMeta)?.sortParam;
-        return (
-          colId === columnId ||
-          accessorKey === columnId ||
-          sortParam === columnId
-        );
-      });
-
-      if (!column) return;
-
-      const meta = (column.meta as ColumnMeta) || {};
-      if (!meta.sortable) return;
 
       const newDirection =
         sortBy === columnId
-          ? sortDirection === 'asc'
-            ? 'desc'
-            : 'asc'
-          : 'asc';
+          ? sortDirection === "asc"
+            ? "desc"
+            : "asc"
+          : "asc";
 
       onSortChange(columnId, newDirection);
     }
@@ -321,9 +288,7 @@ export function DataTable<Data extends object>({
     overallcount = totalRecords;
   }
 
-  /* ===============================
-     Loading
-  =============================== */
+  /* ================= Loading ================= */
 
   if (loading) {
     return (
@@ -333,142 +298,227 @@ export function DataTable<Data extends object>({
     );
   }
 
-  /* ===============================
-     Render
-  =============================== */
+  /* ================= Render ================= */
 
   return (
-    <React.Fragment>
-      <TableContainer
+    <>
+      <Flex
         {...containerProps}
-        overflow="auto"
         border="1px"
         borderColor="gray.500"
         boxShadow="md"
         borderTopWidth="0"
+        overflow="hidden"
       >
-        <Table
-          {...tableProps}
-          size={tableProps?.size || 'sm'}
-          bg="#0C2556"
-          variant="striped"
-        >
-          <Thead>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <Tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  const meta = header.column.columnDef.meta as ColumnMeta;
-                  const sortParam = meta?.sortParam;
-                  const columnId = header.column.id;
-                  const isSortable = meta?.sortable === true;
 
-                  const isSorted = enableClientSideSearch
-                    ? header.column.getIsSorted()
-                    : sortBy === (sortParam ?? columnId);
+        {/* LEFT FROZEN */}
+        {stickyColumns > 0 && (
+          <TableContainer overflow="hidden">
+            <Table size="sm" variant="striped" bg="#0C2556">
 
-                  const currentSortDirection = enableClientSideSearch
-                    ? header.column.getIsSorted()
-                    : sortBy === (sortParam ?? columnId)
-                      ? sortDirection
-                      : false;
+              <Thead>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <Tr key={headerGroup.id}>
+                    {headerGroup.headers.slice(0, stickyColumns).map((header) => {
 
-                  return (
-                    <Th
-                      key={header.id}
-                      onClick={
-                        isSortable
-                          ? () => handleSort(sortParam ?? columnId)
-                          : undefined
-                      }
-                      isNumeric={meta?.isNumeric}
-                      whiteSpace="normal"
-                      overflowWrap="break-word"
-                      color="white"
-                      p={4}
-                      cursor={isSortable ? 'pointer' : 'default'}
-                      position="relative"
-                      _hover={{
-                        bg: isSortable ? 'blue.700' : undefined,
-                      }}
-                    >
-                      <Box display="flex" alignItems="center">
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                        {isSortable && (
-                          <Box
-                            ml={2}
-                            as="span"
-                            display="inline-flex"
-                            animation={
-                              isSorted ? `${blink} 1s ease-in-out infinite` : ''
-                            }
-                          >
-                            {isSorted ? (
-                              currentSortDirection === 'desc' ? (
-                                <LuMoveDown
-                                  aria-label="sorted descending"
-                                  strokeWidth={4}
-                                />
-                              ) : (
-                                <LuMoveUp
-                                  aria-label="sorted ascending"
-                                  strokeWidth={4}
-                                />
-                              )
-                            ) : (
-                              <LuArrowUpDown
-                                opacity={0.5}
-                                aria-label="sortable"
-                              />
+                      const meta = header.column.columnDef.meta as ColumnMeta;
+                      const sortParam = meta?.sortParam;
+                      const columnId = header.column.id;
+                      const isSortable = meta?.sortable === true;
+
+                      const isSorted = enableClientSideSearch
+                        ? header.column.getIsSorted()
+                        : sortBy === (sortParam ?? columnId);
+
+                      const currentSortDirection = enableClientSideSearch
+                        ? header.column.getIsSorted()
+                        : sortBy === (sortParam ?? columnId)
+                          ? sortDirection
+                          : false;
+
+                      return (
+                        <Th
+                          key={header.id}
+                          onClick={
+                            isSortable
+                              ? () => handleSort(sortParam ?? columnId)
+                              : undefined
+                          }
+                          isNumeric={meta?.isNumeric}
+                          color="white"
+                          p={4}
+                          cursor={isSortable ? "pointer" : "default"}
+                        >
+                          <Box display="flex" alignItems="center">
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+
+                            {isSortable && (
+                              <Box ml={2} display="inline-flex"
+                                animation={isSorted ? `${blink} 1s ease-in-out infinite` : ""}
+                              >
+                                {isSorted ? (
+                                  currentSortDirection === "desc"
+                                    ? <LuMoveDown strokeWidth={4} />
+                                    : <LuMoveUp strokeWidth={4} />
+                                ) : (
+                                  <LuArrowUpDown opacity={0.5} />
+                                )}
+                              </Box>
                             )}
                           </Box>
-                        )}
-                      </Box>
-                    </Th>
+                        </Th>
+                      );
+                    })}
+                  </Tr>
+                ))}
+              </Thead>
+
+              <Tbody bg="white">
+                {table.getRowModel().rows.map((row) => {
+                  const rowProps = getRowProps?.(row) ?? {};
+                  return (
+                    <Tr key={row.id} {...rowProps}>
+                      {row.getVisibleCells().slice(0, stickyColumns).map((cell) => (
+                        <Td key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </Td>
+                      ))}
+                    </Tr>
                   );
                 })}
-              </Tr>
-            ))}
-          </Thead>
+                {finalColumns.length > 0 && stickyColumns > 0 &&
+                  table.getRowModel().rows.length === 0 && (
+                    <Tr>
+                      <Td colSpan={stickyColumns} textAlign="center">
+                        {searchValue
+                          ? "No matching results found"
+                          : "No items to display"}
+                      </Td>
+                    </Tr>
+                  )}
+              </Tbody>
+            </Table>
+          </TableContainer>
+        )}
 
-          <Tbody bg="white">
-            {table.getRowModel().rows.map((row) => {
-              const rowProps = getRowProps?.(row) ?? {};
+        {/* RIGHT SCROLL */}
+<TableContainer
+  flex="1"
+  overflowX={(finalColumns.length > 0 && stickyColumns > 0) ? "auto" : "hidden"}
+   sx={{
+    scrollbarWidth: "thin",                 // Firefox
+    scrollbarColor: "#718096 transparent",  // Firefox
 
-              return (
-                <Tr key={row.id} {...rowProps}>
-                  {row.getVisibleCells().map((cell) => {
-                    const meta =
-                      cell.column.columnDef.meta as ColumnMeta;
+    "&::-webkit-scrollbar": {
+      height: "8px",                        // horizontal scrollbar height
+    },
+    "&::-webkit-scrollbar-track": {
+      background: "transparent",
+    },
+    "&::-webkit-scrollbar-thumb": {
+      background: "#718096",
+      borderRadius: "4px",
+    },
+    "&::-webkit-scrollbar-thumb:hover": {
+      background: "#4A5568",
+    },
+  }}
+>
+          <Table
+            {...tableProps}
+            size={tableProps?.size || "sm"}
+            variant="striped"
+            bg="#0C2556"
+            minWidth="max-content"
+          >
+            <Thead>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <Tr key={headerGroup.id}>
+                  {headerGroup.headers.slice(stickyColumns).map((header) => {
+
+                    const meta = header.column.columnDef.meta as ColumnMeta;
+                    const sortParam = meta?.sortParam;
+                    const columnId = header.column.id;
+                    const isSortable = meta?.sortable === true;
+
+                    const isSorted = enableClientSideSearch
+                      ? header.column.getIsSorted()
+                      : sortBy === (sortParam ?? columnId);
+
+                    const currentSortDirection = enableClientSideSearch
+                      ? header.column.getIsSorted()
+                      : sortBy === (sortParam ?? columnId)
+                        ? sortDirection
+                        : false;
 
                     return (
-                      <Td key={cell.id} isNumeric={meta?.isNumeric}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </Td>
+                      <Th
+                        key={header.id}
+                        onClick={
+                          isSortable
+                            ? () => handleSort(sortParam ?? columnId)
+                            : undefined
+                        }
+                        isNumeric={meta?.isNumeric}
+                        color="white"
+                        p={4}
+                        cursor={isSortable ? "pointer" : "default"}
+                      >
+                        <Box display="flex" alignItems="center">
+                          {flexRender(header.column.columnDef.header, header.getContext())}
+
+                          {isSortable && (
+                            <Box ml={2} display="inline-flex"
+                              animation={isSorted ? `${blink} 1s ease-in-out infinite` : ""}
+                            >
+                              {isSorted ? (
+                                currentSortDirection === "desc"
+                                  ? <LuMoveDown strokeWidth={4} />
+                                  : <LuMoveUp strokeWidth={4} />
+                              ) : (
+                                <LuArrowUpDown opacity={0.5} />
+                              )}
+                            </Box>
+                          )}
+                        </Box>
+                      </Th>
                     );
                   })}
                 </Tr>
-              );
-            })}
+              ))}
+            </Thead>
 
-            {finalColumns.length > 0 &&
-              table.getRowModel().rows.length === 0 && (
-                <Tr>
-                  <Td colSpan={finalColumns.length} textAlign="center">
-                    {searchValue
-                      ? 'No matching results found'
-                      : 'No items to display'}
-                  </Td>
-                </Tr>
-              )}
-          </Tbody>
-        </Table>
-      </TableContainer>
+            <Tbody bg="white">
+              {table.getRowModel().rows.map((row) => {
+                const rowProps = getRowProps?.(row) ?? {};
+                return (
+                  <Tr key={row.id} {...rowProps}>
+                    {row.getVisibleCells().slice(stickyColumns).map((cell) => (
+                      <Td key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </Td>
+                    ))}
+                  </Tr>
+                );
+              })}
+              {finalColumns.length > 0 && stickyColumns === 0 &&
+                table.getRowModel().rows.length === 0 && (
+                  <Tr>
+                    <Td
+                      colSpan={finalColumns.length - stickyColumns}
+                      textAlign="center"
+                    >
+                      {searchValue
+                        ? "No matching results found"
+                        : "No items to display"}
+                    </Td>
+                  </Tr>
+                )}
+            </Tbody>
+          </Table>
+        </TableContainer>
+      </Flex>
+
       <Flex
         mt={4}
         px={2}
@@ -488,6 +538,6 @@ export function DataTable<Data extends object>({
             onPageChange={onPageChange!}
           />)}
       </Flex>
-    </React.Fragment>
+    </>
   );
 }

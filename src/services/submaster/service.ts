@@ -1,178 +1,128 @@
-import Axios, { AxiosError } from 'axios';
+import { z } from "zod";
+import { useQuery, UseQueryOptions } from 'react-query';
+
+import { getRequest, postRequest, putRequest } from '@/api/client';
+import { endPoints } from '@/api/endpoints';
+import { useApiMutation } from '@/api/hooks/useApiMutation';
+import { zBasicObject } from '@/services/global-schema';
+import { submasterConfig } from "@/pages/Submaster/submasterConfig";
+
 import {
-  QueryKey,
-  UseMutationOptions,
-  useMutation,
-  useQueryClient,
-} from 'react-query';
+  CreatePayload,
+  zListPayload,
+  zCreatePayload,
+  QueryParams
+} from '@/services/global-schema';
 
-interface QueryParams {
-  status?: string;
+const getSchema = (model: string) => {
+  const config =
+    submasterConfig[model] ?? submasterConfig.default;
+
+  const base = config?.schema ?? zBasicObject;
+
+  return base.extend({
+    actions: z.string().optional(),
+  });
+};
+
+/* ================= SubmasterItem List ================= */
+
+export const useSubmasterItemList = (model: string) =>
+  useQuery({
+    queryKey: ['submasterItemList', model],
+    queryFn: () =>
+      getRequest(
+        endPoints.list.submaster.replace(':model', model),
+        zListPayload
+      ),
+    retry: 2,
+    refetchOnWindowFocus: false,
+  });
+
+/* ================= SubmasterItem Index ================= */
+
+export const useSubmasterItemIndex = (
+  model: string,
+  queryParams?: QueryParams
+) => {
+
+  const zIndexPayload = z.object({
+    data: z.array(getSchema(model)),
+  });
+
+  return useQuery({
+    queryKey: ["submasterItemIndex", model, queryParams],
+    queryFn: () =>
+      getRequest(
+        endPoints.index.submaster.replace(":model", model),
+        zIndexPayload,
+        queryParams
+      ),
+  });
+};
+/* ================= SubmasterItem Details ================= */
+
+export const useSubmasterItemDetails = (
+  model: string,
+  id: number | string,
+  options?: UseQueryOptions<any>
+) => {
+
+  const zDetailsPayload = z.object({
+    data: getSchema(model),
+    status: z.boolean(),
+  });
+
+  type DetailsPayload = z.infer<typeof zDetailsPayload>;
+
+  return useQuery<DetailsPayload>({
+    queryKey: ["submasterItemDetails", model, id],
+    queryFn: () =>
+      getRequest(
+        endPoints.info.submaster
+          .replace(":model", model)
+          .replace(":id", String(id)),
+        zDetailsPayload
+      ),
+    enabled: !!id,
+    retry: 2,
+    refetchOnWindowFocus: false,
+    ...options,
+  });
+};
+
+/* ================= Create SubmasterItem ================= */
+
+interface CreateSubmasterItemVariables {
+  name: string;
+  code?: string;
 }
 
-export type ApiResp = { status: boolean; message?: string; errors?: Record<string, string[]> };
-export type Vars = { url: string; deleted_reason?: string };
-export const endPoints = import.meta.env.VITE_API_ENDPOINTS ? JSON.parse(import.meta.env.VITE_API_ENDPOINTS) : {};
-
-
-export const fetchData = async (
-  url: string,
-  parser: TODO,
-  queryParams: QueryParams = {}
-) => {
-  const queryString = new URLSearchParams();
-
-  Object.entries(queryParams).forEach(([key, value]) => {
-    if (typeof value === 'object' && value !== null) {
-      Object.entries(value).forEach(([nestedKey, nestedValue]) => {
-        if (nestedValue !== undefined && nestedValue !== null) {
-          queryString.append(`search[${nestedKey}]`, nestedValue.toString());
-        }
-      });
-    } else {
-      if (value !== undefined && value !== null) {
-        queryString.append(key, value.toString());
-      }
-    }
-  });
-  try {
-    const response = await Axios.get(`${url}?${queryString}`);
-    return parser().parse(response.data);
-  } catch (error) {
-    console.log(error);
-    throw new Error(`Failed to fetch data from ${url}.`);
-  }
-};
-
-export type SubMasterMutationConfig<T, Variables> = UseMutationOptions<
-  T,
-  AxiosError<T>,
-  Variables
->;
-
-export const useSubMasterMutation = <T, Variables>(
-  endpoint: string,
-  parseResponse: (data: TODO) => T,
-  config: SubMasterMutationConfig<T, Variables>
-) => {
-  return useMutation(
-    async (variables: Variables) => {
-      const response = await Axios.post(endpoint, variables);
-      return parseResponse(response.data);
-    },
-    {
-      ...config,
-      onSuccess: (data, ...args) => {
-        config?.onSuccess?.(data, ...args);
-      },
-    }
+export const useCreateSubmasterItem = (model: string) =>
+  useApiMutation<CreatePayload, CreateSubmasterItemVariables>((variables) =>
+    postRequest(
+      endPoints.create.submaster.replace(':model', model),
+      variables,
+      zCreatePayload
+    )
   );
-};
 
-export const useSubMasterPutMutation = <T, Variables>(
-  endpoint: (variables: Variables) => string,
-  parseResponse: (data: TODO) => T,
-  config: SubMasterMutationConfig<T, Variables>
-) => {
-  return useMutation(
-    async (variables: Variables) => {
-      const url = endpoint(variables);
-      const response = await Axios.put(url, variables);
-      return parseResponse(response.data);
-    },
-    {
-      ...config,
-      onSuccess: (data, ...args) => {
-        config?.onSuccess?.(data, ...args);
-      },
-    }
-  );
-};
+/* ================= Update SubmasterItem ================= */
 
-export const useSubMasterPostMutation = <T, Variables>(
-  endpoint: (variables: Variables) => string,
-  parseResponse: (data: TODO) => T,
-  config: SubMasterMutationConfig<T, Variables>
-) => {
-  return useMutation(
-    async (variables: Variables) => {
-      const url = endpoint(variables);
-      const response = await Axios.post(url, variables);
-      return parseResponse(response.data);
-    },
-    {
-      ...config,
-      onSuccess: (data, ...args) => {
-        config?.onSuccess?.(data, ...args);
-      },
-    }
-  );
-};
-
-export const useDeleteMutation = <T, Variables>(
-  endpoint: (variables: Variables) => string,
-  parseResponse: (data: any) => T,
-  config: UseMutationOptions<T, AxiosError<T>, Variables> = {}
-) => {
-  return useMutation<T, AxiosError<T>, Variables>(
-    async (variables: Variables) => {
-      const url = endpoint(variables);
-      // 👇 send variables as the body of the DELETE request
-      const res = await Axios.delete(url, { data: variables });
-      return parseResponse(res.data);
-    },
-    config
-  );
-};
-
-export type DeleteRequest = {
-  url: string;
-  method?: 'DELETE' | 'POST';
-  body?: unknown;
-  query?: Record<string, string | number | boolean | undefined>;
-  headers?: Record<string, string>;
-};
-
-export type UseDeleteOptions<TResp, TVars> = {
-  request: (vars: TVars) => DeleteRequest;
-  invalidate?: QueryKey[];
-  parser?: (data: unknown) => TResp;
-} & Omit<UseMutationOptions<TResp, unknown, TVars, unknown>, 'mutationFn'>;
-
-export function useDelete<TResp = any, TVars = any>(options: UseDeleteOptions<TResp, TVars>) {
-  const { request, invalidate, parser, ...rest } = options;
-  const queryClient = useQueryClient();
-
-  return useMutation<TResp, unknown, TVars>({
-    mutationFn: async (vars: TVars) => {
-      const { url, method = 'DELETE', body, query, headers } = request(vars);
-
-      try {
-        const res = await Axios({
-          url,
-          method,
-          headers: { 'Content-Type': 'application/json', ...(headers ?? {}) },
-          data: body,
-          params: query,
-        });
-        return parser ? parser(res.data) : (res.data as TResp);
-      } catch (e) {
-        const err = e as AxiosError<any>;
-        // normalize the error so caller can use `error.data.message`
-        const normalized = new Error(
-          err.response?.data?.message || err.message || 'Request failed'
-        ) as any;
-        normalized.status = err.response?.status;
-        normalized.data = err.response?.data;
-        throw normalized;
-      }
-    },
-    onSuccess: (data, vars, ctx) => {
-      // default invalidations
-      for (const key of invalidate ?? []) queryClient.invalidateQueries(key);
-      rest.onSuccess?.(data, vars, ctx);
-    },
-    ...rest,
-  });
+interface UpdateSubmasterItemVariables {
+  id: number | string;
+  name: string;
+  code?: string;
 }
 
+export const useUpdateSubmasterItem = (model: string) =>
+  useApiMutation<CreatePayload, UpdateSubmasterItemVariables>(
+    ({ id, ...rest }) =>
+      putRequest(
+        endPoints.update.submaster
+          .replace(':model', model)
+          .replace(':id', String(id)),
+        rest,
+        zCreatePayload
+      )
+  );
