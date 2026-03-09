@@ -8,10 +8,8 @@ import { createColumnHelper } from '@tanstack/react-table';
 
 import ConfirmationPopup from '@/components/ConfirmationPopup';
 import { DataTable } from '@/components/DataTable';
-import { TableSearchBox } from '@/components/DataTable/SearchBox';
 import { ResponsiveIconButton } from '@/components/ResponsiveIconButton';
 import { SlideIn } from '@/components/SlideIn';
-import { Status, StatusTabs } from '@/components/StatusTabs';
 import { getBaseColumns } from '@/components/ReUsable/table-columns/baseColumns';
 import { getActionColumn } from '@/components/ReUsable/table-columns/actionColumn';
 import { getStatusColumn } from '@/components/ReUsable/table-columns/statusColumn';
@@ -38,22 +36,27 @@ export const DepartmentList = () => {
 
   const columnHelper = createColumnHelper<DataColumn>();
 
-const emailColumn = columnHelper.accessor((row) => row.emails, {
-  id: 'emails',
-  header: 'Emails',
-  cell: (info) => {
-    const emails = info.getValue();
-    if (!emails) return '-';
+  const emailColumn = columnHelper.accessor((row) => row.emails, {
+    id: 'emails',
+    header: 'Emails',
+    meta: {
+      sortable: true,
+      searchable: true,
+      sortType: 'string',
+    },
+    cell: (info) => {
+      const emails = info.getValue();
+      if (!emails) return '-';
 
-    return (
-      <Stack spacing={0}>
-        {emails.split(',').map((email: string, index: number) => (
-          <Box key={index}>{email.trim()}</Box>
-        ))}
-      </Stack>
-    );
-  },
-});
+      return (
+        <Stack spacing={0}>
+          {emails.split(',').map((email: string, index: number) => (
+            <Box key={index}>{email.trim()}</Box>
+          ))}
+        </Stack>
+      );
+    },
+  });
 
   const openModal = (item: any, editStatus?: boolean) => {
     console.log(item)
@@ -134,7 +137,7 @@ const emailColumn = columnHelper.accessor((row) => row.emails, {
   const handleRestore = mutateDepartment;
   const handlePermanentDelete = mutateDepartment;
 
-  const handleStatusChange = (next: Status) => {
+  const handleStatusChange = (next: any) => {
     setQueryParams((prevState: TODO) => ({ ...prevState, status: next }));
   };
 
@@ -197,35 +200,7 @@ const emailColumn = columnHelper.accessor((row) => row.emails, {
         </HStack>
 
         <Box borderRadius={4}>
-          <HStack
-            bg={'white'}
-            justify={'space-between'}
-            mb={4}
-            p={4}
-            borderTopRadius={4}
-          >
-            <Heading as="h4" size={'md'}>
-              Department List
-            </Heading>
-            <Box flex="1" maxW="300px">
-              <TableSearchBox
-                value={searchTerm}
-                onChange={setSearchTerm}
-                width="100%"
-                placeholder={'Search Department'}
-              />
-            </Box>
-          </HStack>
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-          >
-            <StatusTabs
-              status={queryParams?.status}
-              onStatusChange={handleStatusChange}
-            />
-          </Box>
+
           <DataTable
             columns={columns}
             data={data}
@@ -236,6 +211,12 @@ const emailColumn = columnHelper.accessor((row) => row.emails, {
             searchValue={searchTerm}
             enableClientSideSearch={true}
             loading={listLoading}
+            onSearchChange={setSearchTerm}
+            title={'Department List'}
+            statusTabsStatus={true}
+            status={queryParams.status}
+            onStatusChange={handleStatusChange}
+            searchPlaceholder={'Search Department'}
           />
 
           <ModalForm

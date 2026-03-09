@@ -6,10 +6,9 @@ import { useQueryClient } from 'react-query';
 
 import ConfirmationPopup from '@/components/ConfirmationPopup';
 import { DataTable } from '@/components/DataTable';
-import { TableSearchBox } from '@/components/DataTable/SearchBox';
+
 import { ResponsiveIconButton } from '@/components/ResponsiveIconButton';
 import { SlideIn } from '@/components/SlideIn';
-import { Status, StatusTabs } from '@/components/StatusTabs';
 import { getBaseColumns } from '@/components/ReUsable/table-columns/baseColumns';
 import { getActionColumn } from '@/components/ReUsable/table-columns/actionColumn';
 import { getStatusColumn } from '@/components/ReUsable/table-columns/statusColumn';
@@ -113,7 +112,7 @@ export const RoleList = () => {
   const handleRestore = mutateRole;
   const handlePermanentDelete = mutateRole;
 
-  const handleStatusChange = (next: Status) => {
+  const handleStatusChange = (next: any) => {
     setQueryParams((prevState: TODO) => ({ ...prevState, status: next }));
   };
 
@@ -168,35 +167,7 @@ export const RoleList = () => {
         </HStack>
 
         <Box borderRadius={4}>
-          <HStack
-            bg={'white'}
-            justify={'space-between'}
-            mb={4}
-            p={4}
-            borderTopRadius={4}
-          >
-            <Heading as="h4" size={'md'}>
-              UserRole List
-            </Heading>
-            <Box flex="1" maxW="300px">
-              <TableSearchBox
-                value={searchTerm}
-                onChange={setSearchTerm}
-                width="100%"
-                placeholder={'Search Role'}
-              />
-            </Box>
-          </HStack>
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-          >
-            <StatusTabs
-              status={queryParams?.status}
-              onStatusChange={handleStatusChange}
-            />
-          </Box>
+          
           <DataTable
             columns={columns}
             data={data}
@@ -207,6 +178,12 @@ export const RoleList = () => {
             searchValue={searchTerm}
             enableClientSideSearch={true}
             loading={listLoading}
+            onSearchChange={setSearchTerm}
+            title={'UserRole List'}
+            statusTabsStatus={true}
+            status={queryParams.status}
+            onStatusChange={handleStatusChange}
+            searchPlaceholder={'Search Role'}
           />
 
           <ModalForm

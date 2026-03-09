@@ -8,10 +8,8 @@ import { useNavigate } from "react-router-dom";
 
 import ConfirmationPopup from "@/components/ConfirmationPopup";
 import { DataTable } from "@/components/DataTable";
-import { TableSearchBox } from "@/components/DataTable/SearchBox";
 import { ResponsiveIconButton } from "@/components/ResponsiveIconButton";
 import { SlideIn } from "@/components/SlideIn";
-import { Status, StatusTabs } from "@/components/StatusTabs";
 
 import { getBaseColumns } from "@/components/ReUsable/table-columns/baseColumns";
 import { getActionColumn } from "@/components/ReUsable/table-columns/actionColumn";
@@ -47,7 +45,7 @@ export const SubmasterPage = () => {
   const [selected, setSelected] = useState<ModelDataColumn | null>(null);
   const [isEdit, toggleEdit] = useState(false);
 
-  const [queryParams, setQueryParams] = useState<{ status: Status }>({
+  const [queryParams, setQueryParams] = useState<{ status: any }>({
     status: "all",
   });
 
@@ -161,7 +159,7 @@ export const SubmasterPage = () => {
 
   /* ================= Status Filter ================= */
 
-  const handleStatusChange = (next: Status) => {
+  const handleStatusChange = (next: any) => {
     setQueryParams((prev) => ({ ...prev, status: next }));
   };
 
@@ -259,33 +257,6 @@ export const SubmasterPage = () => {
         </HStack>
 
         <Box borderRadius={4}>
-          <HStack
-            bg={"white"}
-            justify={"space-between"}
-            mb={4}
-            p={4}
-            borderTopRadius={4}
-          >
-            <Heading as="h4" size={"md"}>
-              {title} List
-            </Heading>
-
-            <Box flex="1" maxW="300px">
-              <TableSearchBox
-                value={searchTerm}
-                onChange={setSearchTerm}
-                width="100%"
-                placeholder={`Search ${title}`}
-              />
-            </Box>
-          </HStack>
-
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <StatusTabs
-              status={queryParams.status}
-              onStatusChange={handleStatusChange}
-            />
-          </Box>
 
           <DataTable
             columns={columns}
@@ -295,9 +266,15 @@ export const SubmasterPage = () => {
             sortDirection={sortDirection}
             onSortChange={handleSortChange}
             searchValue={searchTerm}
-            enableClientSideSearch
+            enableClientSideSearch={true}
             loading={listLoading}
             stickyColumns={config.stickyColumns ?? 0}
+            title={`${title} List`}
+            statusTabsStatus={true}
+            status={queryParams.status}
+            onStatusChange={handleStatusChange}
+            onSearchChange={setSearchTerm}
+            searchPlaceholder={`Search ${title}`}
           />
 
           <ModalForm

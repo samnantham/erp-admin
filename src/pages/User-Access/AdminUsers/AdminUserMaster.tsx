@@ -16,7 +16,6 @@ import { useNavigate } from 'react-router-dom';
 import { DataTable } from '@/components/DataTable';
 import { FieldInput } from '@/components/FieldInput';
 import { FieldSelect } from '@/components/FieldSelect';
-import { PageLimit } from '@/components/PageLimit';
 import { ResponsiveIconButton } from '@/components/ResponsiveIconButton';
 import { SlideIn } from '@/components/SlideIn';
 import { useAdminUserIndex, useAdminUserDropdowns } from '@/services/user-access/adminuser/services';
@@ -196,38 +195,17 @@ export const AdminUserMaster = () => {
         </Formiz>
 
         <Box borderRadius={4}>
-          {/* Table goes here */}
-          <HStack
-            bg={'white'}
-            justify={'space-between'}
-            mb={4}
-            p={4}
-            borderTopRadius={4}
-          >
-            <Heading as="h4" size={'md'}>
-              Admin User List
-            </Heading>
-            <Box ml="auto" display="flex" alignItems="center">
-              <PageLimit
-                currentLimit={itemsPerPage}
-                loading={listData.isLoading}
-                changeLimit={changePageLimit}
-                total={10}
-              />
-            </Box>
-          </HStack>
           <DataTable
             columns={columns}
             data={data}
             loading={listData.isLoading}
-
+            title={' Admin User List'}
             enablePagination={true}
             currentPage={queryParams?.page}
             pageSize={itemsPerPage}
-            totalCount={listData?.data?.pagination?.total
-
-            }
+            totalCount={listData?.data?.pagination?.total}
             onPageChange={(page) => changePageLimit(page)}
+            onPageSizeChange={changePageLimit}
           />
         </Box>
       </Stack>

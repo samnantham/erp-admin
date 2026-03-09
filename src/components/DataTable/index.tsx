@@ -13,12 +13,14 @@ import {
   Thead,
   Tr,
   Checkbox,
-  Flex
+  Flex,
+  HStack, Heading
 } from "@chakra-ui/react";
-
-import { keyframes } from "@emotion/react";
-
+import { TableSearchBox } from '@/components/DataTable/SearchBox';
+import { Status, StatusTabs } from '@/components/StatusTabs';
+import { PageLimit } from '@/components/PageLimit';
 import Pagination from "@/components/Pagination";
+import { keyframes } from "@emotion/react";
 
 import {
   Row,
@@ -102,6 +104,17 @@ export type DataTableProps<Data extends object> = {
   onPageChange?: (page: number) => void;
 
   stickyColumns?: number;
+
+  // NEW reusable props
+  title?: string;
+  searchPlaceholder?: string;
+  onSearchChange?: (value: string) => void;
+
+  //Show Tabs
+  statusTabsStatus?: boolean;
+  status?: Status;
+  onStatusChange?: (value: string) => void;
+  onPageSizeChange?: (value: number) => void;
 };
 
 export function DataTable<Data extends object>({
@@ -125,7 +138,14 @@ export function DataTable<Data extends object>({
   totalCount = 0,
   pageSize = 10,
   onPageChange,
-  stickyColumns = 0
+  stickyColumns = 0,
+  title = 'Data Table',
+  searchPlaceholder = 'Search',
+  onSearchChange,
+  statusTabsStatus = false,
+  status,
+  onStatusChange,
+  onPageSizeChange
 }: DataTableProps<Data>) {
 
   const [globalFilter, setGlobalFilter] = useState("");
@@ -271,21 +291,26 @@ export function DataTable<Data extends object>({
     }
   };
 
+  const filteredRows = enableClientSideSearch
+    ? table.getFilteredRowModel().rows.length
+    : data.length;
+
   let startRecord = 0;
   let endRecord = 0;
-  let totalRecords = 0;
   let overallcount = 0;
 
   if (enablePagination) {
-    totalRecords = totalCount;
-    startRecord = totalRecords === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-    endRecord = Math.min(currentPage * pageSize, totalRecords);
-    overallcount = totalCount;
+    overallcount = enableClientSideSearch ? filteredRows : totalCount;
+
+    startRecord =
+      overallcount === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+
+    endRecord = Math.min(currentPage * pageSize, overallcount);
   } else {
-    totalRecords = data.length;
-    startRecord = totalRecords > 0 ? 1 : 0;
-    endRecord = totalRecords;
-    overallcount = totalRecords;
+    overallcount = enableClientSideSearch ? filteredRows : data.length;
+
+    startRecord = overallcount > 0 ? 1 : 0;
+    endRecord = overallcount;
   }
 
   /* ================= Loading ================= */
@@ -302,24 +327,185 @@ export function DataTable<Data extends object>({
 
   return (
     <>
-      <Flex
-        {...containerProps}
-        border="1px"
-        borderColor="gray.500"
-        boxShadow="md"
-        borderTopWidth="0"
-        overflow="hidden"
-      >
+      <Box>
+        {(title || enableClientSideSearch || enablePagination) && (
+          <HStack
+            bg={'white'}
+            justify={'space-between'}
+            mb={4}
+            p={4}
+            borderTopRadius={4}
+          >
+            {title && (
+              <Heading size="md">
+                {title}
+              </Heading>
+            )}
 
-        {/* LEFT FROZEN */}
-        {stickyColumns > 0 && (
-          <TableContainer overflow="hidden">
-            <Table size="sm" variant="striped" bg="#0C2556">
+            {enablePagination && onPageSizeChange && (
+              <PageLimit
+                currentLimit={pageSize ?? 10}
+                loading={loading}
+                changeLimit={(limit) => onPageSizeChange?.(limit)}
+                total={overallcount ?? 0}
+              />
+            )}
+            {enableClientSideSearch && onSearchChange && (
+              <Box flex="1" maxW="300px">
+                <TableSearchBox
+                  value={searchValue ?? ""}
+                  onChange={onSearchChange}
+                  width="100%"
+                  placeholder={searchPlaceholder ?? "Search"}
+                />
+              </Box>
+            )}
+          </HStack>
+        )}
 
+        {statusTabsStatus && onStatusChange && (
+          <Box>
+            <StatusTabs
+              status={status ?? 'all'}
+              onStatusChange={onStatusChange}
+            />
+          </Box>
+        )}
+
+
+        <Flex
+          {...containerProps}
+          border="1px"
+          borderColor="gray.500"
+          boxShadow="md"
+          borderTopWidth="0"
+          overflow="hidden"
+        >
+
+          {/* LEFT FROZEN */}
+          {stickyColumns > 0 && (
+            <TableContainer overflow="hidden">
+              <Table size="sm" variant="striped" bg="#0C2556">
+
+                <Thead>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <Tr key={headerGroup.id}>
+                      {headerGroup.headers.slice(0, stickyColumns).map((header) => {
+
+                        const meta = header.column.columnDef.meta as ColumnMeta;
+                        const sortParam = meta?.sortParam;
+                        const columnId = header.column.id;
+                        const isSortable = meta?.sortable === true;
+
+                        const isSorted = enableClientSideSearch
+                          ? header.column.getIsSorted()
+                          : sortBy === (sortParam ?? columnId);
+
+                        const currentSortDirection = enableClientSideSearch
+                          ? header.column.getIsSorted()
+                          : sortBy === (sortParam ?? columnId)
+                            ? sortDirection
+                            : false;
+
+                        return (
+                          <Th
+                            key={header.id}
+                            onClick={
+                              isSortable
+                                ? () => handleSort(sortParam ?? columnId)
+                                : undefined
+                            }
+                            isNumeric={meta?.isNumeric}
+                            color="white"
+                            p={4}
+                            cursor={isSortable ? "pointer" : "default"}
+                          >
+                            <Box display="flex" alignItems="center">
+                              {flexRender(header.column.columnDef.header, header.getContext())}
+
+                              {isSortable && (
+                                <Box ml={2} display="inline-flex"
+                                  animation={isSorted ? `${blink} 1s ease-in-out infinite` : ""}
+                                >
+                                  {isSorted ? (
+                                    currentSortDirection === "desc"
+                                      ? <LuMoveDown strokeWidth={4} />
+                                      : <LuMoveUp strokeWidth={4} />
+                                  ) : (
+                                    <LuArrowUpDown opacity={0.5} />
+                                  )}
+                                </Box>
+                              )}
+                            </Box>
+                          </Th>
+                        );
+                      })}
+                    </Tr>
+                  ))}
+                </Thead>
+
+                <Tbody bg="white">
+                  {table.getRowModel().rows.map((row) => {
+                    const rowProps = getRowProps?.(row) ?? {};
+                    return (
+                      <Tr key={row.id} {...rowProps}>
+                        {row.getVisibleCells().slice(0, stickyColumns).map((cell) => (
+                          <Td key={cell.id}>
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </Td>
+                        ))}
+                      </Tr>
+                    );
+                  })}
+                  {finalColumns.length > 0 && stickyColumns > 0 &&
+                    table.getRowModel().rows.length === 0 && (
+                      <Tr>
+                        <Td colSpan={stickyColumns} textAlign="center">
+                          {searchValue
+                            ? "No matching results found"
+                            : "No items to display"}
+                        </Td>
+                      </Tr>
+                    )}
+                </Tbody>
+              </Table>
+            </TableContainer>
+          )}
+
+          {/* RIGHT SCROLL */}
+          <TableContainer
+            flex="1"
+            overflowX={(finalColumns.length > 0 && stickyColumns > 0) ? "auto" : "hidden"}
+            sx={{
+              scrollbarWidth: "thin",                 // Firefox
+              scrollbarColor: "#718096 transparent",  // Firefox
+
+              "&::-webkit-scrollbar": {
+                height: "8px",                        // horizontal scrollbar height
+              },
+              "&::-webkit-scrollbar-track": {
+                background: "transparent",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                background: "#718096",
+                borderRadius: "4px",
+              },
+              "&::-webkit-scrollbar-thumb:hover": {
+                background: "#4A5568",
+              },
+            }}
+          >
+            <Table
+              {...tableProps}
+              size={tableProps?.size || "sm"}
+              variant="striped"
+              bg="#0C2556"
+              minWidth="max-content"
+            >
               <Thead>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <Tr key={headerGroup.id}>
-                    {headerGroup.headers.slice(0, stickyColumns).map((header) => {
+                    {headerGroup.headers.slice(stickyColumns).map((header) => {
 
                       const meta = header.column.columnDef.meta as ColumnMeta;
                       const sortParam = meta?.sortParam;
@@ -378,7 +564,7 @@ export function DataTable<Data extends object>({
                   const rowProps = getRowProps?.(row) ?? {};
                   return (
                     <Tr key={row.id} {...rowProps}>
-                      {row.getVisibleCells().slice(0, stickyColumns).map((cell) => (
+                      {row.getVisibleCells().slice(stickyColumns).map((cell) => (
                         <Td key={cell.id}>
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </Td>
@@ -386,10 +572,13 @@ export function DataTable<Data extends object>({
                     </Tr>
                   );
                 })}
-                {finalColumns.length > 0 && stickyColumns > 0 &&
+                {finalColumns.length > 0 && stickyColumns === 0 &&
                   table.getRowModel().rows.length === 0 && (
                     <Tr>
-                      <Td colSpan={stickyColumns} textAlign="center">
+                      <Td
+                        colSpan={finalColumns.length - stickyColumns}
+                        textAlign="center"
+                      >
                         {searchValue
                           ? "No matching results found"
                           : "No items to display"}
@@ -399,145 +588,28 @@ export function DataTable<Data extends object>({
               </Tbody>
             </Table>
           </TableContainer>
-        )}
+        </Flex>
 
-        {/* RIGHT SCROLL */}
-<TableContainer
-  flex="1"
-  overflowX={(finalColumns.length > 0 && stickyColumns > 0) ? "auto" : "hidden"}
-   sx={{
-    scrollbarWidth: "thin",                 // Firefox
-    scrollbarColor: "#718096 transparent",  // Firefox
-
-    "&::-webkit-scrollbar": {
-      height: "8px",                        // horizontal scrollbar height
-    },
-    "&::-webkit-scrollbar-track": {
-      background: "transparent",
-    },
-    "&::-webkit-scrollbar-thumb": {
-      background: "#718096",
-      borderRadius: "4px",
-    },
-    "&::-webkit-scrollbar-thumb:hover": {
-      background: "#4A5568",
-    },
-  }}
->
-          <Table
-            {...tableProps}
-            size={tableProps?.size || "sm"}
-            variant="striped"
-            bg="#0C2556"
-            minWidth="max-content"
-          >
-            <Thead>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <Tr key={headerGroup.id}>
-                  {headerGroup.headers.slice(stickyColumns).map((header) => {
-
-                    const meta = header.column.columnDef.meta as ColumnMeta;
-                    const sortParam = meta?.sortParam;
-                    const columnId = header.column.id;
-                    const isSortable = meta?.sortable === true;
-
-                    const isSorted = enableClientSideSearch
-                      ? header.column.getIsSorted()
-                      : sortBy === (sortParam ?? columnId);
-
-                    const currentSortDirection = enableClientSideSearch
-                      ? header.column.getIsSorted()
-                      : sortBy === (sortParam ?? columnId)
-                        ? sortDirection
-                        : false;
-
-                    return (
-                      <Th
-                        key={header.id}
-                        onClick={
-                          isSortable
-                            ? () => handleSort(sortParam ?? columnId)
-                            : undefined
-                        }
-                        isNumeric={meta?.isNumeric}
-                        color="white"
-                        p={4}
-                        cursor={isSortable ? "pointer" : "default"}
-                      >
-                        <Box display="flex" alignItems="center">
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-
-                          {isSortable && (
-                            <Box ml={2} display="inline-flex"
-                              animation={isSorted ? `${blink} 1s ease-in-out infinite` : ""}
-                            >
-                              {isSorted ? (
-                                currentSortDirection === "desc"
-                                  ? <LuMoveDown strokeWidth={4} />
-                                  : <LuMoveUp strokeWidth={4} />
-                              ) : (
-                                <LuArrowUpDown opacity={0.5} />
-                              )}
-                            </Box>
-                          )}
-                        </Box>
-                      </Th>
-                    );
-                  })}
-                </Tr>
-              ))}
-            </Thead>
-
-            <Tbody bg="white">
-              {table.getRowModel().rows.map((row) => {
-                const rowProps = getRowProps?.(row) ?? {};
-                return (
-                  <Tr key={row.id} {...rowProps}>
-                    {row.getVisibleCells().slice(stickyColumns).map((cell) => (
-                      <Td key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </Td>
-                    ))}
-                  </Tr>
-                );
-              })}
-              {finalColumns.length > 0 && stickyColumns === 0 &&
-                table.getRowModel().rows.length === 0 && (
-                  <Tr>
-                    <Td
-                      colSpan={finalColumns.length - stickyColumns}
-                      textAlign="center"
-                    >
-                      {searchValue
-                        ? "No matching results found"
-                        : "No items to display"}
-                    </Td>
-                  </Tr>
-                )}
-            </Tbody>
-          </Table>
-        </TableContainer>
-      </Flex>
-
-      <Flex
-        mt={4}
-        px={2}
-        justify="space-between"
-        align="center"
-        flexWrap="wrap"
-      >
-        {overallcount > 0 && (
-          <Box fontSize="sm">
-            Showing {startRecord} to {endRecord} of {overallcount} records
-          </Box>)}
-        {enablePagination && (
-          <Pagination
-            currentPage={currentPage}
-            totalCount={totalCount}
-            pageSize={pageSize}
-            onPageChange={onPageChange!}
-          />)}
-      </Flex>
+        <Flex
+          mt={4}
+          px={2}
+          justify="space-between"
+          align="center"
+          flexWrap="wrap"
+        >
+          {overallcount > 0 && (
+            <Box fontSize="sm">
+              Showing {startRecord} to {endRecord} of {overallcount} records
+            </Box>)}
+          {enablePagination && (
+            <Pagination
+              currentPage={currentPage}
+              totalCount={totalCount}
+              pageSize={pageSize}
+              onPageChange={onPageChange!}
+            />)}
+        </Flex>
+      </Box>
     </>
   );
 }
