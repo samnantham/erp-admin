@@ -154,7 +154,7 @@ export const SubmasterForm = () => {
                     name={'name'}
                     required={'Name is required'}
                     placeholder="Enter Name"
-                    type="all-capital"
+                    type="alpha-numeric-with-space"
                     maxLength={15}
                   />
 
@@ -163,6 +163,7 @@ export const SubmasterForm = () => {
                     name={'consignee_name'}
                     required={'Consignee Name is required'}
                     placeholder="Enter Consignee Name"
+                    type="alpha-numeric-with-space"
                   />
 
                   <FieldEmailInput
@@ -227,6 +228,7 @@ export const SubmasterForm = () => {
                     label={'Zipcode'}
                     name={'zip_code'}
                     placeholder="Enter Zipcode"
+                    type="integer"
                     maxLength={8}
                   />
                 </Stack>
