@@ -2,6 +2,23 @@ import { z } from 'zod';
 
 /* ================= Option Item ================= */
 
+export const zUploadPayload = () =>
+  z
+    .object({
+      message: z.string(),
+      data: z.object({
+        file_name: z.string(),
+        file_path: z.string(),
+      }),
+    })
+    .transform((val) => ({
+      ...val,
+      status: true,
+    }));
+
+export type UploadPayload = z.infer<ReturnType<typeof zUploadPayload>>;
+
+
 export const zSelectOption = z.object({
   label: z.string(),
   value: z.string(),
@@ -30,12 +47,18 @@ export type SelectOptionsGroup = z.infer<typeof zSelectOptionsGroup>;
    Base Reusable Schemas
 ===================================================== */
 
-export const zBasicObject = z.object({
+export const zStandardObject = z.object({
   id: z.string().uuid(),
-  name: z.string(),
   created_at: z.string(),
+  has_pending_request: z.boolean().optional(),
+  pending_request_message: z.string().nullable().optional(),
   updated_at: z.string(),
-  deleted_at: z.string().nullable().optional(),
+  deleted_at: z.string().nullable().optional()
+});
+
+
+export const zBasicObject = zStandardObject.extend({
+  name: z.string(),
   is_fixed: z.boolean().nullable().optional(),
 });
 

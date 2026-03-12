@@ -37,6 +37,7 @@ const DocumentDownloadButton: React.FC<DocumentDownloadButtonProps> = ({
     } else if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(fileExtension)) {
       setFileType('ppt');
     }
+    console.log(completeUrl)
     setFileUrl(completeUrl);
   };
 

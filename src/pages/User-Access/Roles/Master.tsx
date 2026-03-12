@@ -4,10 +4,9 @@ import { Box, HStack, Heading, Stack } from '@chakra-ui/react';
 import { LuPlus } from 'react-icons/lu';
 import { useQueryClient } from 'react-query';
 
-import { createColumnHelper } from '@tanstack/react-table';
-
 import ConfirmationPopup from '@/components/ConfirmationPopup';
 import { DataTable } from '@/components/DataTable';
+
 import { ResponsiveIconButton } from '@/components/ResponsiveIconButton';
 import { SlideIn } from '@/components/SlideIn';
 import { getBaseColumns } from '@/components/ReUsable/table-columns/baseColumns';
@@ -15,15 +14,15 @@ import { getActionColumn } from '@/components/ReUsable/table-columns/actionColum
 import { getStatusColumn } from '@/components/ReUsable/table-columns/statusColumn';
 import { getDeletedColumn } from '@/components/ReUsable/table-columns/deletedColumn';
 
-import ModalForm from '@/pages/User-Access/Departments/ModalForm';
-import { useDepartmentIndex } from '@/services/user-access/department/services';
-import { DataColumn } from '@/services/user-access/department/schema';
+import ModalForm from '@/pages/User-Access/Roles/ModalForm';
+import { useRoleIndex } from '@/services/user-access/role/services';
+import { DataColumn } from '@/services/global-schema';
 import { useDelete } from '@/api/useDelete';
 import { endPoints } from '@/api/endpoints';
 
 type ConfirmMode = null | 'soft' | 'restore' | 'permanent';
 
-export const DepartmentList = () => {
+export const RoleList = () => {
   const queryClient = useQueryClient();
   const [isOpen, toggleModal] = useState(false);
   const [selected, setSelected] = useState<any | null>(null);
@@ -34,30 +33,6 @@ export const DepartmentList = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const columnHelper = createColumnHelper<DataColumn>();
-
-  const emailColumn = columnHelper.accessor((row) => row.emails, {
-    id: 'emails',
-    header: 'Emails',
-    meta: {
-      sortable: true,
-      searchable: true,
-      sortType: 'string',
-    },
-    cell: (info) => {
-      const emails = info.getValue();
-      if (!emails) return '-';
-
-      return (
-        <Stack spacing={0}>
-          {emails.split(',').map((email: string, index: number) => (
-            <Box key={index}>{email.trim()}</Box>
-          ))}
-        </Stack>
-      );
-    },
-  });
-
   const openModal = (item: any, editStatus?: boolean) => {
     console.log(item)
     setSelected(item);
@@ -66,7 +41,7 @@ export const DepartmentList = () => {
   };
 
   const closeModal = () => {
-    queryClient.invalidateQueries(['userDepartmentIndex']);
+    queryClient.invalidateQueries(['userRoleIndex']);
     setRefreshKey((prev) => prev + 1);
     refreshData();
     setSelected(null);
@@ -83,7 +58,7 @@ export const DepartmentList = () => {
     data: itemList,
     isLoading: listLoading,
     refetch: refreshData,
-  } = useDepartmentIndex(queryParams);
+  } = useRoleIndex(queryParams);
   const data = itemList?.data ?? [];
 
   //Added For Delete and Restore Feature
@@ -91,17 +66,17 @@ export const DepartmentList = () => {
   const [confirmMode, setConfirmMode] = useState<ConfirmMode>(null);
   const [activeItem, setActiveItem] = useState<DataColumn | null>(null);
 
-  const deleteDepartment = useDelete(
+  const deleteEndpoint = useDelete(
     {
-      url: endPoints.delete.department,
-      invalidate: ['userDepartmentIndex', 'userDepartmentList'],
+      url: endPoints.delete.role,
+      invalidate: ['userRoleIndex', 'userRoleList'],
     }
   );
 
-  const mutateDepartment = (item: DataColumn) => {
+  const mutateRole = (item: DataColumn) => {
     setMutatingRowId(item.id);
 
-    deleteDepartment.mutate(
+    deleteEndpoint.mutate(
       { id: item.id },
       {
         onSuccess: () => {
@@ -133,34 +108,26 @@ export const DepartmentList = () => {
     setActiveItem(null);
   };
 
-  const handleSoftDelete = mutateDepartment;
-  const handleRestore = mutateDepartment;
-  const handlePermanentDelete = mutateDepartment;
+  const handleSoftDelete = mutateRole;
+  const handleRestore = mutateRole;
+  const handlePermanentDelete = mutateRole;
 
   const handleStatusChange = (next: any) => {
     setQueryParams((prevState: TODO) => ({ ...prevState, status: next }));
   };
 
   const baseColumns = getBaseColumns<DataColumn>();
-  const nameIndex = baseColumns.findIndex((col: any) => col.id === 'name');
-
-  const departmentColumns = [
-    ...baseColumns.slice(0, nameIndex + 1),
-    emailColumn,
-    ...baseColumns.slice(nameIndex + 1),
-  ];
-
   const columns =
     queryParams.status === 'trashed'
       ? [
-        ...departmentColumns.filter(
-          (col: any) => col.id === 'sNo' || col.id === 'name' || col.id === 'emails'
+        ...baseColumns.filter(
+          (col: any) => col.id === 'sNo' || col.id === 'name'
         ),
         getStatusColumn<DataColumn>(),
         getDeletedColumn<DataColumn>(),
         getActionColumn<DataColumn>({
           mutatingRowId,
-          actionLoaderStatus: deleteDepartment.isLoading,
+          actionLoaderStatus: deleteEndpoint.isLoading,
           openModal,
           openSoftDelete: openSoft,
           openPermenantDelete: openPermanent,
@@ -168,11 +135,11 @@ export const DepartmentList = () => {
         }),
       ]
       : [
-        ...departmentColumns,
+        ...baseColumns,
         getStatusColumn<DataColumn>(),
         getActionColumn<DataColumn>({
           mutatingRowId,
-          actionLoaderStatus: deleteDepartment.isLoading,
+          actionLoaderStatus: deleteEndpoint.isLoading,
           openModal,
           openSoftDelete: openSoft,
           openPermenantDelete: openPermanent,
@@ -185,7 +152,7 @@ export const DepartmentList = () => {
       <Stack pl={2} spacing={4}>
         <HStack justify={'space-between'}>
           <Heading as="h4" size={'md'}>
-            User Access - Department
+            User Access - Role
           </Heading>
           <ResponsiveIconButton
             variant={'@primary'}
@@ -200,7 +167,7 @@ export const DepartmentList = () => {
         </HStack>
 
         <Box borderRadius={4}>
-
+          
           <DataTable
             columns={columns}
             data={data}
@@ -212,11 +179,11 @@ export const DepartmentList = () => {
             enableClientSideSearch={true}
             loading={listLoading}
             onSearchChange={setSearchTerm}
-            title={'Department List'}
+            title={'UserRole List'}
             statusTabsStatus={true}
             status={queryParams.status}
             onStatusChange={handleStatusChange}
-            searchPlaceholder={'Search Department'}
+            searchPlaceholder={'Search Role'}
           />
 
           <ModalForm
@@ -239,13 +206,13 @@ export const DepartmentList = () => {
             isLoading={
               !!activeItem &&
               mutatingRowId === activeItem.id &&
-              deleteDepartment.isLoading
+              deleteEndpoint.isLoading
             }
             headerText={confirmMode === 'restore' ? 'Restore !!' : 'Delete !!'}
             bodyText={
               confirmMode === 'restore'
-                ? 'Are you sure want to restore this department?'
-                : 'Are you sure want to delete this department?'
+                ? 'Are you sure want to restore this role?'
+                : 'Are you sure want to delete this role?'
             }
           />
 
@@ -255,4 +222,4 @@ export const DepartmentList = () => {
   );
 };
 
-export default DepartmentList;
+export default RoleList;

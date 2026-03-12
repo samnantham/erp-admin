@@ -20,6 +20,24 @@ export const submasterConfig: Record<string, any> = {
         schema: zBasicObject
     },
 
+    "customer-statuses": {
+        title: "Customer Status",
+        formType: "modal",
+        fields: [
+            {
+                component: FieldInput,
+                name: "name",
+                placeholder: "Enter Name",
+                required: "Name required",
+            },
+        ],
+        columns: ["name"],
+        extraFields: {},
+        schema: zBasicObject.extend({
+            code: z.string(),
+        }),
+    },
+
     "contact-types": {
         title: "Contact Type",
         formType: "modal",
@@ -84,8 +102,8 @@ export const submasterConfig: Record<string, any> = {
     "payment-terms": {
         title: "Payment Term",
         formType: "modal",
-        columns: ["name", "no_of_days"],
-        extraFields: { no_of_days: "Credit Days" },
+        columns: ["name", "credit_days"],
+        extraFields: { credit_days: "Credit Days" },
         fields: [
             {
                 component: FieldInput,
@@ -96,7 +114,7 @@ export const submasterConfig: Record<string, any> = {
             },
             {
                 component: FieldInput,
-                name: "no_of_days",
+                name: "credit_days",
                 placeholder: "Enter No of Days",
                 required: "No of Day required",
                 type: "integer",
@@ -104,7 +122,7 @@ export const submasterConfig: Record<string, any> = {
             },
         ],
         schema: zBasicObject.extend({
-            no_of_days: z.number(),
+            credit_days: z.number().nullable().optional(),
         }),
     },
 

@@ -27,6 +27,7 @@ type Props = {
   initialReason?: string;
   confirmText?: string;
   cancelText?: string;
+  placeholder?: string;
 };
 
 export const ConfirmationWithReasonPopup: React.FC<Props> = ({
@@ -41,6 +42,7 @@ export const ConfirmationWithReasonPopup: React.FC<Props> = ({
   initialReason = '',
   confirmText = 'Confirm',
   cancelText = 'Cancel',
+  placeholder= 'Enter Reason'
 }) => {
   const [reason, setReason] = useState(initialReason ?? '');
   const [touched, setTouched] = useState(false);
@@ -89,7 +91,7 @@ export const ConfirmationWithReasonPopup: React.FC<Props> = ({
               size="sm"
               isDisabled={isLoading}
             />
-            <FormErrorMessage>Enter Reason to Delete</FormErrorMessage>
+            <FormErrorMessage>{placeholder}</FormErrorMessage>
           </FormControl>
         </ModalBody>
 

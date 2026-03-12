@@ -17,18 +17,24 @@ import PublicRouteGuard from '@/pages/Auth/PublicRouteGuard';
 import Dashboard from '@/pages/Dashboard';
 
 // !<-- !!User Access Routes Start !!-->!
-import { AdminUserMaster } from '@/pages/User-Access/AdminUsers/AdminUserMaster';
-import { AdminUserForm } from '@/pages/User-Access/AdminUsers/AdminUserForm';
+import { AdminUserMaster } from '@/pages/User-Access/AdminUsers/Master';
+import { AdminUserForm } from '@/pages/User-Access/AdminUsers/Form';
 //Department Routes
-import { DepartmentList } from '@/pages/User-Access/Departments/DepartmentList';
+import { DepartmentList } from '@/pages/User-Access/Departments/Master';
 //User Role Routes
-import { RoleList } from '@/pages/User-Access/Roles/RoleList';
+import { RoleList } from '@/pages/User-Access/Roles/Master';
 import AuthenticatedRouteGuard from '@/pages/Auth/AuthenticatedRouteGuard';
 // !<--!! User Access Routes Ends !!-->!
 
 // !<--!! Submaster Routes Starts !!-->!
 import { SubmasterPage } from '@/pages/Submaster';
-import { SubmasterForm } from '@/pages/Submaster/SubmasterForm';
+import { SubmasterForm } from '@/pages/Submaster/Form';
+// !<--!! Submaster Routes Ends !!-->!
+
+// !<--!! Contact Management Routes Starts !!-->!
+import { CustomerMaster } from '@/pages/Master/Customer/Master';
+import { CustomerForm } from '@/pages/Master/Customer/Form';
+import { CustomerInfo } from '@/pages/Master/Customer/Info'
 // !<--!! Submaster Routes Ends !!-->!
 
 export const routes = [
@@ -99,11 +105,27 @@ export const routes = [
           },
           {
             path: "submaster/:model",
-             children: [
+            children: [
               { path: '', element: <SubmasterPage /> },
               { path: 'form', element: <SubmasterForm /> },
             ]
-          }
+          },
+          {
+            path: 'contact-management',
+            children: [
+              {
+                path: 'customer-master',
+                children: [
+                  { path: '', element: <CustomerMaster /> },
+                  { path: 'form', element: <CustomerForm /> },
+                  {
+                    path: 'info',
+                    element: <CustomerInfo />,
+                  },
+                ],
+              }
+            ],
+          },
         ],
       },
 

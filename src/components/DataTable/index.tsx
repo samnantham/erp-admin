@@ -115,6 +115,9 @@ export type DataTableProps<Data extends object> = {
   status?: Status;
   onStatusChange?: (value: string) => void;
   onPageSizeChange?: (value: number) => void;
+  resetKey?: string | number;
+  noTitlePadding?: boolean;
+  headerAction?: React.ReactNode;
 };
 
 export function DataTable<Data extends object>({
@@ -139,13 +142,16 @@ export function DataTable<Data extends object>({
   pageSize = 10,
   onPageChange,
   stickyColumns = 0,
-  title = 'Data Table',
+  title,
   searchPlaceholder = 'Search',
   onSearchChange,
   statusTabsStatus = false,
   status,
   onStatusChange,
-  onPageSizeChange
+  onPageSizeChange,
+  resetKey = '',
+  noTitlePadding = false,
+  headerAction
 }: DataTableProps<Data>) {
 
   const [globalFilter, setGlobalFilter] = useState("");
@@ -274,6 +280,16 @@ export function DataTable<Data extends object>({
     }
   }, [searchValue, enableClientSideSearch]);
 
+  useEffect(() => {
+    if (enablePagination && onPageChange) {
+      onPageChange(1);   // reset to first page
+    }
+
+    if (onPageSizeChange) {
+      onPageSizeChange(10); // reset page size
+    }
+  }, [resetKey]);
+
   const handleSort = (columnId: string) => {
     if (enableClientSideSearch) {
       const column = table.getColumn(columnId);
@@ -333,7 +349,7 @@ export function DataTable<Data extends object>({
             bg={'white'}
             justify={'space-between'}
             mb={4}
-            p={4}
+            p={noTitlePadding ? 0 : 4}
             borderTopRadius={4}
           >
             {title && (
@@ -341,6 +357,8 @@ export function DataTable<Data extends object>({
                 {title}
               </Heading>
             )}
+            
+            {headerAction}
 
             {enablePagination && onPageSizeChange && (
               <PageLimit
@@ -385,7 +403,12 @@ export function DataTable<Data extends object>({
           {/* LEFT FROZEN */}
           {stickyColumns > 0 && (
             <TableContainer overflow="hidden">
-              <Table size="sm" variant="striped" bg="#0C2556">
+              <Table
+                size="sm"
+                variant="striped"
+                bg="#0C2556"
+                minWidth="max-content"
+              >
 
                 <Thead>
                   {table.getHeaderGroups().map((headerGroup) => (
@@ -448,7 +471,7 @@ export function DataTable<Data extends object>({
                   {table.getRowModel().rows.map((row) => {
                     const rowProps = getRowProps?.(row) ?? {};
                     return (
-                      <Tr key={row.id} {...rowProps}>
+                      <Tr key={row.id} {...rowProps} height="48px" bg={row.index % 2 === 0 ? "white" : "gray.50"}>
                         {row.getVisibleCells().slice(0, stickyColumns).map((cell) => (
                           <Td key={cell.id}>
                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -533,6 +556,7 @@ export function DataTable<Data extends object>({
                           isNumeric={meta?.isNumeric}
                           color="white"
                           p={4}
+                          h="46px"
                           cursor={isSortable ? "pointer" : "default"}
                         >
                           <Box display="flex" alignItems="center">
@@ -563,7 +587,7 @@ export function DataTable<Data extends object>({
                 {table.getRowModel().rows.map((row) => {
                   const rowProps = getRowProps?.(row) ?? {};
                   return (
-                    <Tr key={row.id} {...rowProps}>
+                    <Tr key={row.id} {...rowProps} bg={row.index % 2 === 0 ? "white" : "gray.50"}>
                       {row.getVisibleCells().slice(stickyColumns).map((cell) => (
                         <Td key={cell.id}>
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -604,7 +628,7 @@ export function DataTable<Data extends object>({
           {enablePagination && (
             <Pagination
               currentPage={currentPage}
-              totalCount={totalCount}
+              totalCount={overallcount}
               pageSize={pageSize}
               onPageChange={onPageChange!}
             />)}

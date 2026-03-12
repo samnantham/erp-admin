@@ -32,7 +32,9 @@ import {
   FaCog,
   FaGlobeAmericas,
   FaHome,
-  FaUserFriends
+  FaUserFriends,
+  FaUsers,
+  FaUsersCog
 } from 'react-icons/fa';
 import {
   FaBox,
@@ -118,42 +120,17 @@ const NavigationSections: Array<SectionProps> = [
   {
     sectionName: "Master's Menu",
     items: [
-  //     {
-  //       name: 'Customer Master',
-  //       icon: FaGraduationCap,
-  //       subItems: [
-  //         {
-  //           name: 'Customer Master',
-  //           icon: FaUser,
-  //           link: '/customer-master',
-  //         },
-  //         {
-  //           name: 'Customer Bank Master',
-  //           icon: FaBuildingColumns,
-  //           link: '/bank-master',
-  //         },
-  //         {
-  //           name: 'Principal of Owner',
-  //           icon: FaUserCheck,
-  //           link: '/principle-of-owner-master',
-  //         },
-  //         {
-  //           name: 'Contact Manager',
-  //           icon: FaAddressBook,
-  //           link: '/contact-manager-master',
-  //         },
-  //         {
-  //           name: 'Trader Reference',
-  //           icon: FaClipboardList,
-  //           link: '/trader-reference-master',
-  //         },
-  //         {
-  //           name: 'Shipping Address',
-  //           icon: FaTruck,
-  //           link: '/shipping-address-master',
-  //         },
-  //       ],
-  //     },
+      {
+        name: 'Contact Management',
+        icon: FaUsers,
+        subItems: [
+          {
+            name: 'Customer Master',
+            icon: FaUsersCog,
+            link: '/contact-management/customer-master',
+          }
+        ],
+      },
       {
         name: 'Submaster',
         icon: FaUserShield,
@@ -427,10 +404,12 @@ const NavItem = ({
 }: LinkItemProps & FlexProps) => {
   const { pathname } = useLocation();
   const hasActiveChild =
-  subItems?.some((item) => item.link && pathname.startsWith(item.link)) || false;
+    subItems?.some((item) => item.link && pathname.startsWith(item.link)) || false;
 
-const isActive =
-  (link && pathname.startsWith(link)) || hasActiveChild;
+  const isActive =
+    (link === '/'
+      ? pathname === '/'
+      : link && pathname.startsWith(link)) || hasActiveChild;
 
   const [isOpen, setIsOpen] = useState(hasActiveChild);
 

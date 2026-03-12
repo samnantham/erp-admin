@@ -44,12 +44,14 @@ export const SubmasterPage = () => {
   const [isOpen, toggleModal] = useState(false);
   const [selected, setSelected] = useState<ModelDataColumn | null>(null);
   const [isEdit, toggleEdit] = useState(false);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  const [queryParams, setQueryParams] = useState<{ status: any }>({
+  const [queryParams, setQueryParams] = useState<TODO>({
     status: "all",
+    page: 1,
+    limit: itemsPerPage
   });
 
-  const [refreshKey, setRefreshKey] = useState(0);
   const [sortBy, setSortBy] = useState("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [searchTerm, setSearchTerm] = useState("");
@@ -76,8 +78,6 @@ export const SubmasterPage = () => {
 
   const closeModal = () => {
     queryClient.invalidateQueries(["submasterItemIndex", model]);
-
-    setRefreshKey((prev) => prev + 1);
     refreshData();
 
     setSelected(null);
@@ -100,7 +100,11 @@ export const SubmasterPage = () => {
     refetch: refreshData,
   } = useSubmasterItemIndex(model ?? "", queryParams);
 
+  const paginationData: TODO = itemList?.pagination ?? {};
+
   const data: ModelDataColumn[] = itemList?.data ?? [];
+
+  console.log(paginationData)
 
   /* ================= Delete / Restore ================= */
 
@@ -160,7 +164,7 @@ export const SubmasterPage = () => {
   /* ================= Status Filter ================= */
 
   const handleStatusChange = (next: any) => {
-    setQueryParams((prev) => ({ ...prev, status: next }));
+    setQueryParams((prev: any) => ({ ...prev, status: next }));
   };
 
   /* ================= Columns ================= */
@@ -262,7 +266,8 @@ export const SubmasterPage = () => {
             columns={columns}
             data={data}
             sortBy={sortBy}
-            key={refreshKey}
+            resetKey={model} 
+            key={model}
             sortDirection={sortDirection}
             onSortChange={handleSortChange}
             searchValue={searchTerm}
@@ -275,6 +280,23 @@ export const SubmasterPage = () => {
             onStatusChange={handleStatusChange}
             onSearchChange={setSearchTerm}
             searchPlaceholder={`Search ${title}`}
+            enablePagination={true}
+            currentPage={paginationData?.current_page}
+            totalCount={paginationData?.total}
+            pageSize={itemsPerPage}                // ✅ required
+            onPageChange={(page) =>      // ✅ required
+              setQueryParams((prev: any) => ({
+                ...prev,
+                page
+              }))
+            }
+            onPageSizeChange={(limit) =>  {
+              setItemsPerPage(limit);   // ✅ required
+              setQueryParams((prev: any) => ({
+                ...prev,
+                limit,
+                page: 1
+              }))}}
           />
 
           <ModalForm

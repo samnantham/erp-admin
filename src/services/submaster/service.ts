@@ -4,7 +4,7 @@ import { useQuery, UseQueryOptions } from 'react-query';
 import { getRequest, postRequest, putRequest } from '@/api/client';
 import { endPoints } from '@/api/endpoints';
 import { useApiMutation } from '@/api/hooks/useApiMutation';
-import { zBasicObject } from '@/services/global-schema';
+import { zBasicObject, zPagination } from '@/services/global-schema';
 import { submasterConfig } from "@/pages/Submaster/submasterConfig";
 
 import {
@@ -48,6 +48,8 @@ export const useSubmasterItemIndex = (
 
   const zIndexPayload = z.object({
     data: z.array(getSchema(model)),
+      pagination: zPagination.optional(),
+    
   });
 
   return useQuery({

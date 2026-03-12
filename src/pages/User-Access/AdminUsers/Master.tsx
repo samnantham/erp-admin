@@ -45,17 +45,13 @@ export const AdminUserMaster = () => {
     },
   });
 
-  const listData = useAdminUserIndex(queryParams);
-  const data = listData.data?.data ?? [];
+  const {
+    data: itemList,
+    isLoading: listLoading
+  } = useAdminUserIndex(queryParams);
 
-  const changePageLimit = (limit: number) => {
-    setItemsPerPage(limit);
-    setQueryParams((prevState: TODO) => ({
-      ...prevState,
-      limit: limit,
-      page: 1,
-    }));
-  };
+  const data = itemList?.data ?? [];
+  const paginationData: TODO = itemList?.pagination ?? {};
 
   const columnConfig: DynamicColumn<any>[] = [
     { key: "first_name", header: "First Name" },
@@ -71,7 +67,7 @@ export const AdminUserMaster = () => {
       header: "Actions",
       type: "actions",
       // isDisabled: (row) => row.is_fixed,
-      
+
       actions: [
         {
           label: "View",
@@ -198,14 +194,26 @@ export const AdminUserMaster = () => {
           <DataTable
             columns={columns}
             data={data}
-            loading={listData.isLoading}
+            loading={listLoading}
             title={' Admin User List'}
             enablePagination={true}
-            currentPage={queryParams?.page}
-            pageSize={itemsPerPage}
-            totalCount={listData?.data?.pagination?.total}
-            onPageChange={(page) => changePageLimit(page)}
-            onPageSizeChange={changePageLimit}
+            currentPage={paginationData?.current_page}
+            totalCount={paginationData?.total}
+            pageSize={itemsPerPage}                // ✅ required
+            onPageChange={(page) =>      // ✅ required
+              setQueryParams((prev: any) => ({
+                ...prev,
+                page
+              }))
+            }
+            onPageSizeChange={(limit) => {
+              setItemsPerPage(limit);   // ✅ required
+              setQueryParams((prev: any) => ({
+                ...prev,
+                limit,
+                page: 1
+              }))
+            }}
           />
         </Box>
       </Stack>

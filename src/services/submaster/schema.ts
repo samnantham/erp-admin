@@ -7,6 +7,7 @@ export type IndexPayload = z.infer<typeof zIndexPayload>;
 export const zIndexPayload = z.object({
   data: z.array(
     zBasicObject.extend({
+      code: z.string().optional(),
       actions: z.string().optional()
     })
   )
