@@ -57,6 +57,8 @@ export function ContactManager(props: any) {
       deleteErrorTitle="Contact deletion Failed"
       restoreErrorTitle="Contact restore Failed"
       deleteUrl={endPoints.delete.contact_manager}
+      downloadFileUrl={import.meta.env.VITE_CUSTOMERS_CONTACT_MANAGERS_CSV}
+      navigateURLComponent={'contact_manager'}
     />
   );
 }

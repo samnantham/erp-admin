@@ -1,24 +1,33 @@
 import { useQuery, UseQueryOptions } from "react-query";
 import { useCreateUpdateService } from "@/services/global-service";
-import { getRequest, putRequest } from "@/api/client";
+import { getRequest, putRequest, postRequest } from "@/api/client";
 import { endPoints } from "@/api/endpoints";
 import { useApiMutation } from "@/api/hooks/useApiMutation";
+import { useBulkUpload } from "@/api/hooks/useBulkUpload";
 import { UseMutationOptions } from "react-query";
 import { AxiosError } from "axios";
-import { ApiResp } from "@/services/global-service";
+import { ApiResp } from "@/services/global-schema";
 
 import {
   zDropdownPayload,
   DropdownPayload,
-  QueryParams
+  QueryParams,
 } from "@/services/global-schema";
 
 import {
   CustomerDetailsPayload,
+  CreateResponsePayload,
+  CustomerBulkUploadResponse,
+  RelationBulkUploadResponse,
+  BulkCustomerUniqueCheckPayload,
+  RelationUniqueCheckPayload,
   zCreateResponsePayload,
   zCustomerIndexPayload,
   zCustomerDetailsPayload,
-  CreateResponsePayload,
+  zBulkCustomerUploadResponse,
+  zRelationBulkUploadResponse,
+  zBulkCustomerUniqueCheckPayload,
+  zRelationUniqueCheckPayload,
 } from "@/services/master/customer/schema";
 
 /* ================= Customer Index ================= */
@@ -27,11 +36,7 @@ export const useCustomerIndex = (queryParams?: QueryParams) =>
   useQuery({
     queryKey: ["customerIndex", queryParams],
     queryFn: () =>
-      getRequest(
-        endPoints.index.customer,
-        zCustomerIndexPayload,
-        queryParams
-      ),
+      getRequest(endPoints.index.customer, zCustomerIndexPayload, queryParams),
     retry: 2,
     refetchOnWindowFocus: false,
   });
@@ -59,32 +64,23 @@ export const useCustomerDetails = (
 
 export interface CustomerVariables {
   id?: number | string;
-
   business_name: string;
   code: string;
   email: string;
-
   business_type_id: string;
   contact_type_id: string;
   currency_id: string;
-
   payment_mode_id: string;
   payment_term_id: string;
-
   nature_of_business: string;
   remarks?: string;
-
   total_credit_amount?: number;
   total_credit_period?: number;
-
   year_of_business: number;
-
   is_foreign_entity: boolean;
-
   license_trade_no?: string;
   license_trade_exp_date?: string;
   license_trade_url?: string;
-
   vat_tax_id?: string;
   vat_tax_url?: string;
 }
@@ -92,16 +88,13 @@ export interface CustomerVariables {
 /* ================= Create / Update Customer ================= */
 
 export const useSaveCustomer = () =>
-  useCreateUpdateService<
-    CreateResponsePayload,
-    CustomerVariables
-  >({
+  useCreateUpdateService<CreateResponsePayload, CustomerVariables>({
     createUrl: endPoints.create.customer,
     updateUrl: endPoints.update.customer,
     schema: zCreateResponsePayload,
   });
 
-  interface CustomerStatusVariables {
+interface CustomerStatusVariables {
   id: string | number;
   customer_status_id: string;
   reason?: string;
@@ -145,7 +138,7 @@ export const useSaveShippingAddress = (
     options
   );
 
-/* ================= Create / Update BANK ================= */
+/* ================= Create / Update Bank ================= */
 
 export const useSaveBank = (
   options?: UseMutationOptions<any, AxiosError<ApiResp>, any>
@@ -159,7 +152,7 @@ export const useSaveBank = (
     options
   );
 
-  /* ================= Create / Update Principle Of Owner ================= */
+/* ================= Create / Update Principle Of Owner ================= */
 
 export const useSavePrincipleOwner = (
   options?: UseMutationOptions<any, AxiosError<ApiResp>, any>
@@ -173,7 +166,7 @@ export const useSavePrincipleOwner = (
     options
   );
 
-    /* ================= Create / Update Trader Reference ================= */
+/* ================= Create / Update Trader Reference ================= */
 
 export const useSaveTraderReference = (
   options?: UseMutationOptions<any, AxiosError<ApiResp>, any>
@@ -187,18 +180,77 @@ export const useSaveTraderReference = (
     options
   );
 
-
-
 /* ================= Customer Dropdowns ================= */
 
 export const useCustomerDropdowns = () =>
   useQuery<DropdownPayload>({
     queryKey: ["customerDropdowns"],
     queryFn: () =>
-      getRequest(
-        endPoints.drop_downs.customer,
-        zDropdownPayload
-      ),
+      getRequest(endPoints.drop_downs.customer, zDropdownPayload),
     retry: 2,
     refetchOnWindowFocus: false,
   });
+
+/* ================= Customer — Unique Check ================= */
+
+export interface CustomerUniqueCheckRow {
+  business_name: string;
+  email: string;
+}
+
+export interface UploadedCustomerUniqueCheckPayload {
+  rows: CustomerUniqueCheckRow[];
+}
+
+export const useCheckExistingUniqueCustomers = () =>
+  useApiMutation<BulkCustomerUniqueCheckPayload, UploadedCustomerUniqueCheckPayload>(
+    (payload) =>
+      postRequest(
+        endPoints.others.check_existing_unique_customers,
+        payload,
+        zBulkCustomerUniqueCheckPayload()
+      )
+  );
+
+/* ================= Customer — Bulk Upload ================= */
+
+export interface BulkCustomerUploadPayload {
+  rows: CustomerVariables[];
+}
+
+export const useBulkUploadCustomers = () =>
+  useBulkUpload<CustomerBulkUploadResponse, BulkCustomerUploadPayload>(
+    endPoints.bulk_upload.customer,
+    zBulkCustomerUploadResponse()
+  );
+
+/* ================= Relation — Unique Check (Generic) ================= */
+
+// rows contain relation-specific unique fields e.g:
+//   bank:               { customer_id, ac_iban_no, beneficiary_name, name }
+//   contact_manager:    { customer_id, attention }
+//   shipping_address:   { customer_id, consignee_name }
+//   trader_reference:   { customer_id, vendor_name }
+//   principle_of_owner: { customer_id, owner }
+
+export interface RelationUniqueCheckPayloadRequest {
+  rows: Record<string, string>[];
+}
+
+export const useCheckRelationExists = (url: string) =>
+  useApiMutation<RelationUniqueCheckPayload, RelationUniqueCheckPayloadRequest>(
+    (payload) =>
+      postRequest(url, payload, zRelationUniqueCheckPayload())
+  );
+
+/* ================= Relation — Bulk Upload (Generic) ================= */
+
+export interface RelationBulkUploadPayload {
+  rows: any[];
+}
+
+export const useRelationBulkUpload = (url: string) =>
+  useBulkUpload<RelationBulkUploadResponse, RelationBulkUploadPayload>(
+    url,
+    zRelationBulkUploadResponse()
+  );

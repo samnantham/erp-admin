@@ -12,7 +12,8 @@ export const endPoints = {
     department: '/department',
     user: '/user',
     submaster: '/submaster/:model',
-    customer: '/contact-management/customer'
+    customer: '/contact-management/customer',
+    update_delete_request: "/update-delete-requests/:model/:action"
   }, list: {
     role: '/role',
     department: '/department',
@@ -63,7 +64,22 @@ export const endPoints = {
     customer: '/contact-management/customer/drop-downs'
   },
   others: {
-    "upload": "/media/upload",
-    "customer_status_update": "/contact-management/customer/:id/status"
+    upload: "/media/upload",
+    customer_status_update: "/contact-management/customer/:id/status",
+    check_existing_unique_customers: "/contact-management/customer/check-existing-unique-customers",
+    check_existing_unique_banks: "/contact-management/customer/check-existing-unique-banks",
+    check_existing_unique_contact_managers: "/contact-management/customer/check-existing-unique-contact-managers",
+    check_existing_unique_shipping_addresses: "/contact-management/customer/check-existing-unique-shipping-addresses",
+    check_existing_unique_trader_references: "/contact-management/customer/check-existing-unique-trader-references",
+    check_existing_unique_principle_of_owners: "/contact-management/customer/check-existing-unique-principle-owners",
+    update_delete_request_dashboard: "/update-delete-requests/dashboard"
+  },
+  bulk_upload: {
+    customer : "/contact-management/customer/bulk-upload",
+    contact_manager: '/contact-management/customer/contact-managers/bulk-upload',
+    shipping_address: '/contact-management/customer/shipping-addresses/bulk-upload',
+    bank: '/contact-management/customer/banks/bulk-upload',
+    principle_of_owner: '/contact-management/customer/principle-owners/bulk-upload',
+    trader_reference: '/contact-management/customer/trader-references/bulk-upload',
   }
 } as const;

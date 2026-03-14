@@ -1,39 +1,48 @@
-import { AxiosError } from 'axios';
-import { UseMutationOptions, useMutation } from 'react-query';
-import { useToastError, useToastSuccess } from '@/components/Toast';
-import { ApiResponse } from '@/types/api';
+import { AxiosError } from "axios";
+import { UseMutationOptions, useMutation } from "react-query";
+import { useToastError, useToastSuccess } from "@/components/Toast";
+import { ApiResponse } from "@/types/api";
+
+interface ApiMutationOptions<TData, TVariables>
+  extends UseMutationOptions<TData, AxiosError<TData>, TVariables> {
+  showToast?: boolean;
+}
 
 export function useApiMutation<
-    TData extends ApiResponse = ApiResponse,
-    TVariables = unknown
+  TData extends ApiResponse = ApiResponse,
+  TVariables = unknown
 >(
-    mutationFn: (vars: TVariables) => Promise<TData>,
-    options: UseMutationOptions<TData, AxiosError<TData>, TVariables> = {}
+  mutationFn: (vars: TVariables) => Promise<TData>,
+  options: ApiMutationOptions<TData, TVariables> = {}
 ) {
-    const toastSuccess = useToastSuccess();
-    const toastError = useToastError();
-    return useMutation<TData, AxiosError<TData>, TVariables>(mutationFn, {
-        ...options,
+  const toastSuccess = useToastSuccess();
+  const toastError = useToastError();
 
-        onSuccess: (data, variables, context) => {
-            if (data?.message) {
-                toastSuccess({
-                    title: 'Success',
-                    description: data.message,
-                });
-            }
+  const { showToast = true, ...mutationOptions } = options;
 
-            options?.onSuccess?.(data, variables, context);
-        },
+  return useMutation<TData, AxiosError<TData>, TVariables>(mutationFn, {
+    ...mutationOptions,
 
-        onError: (error, variables, context) => {
-            toastError({
-                title: 'Error',
-                description:
-                    error.response?.data?.message || error.message,
-            });
+    onSuccess: (data, variables, context) => {
+      if (showToast && data?.message) {
+        toastSuccess({
+          title: "Success",
+          description: data.message,
+        });
+      }
 
-            options?.onError?.(error, variables, context);
-        },
-    });
+      mutationOptions?.onSuccess?.(data, variables, context);
+    },
+
+    onError: (error, variables, context) => {
+      if (showToast) {
+        toastError({
+          title: "Error",
+          description: error.response?.data?.message || error.message,
+        });
+      }
+
+      mutationOptions?.onError?.(error, variables, context);
+    },
+  });
 }

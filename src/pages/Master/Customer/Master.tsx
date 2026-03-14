@@ -3,6 +3,7 @@ import { BiEdit, BiInfoCircle, BiTrash, BiChevronDown } from "react-icons/bi";
 import {
     Box,
     Button,
+    Flex,
     HStack,
     Heading,
     Stack,
@@ -14,7 +15,7 @@ import {
 } from '@chakra-ui/react';
 import { Formiz, useForm } from '@formiz/core';
 import { HiRefresh, HiOutlineSearch } from 'react-icons/hi';
-import { LuPlus } from 'react-icons/lu';
+import { LuPlus, LuUpload, LuDownload } from 'react-icons/lu';
 import { useNavigate } from 'react-router-dom';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import { DataTable } from '@/components/DataTable';
@@ -25,12 +26,19 @@ import { SlideIn } from '@/components/SlideIn';
 import { useCustomerIndex, useCustomerDropdowns, useUpdateCustomerStatus } from '@/services/master/customer/service';
 import { buildColumns, DynamicColumn } from '@/components/ReUsable/table-columns/buildColumns';
 import { ConfirmationWithReasonPopup } from "@/components/ConfirmationWithReasonPopup";
+import { DownloadSampleOptions, contactManagementPageConfig, DownloadSampleKeys } from '@/constants';
+import {
+    handleDownload
+} from '@/helpers/commonHelper';
+
+import { ActionMenu } from '@/components/ActionMenu';
 
 import { useSubmasterItemIndex } from "@/services/submaster/service";
 import { CustomerDetails } from '@/pages/Master/Customer/Info/CustomerDetails';
 import { useDelete } from '@/api/useDelete';
 import { endPoints } from '@/api/endpoints';
 type ConfirmMode = null | "delete" | "status-update";
+
 
 export const CustomerMaster = () => {
     const navigate = useNavigate();
@@ -43,6 +51,16 @@ export const CustomerMaster = () => {
     const currencyOptions = dropdownData?.currencies ?? [];
     const [activeItem, setActiveItem] = useState<any>(null);
     const [confirmMode, setConfirmMode] = useState<ConfirmMode>(null);
+
+    const handleDownloadSampleFunction = (value: DownloadSampleKeys) => {
+        const csvPath = contactManagementPageConfig[value]?.csv;
+        if (csvPath) handleDownload(csvPath);
+        else console.warn('No CSV file found for:', value);
+    };
+
+    const handleUploadPageRedirection = (value: DownloadSampleKeys) => {
+        navigate(contactManagementPageConfig[value].uploadRoute);
+    };
 
     const [pendingStatus, setPendingStatus] = useState<{
         row: any;
@@ -363,7 +381,7 @@ export const CustomerMaster = () => {
                                 <FieldSelect
                                     key={`customer_id_${formKey}`}
                                     name="id"
-                                    placeholder="Cust.Code"
+                                    placeholder="Contact Code"
                                     options={customerOptions}
                                     selectProps={{ isLoading: dropdownLoading }}
                                     onValueChange={(v) => setQueryParams({
@@ -378,7 +396,7 @@ export const CustomerMaster = () => {
                                 <FieldSelect
                                     key={`customer_status_${formKey}`}
                                     name="customer_status_id"
-                                    placeholder="Cust.Status"
+                                    placeholder="Contact Status"
                                     options={statusOptions}
                                     selectProps={{ isLoading: dropdownLoading }}
                                     onValueChange={(v) => updateFilter("customer_status_id", v)}
@@ -438,7 +456,7 @@ export const CustomerMaster = () => {
                                 <FieldSelect
                                     key={`contact_type_${formKey}`}
                                     name="contact_type_id"
-                                    placeholder="Cont.Type"
+                                    placeholder="Contact Type"
                                     options={contactTypeOptions}
                                     selectProps={{ isLoading: dropdownLoading }}
                                     onValueChange={(v) => updateFilter("contact_type_id", v)}
@@ -477,7 +495,7 @@ export const CustomerMaster = () => {
                                 columns={columns}
                                 data={data}
                                 loading={!allApiDataLoaded || dropdownLoading || listDataLoading}
-                                title="Customers"
+                                title="Contacts"
                                 enablePagination
                                 enableClientSideSearch={false}
                                 onSortChange={handleSortChange}
@@ -501,6 +519,31 @@ export const CustomerMaster = () => {
                                         page: 1,
                                     }));
                                 }}
+                                headerAction={
+                                    <HStack ml="auto">
+                                        <Flex alignItems="center">
+                                            <ActionMenu
+                                                label="Download Sample"
+                                                icon={<LuDownload />}
+                                                color="blue"
+                                                options={DownloadSampleOptions}
+                                                onClick={handleDownloadSampleFunction}
+                                                isDisabled={!allApiDataLoaded}
+                                            />
+                                        </Flex>
+
+                                        <Flex alignItems="center">
+                                            <ActionMenu
+                                                label="Bulk Upload"
+                                                icon={<LuUpload />}
+                                                color="green"
+                                                options={DownloadSampleOptions}
+                                                onClick={handleUploadPageRedirection}
+                                                isDisabled={!allApiDataLoaded}
+                                            />
+                                        </Flex>
+                                    </HStack>
+                                }
                             />
                         )}
                     </Box>

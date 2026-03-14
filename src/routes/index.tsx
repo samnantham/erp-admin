@@ -34,8 +34,14 @@ import { SubmasterForm } from '@/pages/Submaster/Form';
 // !<--!! Contact Management Routes Starts !!-->!
 import { CustomerMaster } from '@/pages/Master/Customer/Master';
 import { CustomerForm } from '@/pages/Master/Customer/Form';
-import { CustomerInfo } from '@/pages/Master/Customer/Info'
+import { CustomerInfo } from '@/pages/Master/Customer/Info';
+import { CustomerBulkUpload } from '@/pages/Master/Customer/BulkUpload';
+import { CustomerRelationsBulkUpload } from '@/pages/Master/Customer/RelationBulkUpload';
 // !<--!! Submaster Routes Ends !!-->!
+
+// !<--!! Update Delete Request Routes Starts !!-->!
+import { UpdateDeleteRequestDashboard } from '@/pages/UpdateDeleteRequests/Dashboard';
+// !<--!! Update Delete Request Routes Ends !!-->!
 
 export const routes = [
   {
@@ -118,6 +124,8 @@ export const routes = [
                 children: [
                   { path: '', element: <CustomerMaster /> },
                   { path: 'form', element: <CustomerForm /> },
+                  { path: 'bulk-upload', element: <CustomerBulkUpload/> },
+                  { path: ':relationType/bulk-upload', element: <CustomerRelationsBulkUpload/> },
                   {
                     path: 'info',
                     element: <CustomerInfo />,
@@ -126,9 +134,14 @@ export const routes = [
               }
             ],
           },
+          {
+            path: 'update-delete-requests',
+            children: [
+              { path: 'dashboard', element: <UpdateDeleteRequestDashboard /> }
+            ],
+          },
         ],
       },
-
       { path: '*', element: <ErrorPage /> },
     ],
   },

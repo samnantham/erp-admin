@@ -47,6 +47,8 @@ export function PrincipleOfOwner(props: any) {
       deleteErrorTitle="Principle of Owner deletion Failed"
       restoreErrorTitle="Principle of Owner restore Failed"
       deleteUrl={endPoints.delete.principle_of_owner}
+      downloadFileUrl={import.meta.env.VITE_CUSTOMERS_PRINCIPLE_OWNERS_CSV}
+      navigateURLComponent={'principle_of_owner'}
     />
   );
 }

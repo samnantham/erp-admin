@@ -76,6 +76,8 @@ export function ShippingAddress(props: any) {
       restoreErrorTitle="Shipping address restore failed"
       customAddHandler={onAddNew}
       deleteUrl={endPoints.delete.shipping_address}
+      downloadFileUrl={import.meta.env.VITE_CUSTOMERS_SHIPPING_ADDRESSES_CSV}
+      navigateURLComponent={'shipping_address'}
     />
   );
 }

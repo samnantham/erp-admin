@@ -34,7 +34,8 @@ import {
   FaHome,
   FaUserFriends,
   FaUsers,
-  FaUsersCog
+  FaUsersCog,
+  FaClipboardList 
 } from 'react-icons/fa';
 import {
   FaBox,
@@ -120,17 +121,6 @@ const NavigationSections: Array<SectionProps> = [
   {
     sectionName: "Master's Menu",
     items: [
-      {
-        name: 'Contact Management',
-        icon: FaUsers,
-        subItems: [
-          {
-            name: 'Customer Master',
-            icon: FaUsersCog,
-            link: '/contact-management/customer-master',
-          }
-        ],
-      },
       {
         name: 'Submaster',
         icon: FaUserShield,
@@ -242,12 +232,24 @@ const NavigationSections: Array<SectionProps> = [
           }
         ],
       },
+      {
+        name: 'Contact Management',
+        icon: FaUsers,
+        subItems: [
+          {
+            name: 'Contact Master',
+            icon: FaUsersCog,
+            link: '/contact-management/customer-master',
+          }
+        ],
+      },
     ],
   },
-  // {
-  //   sectionName: 'Other Menus',
-  //   items: [
-  //     { name: 'Spares', icon: PiWrench, link: '/spares-master' },
+  {
+    sectionName: 'Other Menus',
+    items: [
+      { name: 'Approval Monitor', icon: FaClipboardList, link: '/update-delete-requests/dashboard' },
+    ]}
   //     // { name: 'Sales', icon: SlTag },
   //     {
   //       name: 'Purchase',

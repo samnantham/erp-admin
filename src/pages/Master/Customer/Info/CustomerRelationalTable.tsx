@@ -1,12 +1,14 @@
 import { useMemo, useState } from "react";
-import { Box, Button, useDisclosure } from "@chakra-ui/react";
-import { HiPlus } from "react-icons/hi";
+import { Box, Button, useDisclosure, Flex, HStack } from "@chakra-ui/react";
+import { HiPlus, HiOutlineUpload, HiOutlineDownload } from "react-icons/hi";
 
 import { ConfirmationWithReasonPopup } from "@/components/ConfirmationWithReasonPopup";
 import { DataTable } from "@/components/DataTable";
 import { buildColumns, DynamicColumn } from "@/components/ReUsable/table-columns/buildColumns";
 import { useDelete } from "@/api/useDelete";
 import { BiEdit, BiInfoCircle, BiTrash } from "react-icons/bi";
+import { handleDownload } from '@/helpers/commonHelper';
+import { useNavigate } from 'react-router-dom';
 type ConfirmMode = null | "delete" | "restore";
 
 type Props = {
@@ -26,6 +28,9 @@ type Props = {
   deleteErrorTitle: string;
   restoreErrorTitle: string;
   deleteUrl: string;
+
+  downloadFileUrl: string;
+  navigateURLComponent: string;
 };
 
 export function CustomerRelationalTable({
@@ -38,11 +43,13 @@ export function CustomerRelationalTable({
   customerId,
   customerInfo,
   refreshCustomerDetails,
-  deleteUrl
+  deleteUrl,
+  downloadFileUrl,
+  navigateURLComponent
 }: Props) {
 
   const { isOpen, onOpen, onClose } = useDisclosure();
-
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [confirmMode, setConfirmMode] = useState<ConfirmMode>(null);
 
@@ -115,7 +122,7 @@ export function CustomerRelationalTable({
       },
       {
         label: "Delete",
-        icon: <BiTrash/>,
+        icon: <BiTrash />,
         onClick: (row) => ask("delete", row),
         isDisabled: (row) => !!row.has_pending_request,
         disabledTooltip: (row) => row.pending_request_message,
@@ -143,14 +150,42 @@ export function CustomerRelationalTable({
         searchPlaceholder={searchPlaceholder}
         noTitlePadding={true}
         headerAction={
-          <Button
-            leftIcon={<HiPlus />}
-            size="sm"
-            colorScheme="brand"
-            onClick={() => openModalFor("add")}
-          >
-            {addButtonLabel}
-          </Button>
+          <HStack ml="auto">
+            <Flex alignItems="center">
+              <Button
+                leftIcon={<HiOutlineUpload />}
+                size="sm"
+                colorScheme="green"
+                onClick={() => navigate(`/contact-management/customer-master/${navigateURLComponent}/bulk-upload`)}
+              >
+                Bulk Upload
+              </Button>
+            </Flex>
+
+            <Flex alignItems="center">
+              <Button
+                leftIcon={<HiOutlineDownload />}
+                size="sm"
+                colorScheme="teal"
+                onClick={() => handleDownload(downloadFileUrl)}
+              >
+                Download Sample
+              </Button>
+            </Flex>
+
+            <Flex alignItems="center">
+              <Button
+                leftIcon={<HiPlus />}
+                size="sm"
+                colorScheme="brand"
+                onClick={() => openModalFor("add")}
+              >
+                {addButtonLabel}
+              </Button>
+            </Flex>
+          </HStack>
+
+
         }
       />
 

@@ -118,3 +118,10 @@ export const zCreatePayload = z.object({
 export interface QueryParams {
   status?: string;
 }
+
+
+export type ApiResp = {
+  status: boolean;
+  message?: string;
+  errors?: Record<string, string[]>;
+};

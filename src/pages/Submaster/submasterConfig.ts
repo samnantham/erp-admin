@@ -13,6 +13,7 @@ export const submasterConfig: Record<string, any> = {
                 name: "name",
                 placeholder: "Enter Name",
                 required: "Name required",
+                type: "alpha-with-space"
             },
         ],
         columns: ["name"],
@@ -49,6 +50,7 @@ export const submasterConfig: Record<string, any> = {
                 name: "name",
                 placeholder: "Enter Contact Type",
                 required: "Contact Type required",
+                type: "alpha-with-space"
             },
             {
                 component: FieldInput,
@@ -73,7 +75,7 @@ export const submasterConfig: Record<string, any> = {
                 name: "name",
                 placeholder: "Enter Currency Name",
                 required: "Currency Name required",
-                type: "all-capital",
+                type: "alpha-with-space",
                 maxLength: 15
             },
             {
@@ -110,7 +112,7 @@ export const submasterConfig: Record<string, any> = {
                 name: "name",
                 placeholder: "Enter Payment Term",
                 required: "Payment Term required",
-                type: "all-capital"
+                type: "alpha-with-space"
             },
             {
                 component: FieldInput,
@@ -137,7 +139,7 @@ export const submasterConfig: Record<string, any> = {
                 name: "name",
                 placeholder: "Enter Priority Name",
                 required: "Priority Name required",
-                type: "all-capital",
+                type: "alpha-with-space",
                 maxLength: 10
             },
             {
@@ -165,7 +167,7 @@ export const submasterConfig: Record<string, any> = {
                 name: "name",
                 placeholder: "Enter Name",
                 required: "Name required",
-                type: "all-capital"
+                type: "alpha-with-space"
             },
             {
                 component: FieldInput,
@@ -192,7 +194,7 @@ export const submasterConfig: Record<string, any> = {
                 name: "name",
                 placeholder: "Enter Name",
                 required: "Name required",
-                type: "all-capital"
+                type: "alpha-with-space"
             },
             {
                 component: FieldCheckbox,

@@ -4,15 +4,7 @@ import Axios from "axios";
 
 import { useApiMutation } from "@/api/hooks/useApiMutation";
 import { endPoints } from "@/api/endpoints";
-import { UploadPayload, zUploadPayload } from "@/services/global-schema";
-
-/* ================= Base API Response ================= */
-
-export type ApiResp = {
-  status: boolean;
-  message?: string;
-  errors?: Record<string, string[]>;
-};
+import { UploadPayload, zUploadPayload, ApiResp } from "@/services/global-schema";
 
 /* ================= Upload File ================= */
 

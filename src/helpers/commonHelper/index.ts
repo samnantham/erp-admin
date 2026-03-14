@@ -712,6 +712,22 @@ export const getValueByLabel = (
   return foundItem ? foundItem.value : undefined;
 };
 
+export const getOptionValue = (value: string, options: any[]) => {
+  if (!value) return '';
+  const found = options.find(
+    (item) => item.label.toLowerCase() === value.toLowerCase()
+  );
+  return found?.value ?? '';
+};
+
+export const getOptionValueFromValue = (value: string, options: any[]) => {
+  if (!value) return 'false';
+  const found = options.find(
+    (item) => item.value.toLowerCase() === value.toLowerCase()
+  );
+  return found?.value ?? 'false';
+};
+
 export const getValueByValue = (
   value: string,
   options: any

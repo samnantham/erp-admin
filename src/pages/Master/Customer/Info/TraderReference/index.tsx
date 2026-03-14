@@ -56,6 +56,8 @@ export function TraderReference(props: any) {
       deleteErrorTitle="Trader Reference deletion Failed"
       restoreErrorTitle="Trader Reference restore Failed"
       deleteUrl={endPoints.delete.trader_reference}
+      downloadFileUrl={import.meta.env.VITE_CUSTOMERS_TRADER_REFERENCES_CSV}
+      navigateURLComponent={'trader_reference'}
     />
   );
 }
