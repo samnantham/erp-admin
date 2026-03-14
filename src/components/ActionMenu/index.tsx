@@ -42,6 +42,8 @@ export const ActionMenu = <T extends string = string>({
       ml={2}
       color="white"
       _hover={{ bg: color }}
+      _active={{ bg: color }}
+      _focus={{ bg: color }}
       isDisabled={isDisabled}
     >
       {label}
