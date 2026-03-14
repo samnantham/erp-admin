@@ -1,5 +1,3 @@
-// src/components/ReUsable/ActionMenu.tsx
-
 import { BiChevronDown } from 'react-icons/bi';
 import {
   Box,
@@ -18,7 +16,7 @@ export interface ActionMenuOption<T extends string = string> {
 interface ActionMenuProps<T extends string = string> {
   label: string;
   icon: React.ReactElement;
-  color: string;
+  colorScheme: string;
   options: readonly ActionMenuOption<T>[];
   onClick: (value: T) => void;
   isDisabled?: boolean;
@@ -27,7 +25,7 @@ interface ActionMenuProps<T extends string = string> {
 export const ActionMenu = <T extends string = string>({
   label,
   icon,
-  color,
+  colorScheme,
   options,
   onClick,
   isDisabled = false,
@@ -38,12 +36,8 @@ export const ActionMenu = <T extends string = string>({
       leftIcon={<Box mr={3}>{icon}</Box>}
       rightIcon={<Box ml={3} as={BiChevronDown} />}
       size="sm"
-      bgColor={color}
+      colorScheme={colorScheme}
       ml={2}
-      color="white"
-      _hover={{ bg: color }}
-      _active={{ bg: color }}
-      _focus={{ bg: color }}
       isDisabled={isDisabled}
     >
       {label}
@@ -66,5 +60,3 @@ export const ActionMenu = <T extends string = string>({
     </MenuList>
   </Menu>
 );
-
-export default ActionMenu;

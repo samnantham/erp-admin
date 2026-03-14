@@ -539,7 +539,7 @@ export const CustomerRelationsBulkUpload = () => {
             <ActionMenu
               label="Bulk Upload"
               icon={<LuUpload />}
-              color="green"
+              colorScheme="green"
               options={filteredOptions}
               onClick={handleUploadPageRedirection}
               isDisabled={dropdownLoading}

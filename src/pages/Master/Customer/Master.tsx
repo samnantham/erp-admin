@@ -521,24 +521,26 @@ export const CustomerMaster = () => {
                                 }}
                                 headerAction={
                                     <HStack ml="auto">
+
+
                                         <Flex alignItems="center">
                                             <ActionMenu
-                                                label="Download Sample"
-                                                icon={<LuDownload />}
-                                                color="blue"
+                                                label="Bulk Upload"
+                                                icon={<LuUpload />}
+                                                colorScheme="green"
                                                 options={DownloadSampleOptions}
-                                                onClick={handleDownloadSampleFunction}
+                                                onClick={handleUploadPageRedirection}
                                                 isDisabled={!allApiDataLoaded}
                                             />
                                         </Flex>
 
                                         <Flex alignItems="center">
                                             <ActionMenu
-                                                label="Bulk Upload"
-                                                icon={<LuUpload />}
-                                                color="green"
+                                                label="Download Sample"
+                                                icon={<LuDownload />}
+                                                colorScheme="blue"
                                                 options={DownloadSampleOptions}
-                                                onClick={handleUploadPageRedirection}
+                                                onClick={handleDownloadSampleFunction}
                                                 isDisabled={!allApiDataLoaded}
                                             />
                                         </Flex>
