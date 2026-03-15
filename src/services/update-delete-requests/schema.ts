@@ -38,11 +38,11 @@ export const zApprovalLogEntry = z.object({
   model_name: z.string(),
   record_id: z.string().uuid(),
   status: z.enum(["pending", "approved", "rejected"]),
-  new_data: z.record(z.unknown()),
-  old_data: z.record(z.unknown()),
+  new_data: z.record(z.unknown()).nullable(),
+  old_data: z.record(z.unknown()).nullable(),
   record: z.record(z.unknown()),
-  approved_by: z.string().uuid().nullable(),
-  requested_by: z.string().uuid(),
+  approved_by: z.string().nullable(),
+  requested_by: z.string().nullable(),
   reason: z.string().nullable(),
   created_at: z.string(),
   updated_at: z.string(),
@@ -79,6 +79,33 @@ export const zApprovalActionPayload = z.object({
   message: z.string().optional(),
 });
 
+// schema.ts
+
+export const zApprovalLogHistoryItem = z.object({
+    id:           z.string(),
+    record_id:    z.string(),
+    model_name:   z.string(),                       // was "model" — actual field is model_name
+    action:       z.enum(["update", "delete"]),
+    status:       z.enum(["pending", "approved", "rejected"]),
+    record:       z.record(z.any()).nullable().optional(),      // current live record
+    old_data:     z.record(z.any()).nullable().optional(),      // data before the request
+    new_data:     z.record(z.any()).nullable().optional(),      // data in the request
+    requested_by: z.string().nullable().optional(),
+    approved_by:  z.string().nullable().optional(),
+    reason:       z.string().nullable().optional(),
+    created_at:   z.string().nullable().optional(),
+    updated_at:   z.string().nullable().optional(),
+    deleted_at:   z.string().nullable().optional(),
+});
+
+export type ApprovalLogHistoryItem = z.infer<typeof zApprovalLogHistoryItem>;
+
+export const zApprovalLogHistoryPayload = z.object({
+    status:  z.boolean(),
+    message: z.string(),
+    data:    z.array(zApprovalLogHistoryItem),
+});
+
 // ─── Inferred types ───────────────────────────────────────────────────────────
 
 export type ApprovalCounts        = z.infer<typeof zApprovalCounts>;
@@ -89,3 +116,4 @@ export type DashboardPayload      = z.infer<typeof zDashboardPayload>;
 export type ApprovalLogPayload    = z.infer<typeof zApprovalLogPayload>;
 export type ApprovalLogDetailsPayload = z.infer<typeof zApprovalLogDetailsPayload>;
 export type ApprovalActionPayload = z.infer<typeof zApprovalActionPayload>;
+export type ApprovalLogHistoryPayload = z.infer<typeof zApprovalLogHistoryPayload>;

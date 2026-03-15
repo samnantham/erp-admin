@@ -1,13 +1,22 @@
-import { useQuery, useQueryClient, UseQueryOptions } from "react-query";
-
-import { getRequest } from "@/api/client";
-import { endPoints } from "@/api/endpoints";
-
 import {
-  zDashboardPayload,
-  zApprovalLogPayload,
+  useQuery,
+  useQueryClient,
+  UseQueryOptions,
+} from "react-query";
+
+import { getRequest, putRequest } from "@/api/client";
+import { endPoints } from "@/api/endpoints";
+import { useApiMutation } from '@/api/hooks/useApiMutation';
+import {
+  ApprovalLogHistoryPayload,
+  ApprovalLogPayload,
+  ApprovalActionPayload,
   DashboardPayload,
-  ApprovalLogPayload
+  zApprovalActionPayload,
+  zApprovalLogPayload,
+  zApprovalLogHistoryPayload,
+  zDashboardPayload,
+  
 } from "@/services/update-delete-requests/schema";
 
 // ─── Query params ─────────────────────────────────────────────────────────────
@@ -16,7 +25,6 @@ export interface ApprovalQueryParams {
   page?: number;
   limit?: number;
   status?: "pending" | "approved" | "rejected";
-  action?: "update" | "delete" | "create";
 }
 
 export interface ApprovalLogParams {
@@ -24,9 +32,9 @@ export interface ApprovalLogParams {
   action: "update" | "delete";
 }
 
-
-export interface ApprovalActionVariables {
-  id: string;
+export interface ProcessRequestVariables {
+  change_id: string;
+  action: "approve" | "reject";
   reason?: string;
 }
 
@@ -38,7 +46,10 @@ export const useApprovalsDashboard = (
   useQuery<DashboardPayload>({
     queryKey: ["approvalsDashboard"],
     queryFn: () =>
-      getRequest(endPoints.others.update_delete_request_dashboard, zDashboardPayload),
+      getRequest(
+        endPoints.others.update_delete_request_dashboard,
+        zDashboardPayload
+      ),
     retry: 2,
     refetchOnWindowFocus: false,
     ...options,
@@ -67,6 +78,51 @@ export const useApprovalLogIndex = (
     ...options,
   });
 
+  // In /services/update-delete-requests/service.ts
+
+// ── add this alongside useApprovalLogIndex ──
+// service.ts
+
+export const useApprovalLogHistory = (
+    recordId: string | null,
+    options?: UseQueryOptions<ApprovalLogHistoryPayload>
+) =>
+    useQuery<ApprovalLogHistoryPayload>({
+        queryKey: ["approvalLogHistory", recordId],
+        queryFn: () =>
+            getRequest(
+                endPoints.others.update_delete_request_history
+                    .replace(":record_id", recordId!),
+                zApprovalLogHistoryPayload
+            ),
+        enabled: !!recordId,
+        retry: 2,
+        refetchOnWindowFocus: false,
+        ...options,
+    });
+
+/* ================= Process Request (Approve / Reject) ================= */
+
+export const useProcessRequest = () => {
+  const queryClient = useQueryClient();
+
+  return useApiMutation<ApprovalActionPayload, ProcessRequestVariables>(
+    ({ change_id, action, reason }) =>
+      putRequest(
+        endPoints.others.process_request
+          .replace(":change_id", change_id)
+          .replace(":action", action),
+        { reason },
+        zApprovalActionPayload
+      ),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(["approvalLogIndex"]);
+        queryClient.invalidateQueries(["approvalsDashboard"]);
+      },
+    }
+  );
+};
 
 /* ================= Invalidate helpers ================= */
 

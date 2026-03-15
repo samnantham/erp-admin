@@ -12,7 +12,7 @@ import {
 import { Formiz, useForm, useFormFields } from "@formiz/core";
 import { isEmail, isMinLength } from "@formiz/validations";
 import { HiArrowNarrowLeft } from "react-icons/hi";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { FieldInput } from "@/components/FieldInput";
 import { FieldPhone } from "@/components/FieldPhone";
@@ -32,9 +32,8 @@ import LoadingOverlay from '@/components/LoadingOverlay';
 
 export const AdminUserForm = () => {
   const navigate = useNavigate();
-  const location = useLocation();
 
-  const { id, mode } = location.state || {};
+  const { id, mode } = useParams<{id?: string, mode?: string }>();
 
   const isEdit = mode === "edit";
   const isView = mode === "view";

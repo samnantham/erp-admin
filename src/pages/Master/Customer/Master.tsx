@@ -306,19 +306,13 @@ export const CustomerMaster = () => {
                     {
                         label: "View",
                         icon: <BiInfoCircle />,
-                        onClick: (row: any) =>
-                            navigate("/contact-management/customer-master/info", {
-                                state: { id: row.id },
-                            }),
+                        onClick: (row: any) =>  navigate(`/contact-management/customer-master/info/${row.id}`),
                     },
                     {
                         label: "Edit",
                         icon: <BiEdit />,
                         isDisabled: (row) => row.is_fixed || !!row.has_pending_request,
-                        onClick: (row: any) =>
-                            navigate("/contact-management/customer-master/form", {
-                                state: { id: row.id, mode: "edit" },
-                            }),
+                        onClick: (row: any) => navigate(`/contact-management/customer-master/form/${row.id}`),
                         disabledTooltip: (row) => row.pending_request_message,
                     },
                     {

@@ -62,9 +62,7 @@ export const SubmasterPage = () => {
 
     if (config.formType === "page") {
       if (item) {
-        navigate(`/submaster/${model}/form`, {
-          state: { id: item.id, mode: "edit" }
-        });
+        navigate(`/submaster/${model}/form/${item.id}/edit`);
       } else {
         navigate(`/submaster/${model}/form`);
       }

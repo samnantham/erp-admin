@@ -32,15 +32,12 @@ import {
   useSubmasterItemDetails
 } from "@/services/submaster/service";
 
-import { useLocation } from "react-router-dom";
 import LoadingOverlay from '@/components/LoadingOverlay';
 
 export const SubmasterForm = () => {
   const navigate = useNavigate();
-  const { model } = useParams<{ model: string }>();
-  const location = useLocation();
+  const { model, id, mode } = useParams<{ model: string, id?: string, mode?: string }>();
   const title = formatModelTitle(model);
-  const { id, mode } = location.state || {};
   const redirectLink = `/submaster/${model}`;
   const isEdit = mode === "edit";
   const isView = mode === "view";

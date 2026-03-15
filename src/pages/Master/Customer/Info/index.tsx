@@ -9,16 +9,17 @@ import {
   Stack,
 } from '@chakra-ui/react';
 import { HiArrowNarrowLeft } from 'react-icons/hi';
-import { useLocation } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { ResponsiveIconButton } from '@/components/ResponsiveIconButton';
 import { CustomerDetails } from '@/pages/Master/Customer/Info/CustomerDetails';
+import { useCustomerDetails } from '@/services/master/customer/service';
 
 export const CustomerInfo = () => {
-  const location = useLocation();
   const navigate = useNavigate();
-  const { id } = location.state || {};
+  const { id } = useParams<{ id: string }>();
+    const { data: details } = useCustomerDetails(id);
 
   return (
     <Box>
@@ -47,7 +48,8 @@ export const CustomerInfo = () => {
             size="sm"
             variant="outline"
             colorScheme="gray"
-            onClick={() => navigate(`/customer-master/${id}/edit`)}
+            onClick={() => navigate(`/contact-management/customer-master/form/${id}`)}
+            isDisabled={!!details?.data?.has_pending_request}
           />
           <ResponsiveIconButton
             variant={'@primary'}
@@ -61,7 +63,7 @@ export const CustomerInfo = () => {
         </HStack>
       </HStack>
       <CustomerDetails
-        customerId={id ?? 0}
+        customerId={id ?? ''}
       />
     </Box>
   );

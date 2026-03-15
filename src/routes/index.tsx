@@ -41,6 +41,7 @@ import { CustomerRelationsBulkUpload } from '@/pages/Master/Customer/RelationBul
 
 // !<--!! Update Delete Request Routes Starts !!-->!
 import { UpdateDeleteRequestDashboard } from '@/pages/UpdateDeleteRequests/Dashboard';
+import { UpdateDeleteRequestMaster } from '@/pages/UpdateDeleteRequests/Master';
 // !<--!! Update Delete Request Routes Ends !!-->!
 
 export const routes = [
@@ -104,7 +105,7 @@ export const routes = [
                 path: 'admin-users',
                 children: [
                   { path: '', element: <AdminUserMaster /> },
-                  { path: 'form', element: <AdminUserForm /> },
+                  { path: 'form/:id?/:mode?', element: <AdminUserForm /> },
                 ],
               }
             ],
@@ -113,7 +114,7 @@ export const routes = [
             path: "submaster/:model",
             children: [
               { path: '', element: <SubmasterPage /> },
-              { path: 'form', element: <SubmasterForm /> },
+              { path: 'form/:id?/:mode?', element: <SubmasterForm /> },
             ]
           },
           {
@@ -123,12 +124,10 @@ export const routes = [
                 path: 'customer-master',
                 children: [
                   { path: '', element: <CustomerMaster /> },
-                  { path: 'form', element: <CustomerForm /> },
+                  { path: 'form/:id?', element: <CustomerForm /> },
                   { path: 'bulk-upload', element: <CustomerBulkUpload/> },
                   { path: ':relationType/bulk-upload', element: <CustomerRelationsBulkUpload/> },
-                  {
-                    path: 'info',
-                    element: <CustomerInfo />,
+                  { path: 'info/:id', element: <CustomerInfo />,
                   },
                 ],
               }
@@ -137,7 +136,8 @@ export const routes = [
           {
             path: 'update-delete-requests',
             children: [
-              { path: 'dashboard', element: <UpdateDeleteRequestDashboard /> }
+              { path: 'dashboard', element: <UpdateDeleteRequestDashboard /> },
+              { path: ':module', element: <UpdateDeleteRequestMaster /> }
             ],
           },
         ],

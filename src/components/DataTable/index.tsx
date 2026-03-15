@@ -118,6 +118,7 @@ export type DataTableProps<Data extends object> = {
   resetKey?: string | number;
   noTitlePadding?: boolean;
   headerAction?: React.ReactNode;
+  showtitleBar?: boolean;
 };
 
 export function DataTable<Data extends object>({
@@ -151,7 +152,8 @@ export function DataTable<Data extends object>({
   onPageSizeChange,
   resetKey = '',
   noTitlePadding = false,
-  headerAction
+  headerAction, 
+  showtitleBar = true
 }: DataTableProps<Data>) {
 
   const [globalFilter, setGlobalFilter] = useState("");
@@ -344,7 +346,7 @@ export function DataTable<Data extends object>({
   return (
     <>
       <Box>
-        {(title || enableClientSideSearch || enablePagination) && (
+        {(title || enableClientSideSearch || enablePagination) && showtitleBar && (
           <HStack
             bg={'white'}
             justify={'space-between'}

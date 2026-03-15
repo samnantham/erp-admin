@@ -763,11 +763,10 @@ export const formatModelTitle = (model?: string) => {
   if (!model) return "";
 
   return model
-    .split("-")
+    .split(/[-_]/)
     .map(word => {
       const singular = pluralize.singular(word);
-      return singular.charAt(0).toUpperCase() + singular.slice(1);
+      return singular.charAt(0).toUpperCase() + singular.slice(1).toLowerCase();
     })
     .join(" ");
 };
- 

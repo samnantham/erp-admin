@@ -30,8 +30,8 @@ import DocumentDownloadButton from '@/components/DocumentDownloadButton';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import {
   useCustomerDetails,
-  useCustomerStatusHistory,
-} from '@/services/master/services';
+  // useCustomerStatusHistory,
+} from '@/services/master/customer/service';
 
 /* ----------------------------- Reusable Bits ----------------------------- */
 type CustomerInfo = {
@@ -234,8 +234,8 @@ type CustomerPreviewProps = {
 
 export function CustomerPreview({ customerId }: CustomerPreviewProps) {
   const { data: details, isLoading } = useCustomerDetails(Number(customerId));
-  const { data: statusHistory } = useCustomerStatusHistory(Number(customerId));
-  const raw: CustomerInfo = (details?.data as CustomerInfo) ?? {};
+  // const { data: statusHistory } = useCustomerStatusHistory(Number(customerId));
+  const raw: CustomerInfo = details as CustomerInfo ?? {};
 
   const customerInfo: Required<
     Pick<
@@ -245,7 +245,7 @@ export function CustomerPreview({ customerId }: CustomerPreviewProps) {
       | 'orders'
       | 'refunds'
       | 'activity'
-      | 'statusTimeline'
+      // | 'statusTimeline'
       | 'documents'
     >
   > &
@@ -263,24 +263,24 @@ export function CustomerPreview({ customerId }: CustomerPreviewProps) {
       { text: 'Updated Address', dateTime: '01 Jun 2024', by: 'EMP222' },
       { text: 'Created Contact', dateTime: '15 May 2024', by: 'EMP123' },
     ],
-    statusTimeline:
-      raw.statusTimeline ??
-      [
-        {
-          label: 'created',
-          dateTime: details?.data?.created_at
-            ? format(new Date(details?.data?.created_at), 'dd MMM yyyy')
-            : '',
-        },
-      ].concat(
-        (statusHistory?.data ?? []).map((qc: any, idx: number) => ({
-          id: qc?.id ?? `status-${idx + 1}`,
-          label: qc?.status_name,
-          dateTime: qc?.created_at
-            ? format(new Date(qc?.created_at), 'dd MMM yyyy')
-            : '',
-        }))
-      ),
+    // statusTimeline:
+    //   raw.statusTimeline ??
+    //   [
+    //     {
+    //       label: 'created',
+    //       dateTime: details?.data?.created_at
+    //         ? format(new Date(details?.data?.created_at), 'dd MMM yyyy')
+    //         : '',
+    //     },
+    //   ].concat(
+    //     (statusHistory?.data ?? []).map((qc: any, idx: number) => ({
+    //       id: qc?.id ?? `status-${idx + 1}`,
+    //       label: qc?.status_name,
+    //       dateTime: qc?.created_at
+    //         ? format(new Date(qc?.created_at), 'dd MMM yyyy')
+    //         : '',
+    //     }))
+    //   ),
     documents: [
       { name: 'Trade License', url: details?.data?.license_trade_url ?? '' },
       { name: 'VAT Doc', url: details?.data?.vat_tax_url ?? '' },

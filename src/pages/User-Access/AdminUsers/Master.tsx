@@ -72,17 +72,13 @@ export const AdminUserMaster = () => {
         {
           label: "View",
           icon: <ViewIcon />,
-          onClick: (row: any) => navigate("/user-access/admin-users/form", {
-            state: { id: row.id, mode: "view" }
-          }),
+          onClick: (row: any) => navigate(`/user-access/admin-users/form/${row.id}/view`),
         },
         {
           label: "Edit",
           icon: <EditIcon />,
           isDisabled: (row) => row.is_fixed,
-          onClick: (row: any) => navigate("/user-access/admin-users/form", {
-            state: { id: row.id, mode: "edit" }
-          }),
+          onClick: (row: any) => navigate(`/user-access/admin-users/form/${row.id}/edit`),
         },
       ],
     },

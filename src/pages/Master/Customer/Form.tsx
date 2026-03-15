@@ -30,14 +30,16 @@ import {
   useCustomerDropdowns
 } from '@/services/master/customer/service';
 import { useSubmasterItemIndex } from "@/services/submaster/service";
-import { useLocation } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import LoadingOverlay from '@/components/LoadingOverlay';
 import { QualityCertificates } from '@/pages/Master/Customer/QualityCertificates';
 import { formatDate } from '@/helpers/commonHelper';
 
 export const CustomerForm = () => {
   const navigate = useNavigate();
-  const location = useLocation();
+  const { id } = useParams<{ id?: string }>();
+
+  const isEdit = !!id;
   const keys = [
     'contact_type_id',
     'business_name',
@@ -55,12 +57,10 @@ export const CustomerForm = () => {
     'total_credit_amount',
     'total_credit_period',
     'vat_tax_id',
-    'vat_tax_url'
+    'vat_tax_url',
+    'remarks'
   ];
 
-  const { id, mode } = location.state || {};
-  const isEdit = mode === "edit";
-  const isView = mode === "view";
   const { data: paymentTermList } = useSubmasterItemIndex("payment-terms", {});
   const paymentTerms: TODO[] = paymentTermList?.data ?? [];
 
@@ -162,6 +162,7 @@ export const CustomerForm = () => {
     const init = Object.fromEntries(
       keys.map((key) => [key, (existData as any)?.[key] ?? ""])
     );
+    init.is_foreign_entity = existData.is_foreign_entity.toString();
     init.business_since = existData.year_of_business ? dayjs(`${new Date().getFullYear() - Number(existData.year_of_business)}-01-01`) : null;
     init.license_trade_exp_date = existData.license_trade_exp_date ? dayjs(existData.license_trade_exp_date) : null;
     handlePaymentTermsChange(existData?.payment_term_id)
@@ -169,6 +170,7 @@ export const CustomerForm = () => {
       existData.quality_certificates &&
         existData.quality_certificates.length > 0
         ? existData.quality_certificates?.map((certificate: any) => ({
+          id: certificate.id,
           certificate_type: certificate.certificate_type,
           doc_no: certificate.doc_no,
           validity_date: certificate.validity_date
@@ -185,7 +187,7 @@ export const CustomerForm = () => {
     setInitialValues(init);
     form.setValues(init);
   }, [userData]);
-  
+
   const isQcChanged = JSON.stringify(qcFields) !== JSON.stringify(initialQcFields);
   const [initialValues, setInitialValues] = useState<any>(null);
   const fields = useFormFields({ connect: form });
@@ -214,13 +216,13 @@ export const CustomerForm = () => {
 
               <BreadcrumbItem isCurrentPage color={"gray.500"}>
                 <BreadcrumbLink>
-                  {isView ? "View Contact" : isEdit ? "Edit Contact" : "Add New Contact"}
+                  {isEdit ? "Edit Contact" : "Add New Contact"}
                 </BreadcrumbLink>
               </BreadcrumbItem>
             </Breadcrumb>
 
             <Heading as="h4" size={"md"}>
-              {isView ? "View Contact" : isEdit ? "Edit Contact" : "Add New Contact"}
+              {isEdit ? "Edit Contact" : "Add New Contact"}
             </Heading>
           </Stack>
 
@@ -475,20 +477,18 @@ export const CustomerForm = () => {
                 alignItems={"center"}
                 mt={6}
               >
-                {!isView && (
-                  <Button
-                    type="submit"
-                    colorScheme="brand"
-                    isLoading={
-                      saveCustomer.isLoading}
-                    isDisabled={
-                      saveCustomer.isLoading ||
-                      !form.isValid || (isEdit ? !isFormValuesChanged : false)
-                    }
-                  >
-                    {isEdit ? "Update" : "Submit"}
-                  </Button>
-                )}
+                <Button
+                  type="submit"
+                  colorScheme="brand"
+                  isLoading={
+                    saveCustomer.isLoading}
+                  isDisabled={
+                    saveCustomer.isLoading ||
+                    !form.isValid || (isEdit ? !isFormValuesChanged : false)
+                  }
+                >
+                  {isEdit ? "Update" : "Submit"}
+                </Button>
                 <Button
                   colorScheme="red"
                   isDisabled={
