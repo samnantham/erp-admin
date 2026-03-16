@@ -149,6 +149,7 @@ export const zCustomer = zStandardObject.extend({
   banks: z.array(zCustomerBank).optional(),
   principle_owners: z.array(zCustomerPrincipleOwner).optional(),
   trader_references: z.array(zCustomerTraderReference).optional(),
+  completion_percentage: z.number(),
 });
 
 export type Customer = z.infer<typeof zCustomer>;

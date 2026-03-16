@@ -30,13 +30,14 @@ import { DownloadSampleOptions, contactManagementPageConfig, DownloadSampleKeys 
 import {
     handleDownload
 } from '@/helpers/commonHelper';
-
+import { CompletionProgressBar } from '@/components/CompletionProgressBar';
 import { ActionMenu } from '@/components/ActionMenu';
 
 import { useSubmasterItemIndex } from "@/services/submaster/service";
 import { CustomerDetails } from '@/pages/Master/Customer/Info/CustomerDetails';
 import { useDelete } from '@/api/useDelete';
 import { endPoints } from '@/api/endpoints';
+
 type ConfirmMode = null | "delete" | "status-update";
 
 
@@ -297,7 +298,16 @@ export const CustomerMaster = () => {
 
             { key: "payment_term.name", header: "Pay.Term", meta: { sortable: true, isNumeric: false, sortParam: 'payment_term_id' } },
             { key: "payment_mode.name", header: "Pay.Mode", meta: { sortable: true, isNumeric: false, sortParam: 'payment_mode_id' } },
-
+            {
+                key: "completion_percentage",
+                header: "Completion (%)",
+                meta: { sortable: false },
+                render: (row: any) => {
+                    return (
+                        <CompletionProgressBar value={row.completion_percentage} trackColor="#7b8085" />
+                    );
+                },
+            },
             {
                 key: "actions",
                 header: "Actions",
@@ -306,7 +316,7 @@ export const CustomerMaster = () => {
                     {
                         label: "View",
                         icon: <BiInfoCircle />,
-                        onClick: (row: any) =>  navigate(`/contact-management/customer-master/info/${row.id}`),
+                        onClick: (row: any) => navigate(`/contact-management/customer-master/info/${row.id}`),
                     },
                     {
                         label: "Edit",
@@ -370,6 +380,7 @@ export const CustomerMaster = () => {
                                     placeholder="Search"
                                     onValueChange={(value) => updateFilter("search", value ?? '')}
                                     rightElement={<Icon as={HiOutlineSearch} color="gray.300" />}
+                                    size={'sm'}
                                 />
 
                                 <FieldSelect
@@ -385,6 +396,7 @@ export const CustomerMaster = () => {
                                         limit: itemsPerPage
                                     })}
                                     isClearable={true}
+                                    size={'sm'}
                                 />
 
                                 <FieldSelect
@@ -396,6 +408,7 @@ export const CustomerMaster = () => {
                                     onValueChange={(v) => updateFilter("customer_status_id", v)}
                                     isDisabled={queryParams?.id}
                                     isClearable={true}
+                                    size={'sm'}
                                 />
 
                                 <FieldSelect
@@ -407,6 +420,7 @@ export const CustomerMaster = () => {
                                     onValueChange={(v) => updateFilter("business_type_id", v)}
                                     isDisabled={queryParams?.id}
                                     isClearable={true}
+                                    size={'sm'}
                                 />
 
                             </Stack>
@@ -423,6 +437,7 @@ export const CustomerMaster = () => {
                                     onValueChange={(v) => updateFilter("currency_id", v)}
                                     isDisabled={queryParams?.id}
                                     isClearable={true}
+                                    size={'sm'}
                                 />
 
                                 <FieldSelect
@@ -434,6 +449,7 @@ export const CustomerMaster = () => {
                                     onValueChange={(v) => updateFilter("payment_term_id", v)}
                                     isDisabled={queryParams?.id}
                                     isClearable={true}
+                                    size={'sm'}
                                 />
 
                                 <FieldSelect
@@ -445,6 +461,7 @@ export const CustomerMaster = () => {
                                     onValueChange={(v) => updateFilter("payment_mode_id", v)}
                                     isDisabled={queryParams?.id}
                                     isClearable={true}
+                                    size={'sm'}
                                 />
 
                                 <FieldSelect
@@ -456,6 +473,7 @@ export const CustomerMaster = () => {
                                     onValueChange={(v) => updateFilter("contact_type_id", v)}
                                     isDisabled={queryParams?.id}
                                     isClearable={true}
+                                    size={'sm'}
                                 />
 
                             </Stack>
