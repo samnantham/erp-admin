@@ -39,6 +39,23 @@ export const submasterConfig: Record<string, any> = {
         }),
     },
 
+        "hsc-codes": {
+        title: "HSC Code",
+        formType: "modal",
+        fields: [
+            {
+                component: FieldInput,
+                name: "name",
+                placeholder: "Enter Name",
+                required: "Name required",
+                type: "alpha-numeric-with-space"
+            },
+        ],
+        columns: ["name"],
+        extraFields: {},
+        schema: zBasicObject
+    },
+
     "contact-types": {
         title: "Contact Type",
         formType: "modal",
@@ -204,6 +221,40 @@ export const submasterConfig: Record<string, any> = {
         ],
         schema: zBasicObject.extend({
             is_quarantine: z.boolean(),
+        }),
+    },
+
+    "uns": {
+        title: "Unified Number",
+        formType: "modal",
+        columns: ["name", "description", "un_class"],
+        extraFields: { description: "Description", un_class: "Class" },
+        fields: [
+            {
+                component: FieldInput,
+                name: "name",
+                placeholder: "Enter Name",
+                required: "Name required",
+                type: "alpha-with-space"
+            },
+            {
+                component: FieldInput,
+                name: "description",
+                placeholder: "Enter Description",
+                required: "Description required",
+                type: "alpha-with-space"
+            },
+            {
+                component: FieldInput,
+                name: "un_class",
+                placeholder: "Enter Class",
+                required: "Class required",
+                type: "lpha-numeric-with-special"
+            }
+        ],
+        schema: zBasicObject.extend({
+            description: z.string(),
+            un_class: z.string(),
         }),
     },
 

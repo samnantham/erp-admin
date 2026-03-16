@@ -35,7 +35,7 @@ import {
   FaUserFriends,
   FaUsers,
   FaUsersCog,
-  FaClipboardList 
+  FaClipboardList
 } from 'react-icons/fa';
 import {
   FaBox,
@@ -58,8 +58,9 @@ import {
   FaWrench,
   FaReceipt
 } from 'react-icons/fa6';
+import { PiListNumbersFill } from "react-icons/pi";
 import { FiBell, FiChevronDown, FiMenu } from 'react-icons/fi';
-// import { LuMail } from 'react-icons/lu';
+import { LuBarcode } from 'react-icons/lu';
 import { useQueryClient } from 'react-query';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 
@@ -125,111 +126,29 @@ const NavigationSections: Array<SectionProps> = [
         name: 'Submaster',
         icon: FaUserShield,
         subItems: [
-          {
-            name: 'Business Type',
-            icon: FaBriefcase,
-            link: '/submaster/business-types',
-          },
-          {
-            name: 'Contact Type',
-            icon: FaUserFriends,
-            link: '/submaster/contact-types',
-          },
-          {
-            name: 'Currency',
-            icon: FaDollarSign,
-            link: '/submaster/currencies',
-          },
-          {
-            name: 'Payment Mode',
-            icon: FaCreditCard,
-            link: '/submaster/payment-modes',
-          },
-          {
-            name: 'Payment Terms',
-            icon: FaCalendarAlt,
-            link: '/submaster/payment-terms',
-          },
-          {
-            name: 'Spare Class',
-            icon: FaCog,
-            link: '/submaster/spare-classes',
-          },
-          {
-            name: 'Spare Type',
-            icon: FaBox,
-            link: '/submaster/spare-types',
-          },
-          {
-            name: 'Spare Model',
-            icon: FaWrench,
-            link: '/submaster/spare-models',
-          },
-          {
-            name: 'Priorities',
-            icon: FaFlag,
-            link: '/submaster/priorities',
-          },
-          {
-            name: 'Conditions',
-            icon: FaCheckCircle,
-            link: '/submaster/conditions',
-          },
-          {
-            name: 'FOB',
-            icon: FaWarehouse,
-            link: '/submaster/fobs',
-          },
-          {
-            name: 'Ship Accounts',
-            icon: FaShip,
-            link: '/submaster/ship-accounts',
-          },
-          {
-            name: 'Ship Modes',
-            icon: FaTruck,
-            link: '/submaster/ship-modes',
-          },
-          {
-            name: 'Ship Via',
-            icon: FaPlane,
-            link: '/submaster/ship-vias',
-          },
-          {
-            name: 'Custom Entry',
-            icon: FaGlobeAmericas,
-            link: '/submaster/custom-entries',
-          },
-          {
-            name: 'Package Type',
-            icon: FaBox,
-            link: '/submaster/package-types',
-          },
-          {
-            name: 'Ship Type',
-            icon: FaSailboat,
-            link: '/submaster/ship-types',
-          },
-          {
-            name: 'Warehouse',
-            icon: FaWarehouse,
-            link: '/submaster/warehouses',
-          },
-          {
-            name: 'Rack',
-            icon: FaLayerGroup,
-            link: '/submaster/racks',
-          },
-          {
-            name: 'Bin Location',
-            icon: FaBoxOpen,
-            link: '/submaster/bin-locations',
-          },
-          {
-            name: 'Mode of Receipt',
-            icon: FaReceipt,
-            link: '/submaster/mode-of-receipts',
-          }
+          { name: 'Bin Location', icon: FaBoxOpen, link: '/submaster/bin-locations' },
+          { name: 'Business Type', icon: FaBriefcase, link: '/submaster/business-types' },
+          { name: 'Conditions', icon: FaCheckCircle, link: '/submaster/conditions' },
+          { name: 'Contact Type', icon: FaUserFriends, link: '/submaster/contact-types' },
+          { name: 'Currency', icon: FaDollarSign, link: '/submaster/currencies' },
+          { name: 'Custom Entry', icon: FaGlobeAmericas, link: '/submaster/custom-entries' },
+          { name: 'FOB', icon: FaWarehouse, link: '/submaster/fobs' },
+          { name: 'HSC Code', icon: LuBarcode, link: '/submaster/hsc-codes' },
+          { name: 'Mode of Receipt', icon: FaReceipt, link: '/submaster/mode-of-receipts' },
+          { name: 'Package Type', icon: FaBox, link: '/submaster/package-types' },
+          { name: 'Payment Mode', icon: FaCreditCard, link: '/submaster/payment-modes' },
+          { name: 'Payment Terms', icon: FaCalendarAlt, link: '/submaster/payment-terms' },
+          { name: 'Priorities', icon: FaFlag, link: '/submaster/priorities' },
+          { name: 'Rack', icon: FaLayerGroup, link: '/submaster/racks' },
+          { name: 'Ship Accounts', icon: FaShip, link: '/submaster/ship-accounts' },
+          { name: 'Ship Modes', icon: FaTruck, link: '/submaster/ship-modes' },
+          { name: 'Ship Type', icon: FaSailboat, link: '/submaster/ship-types' },
+          { name: 'Ship Via', icon: FaPlane, link: '/submaster/ship-vias' },
+          { name: 'Spare Class', icon: FaCog, link: '/submaster/spare-classes' },
+          { name: 'Spare Model', icon: FaWrench, link: '/submaster/spare-models' },
+          { name: 'Spare Type', icon: FaBox, link: '/submaster/spare-types' },
+          { name: 'UN', icon: PiListNumbersFill, link: '/submaster/uns' },
+          { name: 'Warehouse', icon: FaWarehouse, link: '/submaster/warehouses' },
         ],
       },
       {
@@ -249,7 +168,8 @@ const NavigationSections: Array<SectionProps> = [
     sectionName: 'Other Menus',
     items: [
       { name: 'Approval Monitor', icon: FaClipboardList, link: '/update-delete-requests/dashboard' },
-    ]}
+    ]
+  }
   //     // { name: 'Sales', icon: SlTag },
   //     {
   //       name: 'Purchase',

@@ -152,7 +152,7 @@ export function DataTable<Data extends object>({
   onPageSizeChange,
   resetKey = '',
   noTitlePadding = false,
-  headerAction, 
+  headerAction,
   showtitleBar = true
 }: DataTableProps<Data>) {
 
@@ -318,11 +318,12 @@ export function DataTable<Data extends object>({
   let overallcount = 0;
 
   if (enablePagination) {
-    overallcount = enableClientSideSearch ? filteredRows : totalCount;
+    // If server-side pagination, always use totalCount
+    overallcount = enableClientSideSearch && !totalCount
+      ? filteredRows
+      : totalCount;  // ← prefer totalCount when pagination is enabled
 
-    startRecord =
-      overallcount === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-
+    startRecord = overallcount === 0 ? 0 : (currentPage - 1) * pageSize + 1;
     endRecord = Math.min(currentPage * pageSize, overallcount);
   } else {
     overallcount = enableClientSideSearch ? filteredRows : data.length;
@@ -359,7 +360,7 @@ export function DataTable<Data extends object>({
                 {title}
               </Heading>
             )}
-            
+
             {headerAction}
 
             {enablePagination && onPageSizeChange && (
@@ -591,7 +592,7 @@ export function DataTable<Data extends object>({
                   return (
                     <Tr key={row.id} {...rowProps} bg={row.index % 2 === 0 ? "white" : "gray.50"}>
                       {row.getVisibleCells().slice(stickyColumns).map((cell) => (
-                        <Td key={cell.id}>
+                        <Td key={cell.id} maxW="200px" whiteSpace="normal" wordBreak="break-word" lineHeight="1.6">
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </Td>
                       ))}

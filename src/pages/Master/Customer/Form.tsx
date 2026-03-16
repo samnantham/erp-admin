@@ -454,7 +454,7 @@ export const CustomerForm = () => {
               </Stack>
 
               <QualityCertificates
-                name="QC"
+                name="Doc."
                 fields={qcFields}
                 onAdd={addQcFields}
                 onRemove={removeQcFields}
@@ -496,7 +496,7 @@ export const CustomerForm = () => {
                   }
                   onClick={() => navigate(-1)}
                 >
-                  Go Back
+                  Close
                 </Button>
               </Stack>
             </Formiz>

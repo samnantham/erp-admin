@@ -89,7 +89,7 @@ export const QualityCertificates = ({
     <Box mt={1}>
       <Flex justify="space-between" align="center" mb={2}>
         <Text fontSize="md" fontWeight="600">
-          Quality Certificates
+          Quality / Other Documents
         </Text>
       </Flex>
       <TableContainer
@@ -105,10 +105,10 @@ export const QualityCertificates = ({
             <Tr>
               <Th color={'white'}>#</Th>
               <Th color={'white'}>{name} Type</Th>
-              <Th color={'white'}>{name} Doc</Th>
-              <Th color={'white'}>{name} Doc No#</Th>
-              <Th color={'white'}>{name} Issue. Date</Th>
-              <Th color={'white'}>{name} Valid. Date</Th>
+              <Th color={'white'}>{name} File</Th>
+              <Th color={'white'}>{name} No</Th>
+              <Th color={'white'}>Issue. Date</Th>
+              <Th color={'white'}>Valid. Date</Th>
               <Th color={'white'}>Action</Th>
             </Tr>
           </Thead>

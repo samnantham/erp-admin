@@ -61,7 +61,7 @@ const modalForm = useForm({
       <ModalContent maxWidth="45vw">
         <Formiz autoForm connect={modalForm}>
           <ModalHeader>
-            {isEdit ? 'Update ' : 'Add '} Quality Certificate
+            {isEdit ? 'Update ' : 'Add '} Quality / Other Documents
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={6}>
@@ -70,40 +70,40 @@ const modalForm = useForm({
                 <Stack spacing={8} direction={{ base: 'column', md: 'row' }}>
                   <FieldInput
                     name={`certificate_type`}
-                    label={'QC Type'}
-                    placeholder={`Enter QC type`}
-                    required={`QC type required`}
+                    label={'Doc Type'}
+                    placeholder={`Enter Doc type`}
+                    required={`Doc type required`}
                     maxLength={30}
                     size={'sm'}
                     defaultValue={existInfo?.certificate_type || ''}
                     type={'alpha-numeric-with-special'}
                   />
                   <FieldInput
-                    label={'QC Document No.'}
+                    label={'Doc No.'}
                     name={`doc_no`}
-                    placeholder={`Enter QC document number`}
+                    placeholder={`Enter Doc number`}
                     maxLength={30}
                     size={'sm'}
-                    required={`QC Document No required`}
+                    required={`Document No required`}
                     defaultValue={existInfo?.doc_no ?? ''}
                     type={'alpha-numeric-with-special'}
                   />
                 </Stack>
                 <Stack spacing={8} direction={{ base: 'column', md: 'row' }}>
                   <FieldUpload
-                    label={'QC Document'}
+                    label={'Doc. File'}
                     name={`doc_url`}
-                    placeholder={`Upload QC document`}
+                    placeholder={`Upload Doc File`}
                     size={'sm'}
-                    required={`QC document required`}
+                    required={`Document File required`}
                     existingFileUrl={existInfo?.doc_url || ''}
                   />
                 </Stack>
                 <Stack spacing={8} direction={{ base: 'column', md: 'row' }}>
                   <FieldDayPicker
-                    label={'QC Issue Date'}
+                    label={'Issue Date'}
                     name={`issue_date`}
-                    placeholder={`Select QC issue date`}
+                    placeholder={`Select Doc issue date`}
                     disabledDays={{ after: new Date() }}
                     size={'sm'}
                     required={
@@ -119,9 +119,9 @@ const modalForm = useForm({
                     }
                   />
                   <FieldDayPicker
-                    label={'QC Valid Date'}
+                    label={'Expiry Date'}
                     name={`validity_date`}
-                    placeholder={`Select QC expiry date`}
+                    placeholder={`Select Doc expiry date`}
                     disabledDays={{ before: new Date() }}
                     required={
                       !fields?.issue_date?.value &&
