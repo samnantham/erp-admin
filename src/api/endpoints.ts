@@ -83,5 +83,8 @@ export const endPoints = {
     bank: '/contact-management/customer/banks/bulk-upload',
     principle_of_owner: '/contact-management/customer/principle-owners/bulk-upload',
     trader_reference: '/contact-management/customer/trader-references/bulk-upload',
+  },
+  preview: {
+    customer: "preview-pdf/customer/:id"
   }
 } as const;

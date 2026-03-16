@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { BiEdit, BiInfoCircle, BiTrash, BiChevronDown } from "react-icons/bi";
+import { BiEdit, BiInfoCircle, BiTrash, BiChevronDown, BiSolidFilePdf } from "react-icons/bi";
 import {
     Box,
     Button,
@@ -37,6 +37,8 @@ import { useSubmasterItemIndex } from "@/services/submaster/service";
 import { CustomerDetails } from '@/pages/Master/Customer/Info/CustomerDetails';
 import { useDelete } from '@/api/useDelete';
 import { endPoints } from '@/api/endpoints';
+import { usePdfPreview } from '@/hooks/usePdfPreview';
+import { PDFPreviewModal } from '@/components/PDFPreview';
 
 type ConfirmMode = null | "delete" | "status-update";
 
@@ -52,6 +54,14 @@ export const CustomerMaster = () => {
     const currencyOptions = dropdownData?.currencies ?? [];
     const [activeItem, setActiveItem] = useState<any>(null);
     const [confirmMode, setConfirmMode] = useState<ConfirmMode>(null);
+
+    const { pdfUrl, pdfTitle, isOpen, openPreview, closePreview } = usePdfPreview();
+
+    const handleOpenPreview = (custInfo: any) => {
+        const url = endPoints.preview.customer.replace(':id', custInfo.id);
+        openPreview(url, `Contact Preview - #${custInfo.business_name}`);
+    };
+
 
     const handleDownloadSampleFunction = (value: DownloadSampleKeys) => {
         const csvPath = contactManagementPageConfig[value]?.csv;
@@ -332,6 +342,12 @@ export const CustomerMaster = () => {
                         onClick: (row) => ask("delete", row),
                         disabledTooltip: (row) => row.pending_request_message,
                     },
+
+                    {
+                        label: "Preview",
+                        icon: <BiSolidFilePdf />,
+                        onClick: (row) => handleOpenPreview(row),
+                    },
                 ],
             },
         ];
@@ -582,6 +598,14 @@ export const CustomerMaster = () => {
                     placeholder={confirmMode === "delete"
                         ? "Enter Reason to delete"
                         : "Enter Reason"}
+                />
+
+                <PDFPreviewModal
+                    isOpen={isOpen}
+                    onClose={closePreview}
+                    pdfUrlOrEndpoint={pdfUrl}
+                    title={pdfTitle}
+                    isEndpoint={true}
                 />
             </Stack>
         </SlideIn>
