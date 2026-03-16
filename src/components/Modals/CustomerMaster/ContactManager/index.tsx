@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useRef, useEffect, useState } from "react";
 
 import {
   Button,
@@ -46,18 +46,18 @@ export function ContactManagerModal({
 }: ContactManagerModalProps) {
 
   const keys = [
-      "attention",
-      "address_line1",
-      "address_line2",
-      "city",
-      "state",
-      "zip_code",
-      "country",
-      "phone",
-      "fax",
-      "email",
-      "remarks",
-    ];
+    "attention",
+    "address_line1",
+    "address_line2",
+    "city",
+    "state",
+    "zip_code",
+    "country",
+    "phone",
+    "fax",
+    "email",
+    "remarks",
+  ];
   const saveItem = useSaveContactManager({
     onSuccess: ({ id }) => {
       onClose(true, id);
@@ -117,6 +117,9 @@ export function ContactManagerModal({
     connect: form,
   });
 
+  const formRef = useRef(form);
+  formRef.current = form;
+
   const [initialValues, setInitialValues] = useState<any>(null);
 
   const isFormValuesChanged = isFormFieldsChanged({
@@ -125,7 +128,7 @@ export function ContactManagerModal({
     keys: keys
   });
 
-   useEffect(() => {
+  useEffect(() => {
     if (!existValues || !isOpen) return;
 
     const init = Object.fromEntries(
@@ -133,8 +136,8 @@ export function ContactManagerModal({
     );
 
     setInitialValues(init);
-    form.setValues(init);
-  }, [existValues, form, isOpen]);
+    formRef.current.setValues(init);
+  }, [existValues, isOpen]);
 
   const handleClose = () => {
     onClose(false, 0);

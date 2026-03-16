@@ -150,25 +150,25 @@ export const CUSTOMER_RELATION_CONFIG: Record<string, ModuleConfig> = {
     displayProps: BANK_DISPLAY_PROPS,
     getViewAction: (row) => modalAction('customer_bank', row),
   },
-  'contact-managers': {
+  'contact_managers': {
     value: 'contact-managers',
     label: 'Contact Managers',
     displayProps: CONTACT_MANAGER_DISPLAY_PROPS,
     getViewAction: (row) => modalAction('contact_manager', row),
   },
-  'shipping-addresses': {
+  'shipping_addresses': {
     value: 'shipping-addresses',
     label: 'Shipping Addresses',
     displayProps: SHIPPING_ADDRESS_DISPLAY_PROPS,
     getViewAction: (row) => modalAction('customer_shipping_address', row),
   },
-  'principle-owners': {
+  'principle_owners': {
     value: 'principle-owners',
     label: 'Principle Owners',
     displayProps: PRINCIPLE_OWNER_DISPLAY_PROPS,
     getViewAction: (row) => modalAction('customer_principle_owner', row),
   },
-  'trader-references': {
+  'trader_references': {
     value: 'trader-references',
     label: 'Trader References',
     displayProps: TRADER_REFERENCE_DISPLAY_PROPS,

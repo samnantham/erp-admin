@@ -144,6 +144,8 @@ export const UpdateDeleteRequestMaster = () => {
 
     // Derived
     const config = CUSTOMER_RELATION_CONFIG[queryParams.model ?? ""];
+
+    console.log(config, queryParams.model)
     const title = `${formatModelTitle(queryParams.model)} ${activeAction} Requests`;
     const statusColors = STATUS_COLOR[queryParams.status as keyof typeof STATUS_COLOR] ?? {
         border: "gray.300", color: "gray.600", bg: "white", hover: "gray.100",

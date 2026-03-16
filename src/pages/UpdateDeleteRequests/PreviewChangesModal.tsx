@@ -289,7 +289,7 @@ export const PreviewChangesModal = ({
                         <HStack justify="flex-end" spacing={3}>
                             <Button
                                 size="sm"
-                                variant="outline"
+                                variant="solid"
                                 colorScheme="red"
                                 isLoading={isProcessing}
                                 onClick={onReject}

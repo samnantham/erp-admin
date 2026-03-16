@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 
 import {
   Button,
@@ -44,19 +44,19 @@ export function CustomerShippingAddressModal({
   customerInfo
 }: CustomerShippingAddressModalProps) {
   const keys = [
-      'attention',
-      'consignee_name',
-      'address_line1',
-      'address_line2',
-      'city',
-      'state',
-      'zip_code',
-      'country',
-      'phone',
-      'fax',
-      'email',
-      'remarks',
-    ]
+    'attention',
+    'consignee_name',
+    'address_line1',
+    'address_line2',
+    'city',
+    'state',
+    'zip_code',
+    'country',
+    'phone',
+    'fax',
+    'email',
+    'remarks',
+  ]
   const saveItem = useSaveShippingAddress({
     onSuccess: ({ id }) => {
       onClose(true, id);
@@ -116,6 +116,9 @@ export function CustomerShippingAddressModal({
   const fields = useFormFields({
     connect: form,
   });
+
+  const formRef = useRef(form);
+  formRef.current = form;
   const [initialValues, setInitialValues] = useState<any>(null);
 
   const isFormValuesChanged = isFormFieldsChanged({
@@ -132,8 +135,8 @@ export function CustomerShippingAddressModal({
     );
 
     setInitialValues(init);
-    form.setValues(init);
-  }, [existValues, form, isOpen]);
+    formRef.current.setValues(init);
+  }, [existValues, isOpen]);
 
 
   const handleClose = () => {
@@ -234,7 +237,7 @@ export function CustomerShippingAddressModal({
                     isDisabled={isView}
                   />
 
-                  
+
                   <FieldInput
                     label={'Fax No'}
                     name={'fax'}
