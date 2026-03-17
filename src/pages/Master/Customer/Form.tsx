@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { ChevronRightIcon } from "@chakra-ui/icons";
 import {
   Breadcrumb,
@@ -14,6 +14,7 @@ import {
   TabPanels,
   Tab,
   TabPanel,
+  Tooltip,
 } from "@chakra-ui/react";
 import { Formiz, useForm, useFormFields } from "@formiz/core";
 import { isEmail } from "@formiz/validations";
@@ -173,7 +174,6 @@ export const CustomerForm = () => {
 
     handlePaymentTermsChange(existData?.payment_term_id);
 
-    // QC
     const mappedCertificates: any[] = (existData.quality_certificates ?? []).length > 0
       ? (existData.quality_certificates ?? []).map((c: any) => ({
         id: c.id, certificate_type: c.certificate_type, doc_no: c.doc_no,
@@ -184,34 +184,28 @@ export const CustomerForm = () => {
     setInitialQcFields(mappedCertificates);
     setQcFields(mappedCertificates);
 
-    // Fields to strip from all relation records — keep only id + domain fields
     const STRIP_KEYS = new Set(['has_pending_request', 'pending_request_message', 'updated_at', 'deleted_at', 'created_at']);
     const stripMeta = (arr: any[]) =>
       arr.map((item) =>
         Object.fromEntries(Object.entries(item).filter(([k]) => !STRIP_KEYS.has(k)))
       );
 
-    // Banks
     const mappedBanks = stripMeta(existData.banks ?? []);
     setInitialBankFields(mappedBanks);
     setBankFields(mappedBanks);
 
-    // Contact Managers
     const mappedContactManagers = stripMeta(existData.contact_managers ?? []);
     setInitialContactManagerFields(mappedContactManagers);
     setContactManagerFields(mappedContactManagers);
 
-    // Shipping Addresses
     const mappedShippingAddresses = stripMeta(existData.shipping_addresses ?? []);
     setInitialShippingAddressFields(mappedShippingAddresses);
     setShippingAddressFields(mappedShippingAddresses);
 
-    // Principle of Owners
     const mappedPrincipleOfOwners = stripMeta(existData.principle_owners ?? []);
     setInitialPrincipleOfOwnerFields(mappedPrincipleOfOwners);
     setPrincipleOfOwnerFields(mappedPrincipleOfOwners);
 
-    // Trader References
     const mappedTraderReferences = stripMeta(existData.trader_references ?? []);
     setInitialTraderReferenceFields(mappedTraderReferences);
     setTraderReferenceFields(mappedTraderReferences);
@@ -220,7 +214,7 @@ export const CustomerForm = () => {
     form.setValues(init);
   }, [userData]);
 
-  // ── Change detection — contact details form + all tab arrays ──────────────
+  // ── Change detection ───────────────────────────────────────────────────────
   const [initialValues, setInitialValues] = useState<any>(null);
   const fields = useFormFields({ connect: form });
 
@@ -233,11 +227,70 @@ export const CustomerForm = () => {
     JSON.stringify(principleOfOwnerFields) !== JSON.stringify(initialPrincipleOfOwnerFields) ||
     JSON.stringify(traderReferenceFields) !== JSON.stringify(initialTraderReferenceFields);
 
-  // ── Tab navigation button component ───────────────────────────────────────
+  // ── Tab unlock logic ───────────────────────────────────────────────────────
   const isFirstTab = activeTab === 0;
   const isLastTab = activeTab === LAST_TAB;
 
-  const TabNavigationButtons = () => (
+  const formValid = form.isValid;
+  const hasContactManagers = contactManagerFields.length > 0;
+  const hasShippingAddresses = shippingAddressFields.length > 0;
+
+  const tabUnlocked = useMemo(() => [
+    true,                                                         // Tab 0: Contact Details — always
+    formValid,                                                    // Tab 1: Quality / Other Docs
+    formValid,                                                    // Tab 2: Contact Managers
+    formValid && hasContactManagers,                              // Tab 3: Shipping Addresses
+    formValid && hasContactManagers && hasShippingAddresses,      // Tab 4: Customer Banks
+    formValid && hasContactManagers && hasShippingAddresses,      // Tab 5: Principle of Owners
+    formValid && hasContactManagers && hasShippingAddresses,      // Tab 6: Trader References
+  ], [formValid, hasContactManagers, hasShippingAddresses]);
+
+  const tabLockReason = useMemo(() => [
+    "",
+    !formValid ? "Complete Contact Details first" : "",
+    !formValid ? "Complete Contact Details first" : "",
+    !formValid
+      ? "Complete Contact Details first"
+      : !hasContactManagers
+        ? "Add at least 1 Contact Manager first"
+        : "",
+    !formValid
+      ? "Complete Contact Details first"
+      : !hasContactManagers
+        ? "Add at least 1 Contact Manager first"
+        : !hasShippingAddresses
+          ? "Add at least 1 Shipping Address first"
+          : "",
+    !formValid
+      ? "Complete Contact Details first"
+      : !hasContactManagers
+        ? "Add at least 1 Contact Manager first"
+        : !hasShippingAddresses
+          ? "Add at least 1 Shipping Address first"
+          : "",
+    !formValid
+      ? "Complete Contact Details first"
+      : !hasContactManagers
+        ? "Add at least 1 Contact Manager first"
+        : !hasShippingAddresses
+          ? "Add at least 1 Shipping Address first"
+          : "",
+  ], [formValid, hasContactManagers, hasShippingAddresses]);
+
+  // ── isNextDisabled: memoized boolean (NOT a function call) ─────────────────
+  const isNextDisabled = useMemo(() => {
+    const nextTab = activeTab + 1;
+    if (nextTab > LAST_TAB) return false;
+    return !tabUnlocked[nextTab];
+  }, [activeTab, tabUnlocked]);
+
+  // ── renderTabNavigationButtons: plain render function (NOT a component) ────
+  // Using a render function instead of a React component is critical here.
+  // An inner component (const Foo = () => ...) gets a new identity every render,
+  // causing React to remount it and read stale closure values on the first click.
+  // A plain function called as {renderTabNavigationButtons()} always executes in
+  // the current render scope and reads the latest isNextDisabled value directly.
+  const renderTabNavigationButtons = () => (
     <Stack direction={{ base: "column", md: "row" }} justify="center" alignItems="center" mt={6}>
       {isFirstTab ? (
         <>
@@ -250,16 +303,25 @@ export const CustomerForm = () => {
           >
             Close
           </Button>
-          {/* Tab 1 Next: disabled until all required fields on this tab are valid */}
-          <Button
-            type="button"
-            colorScheme="brand"
-            onClick={() => setActiveTab((t) => t + 1)}
-            isDisabled={!form.isValid}
-            rightIcon={<FaChevronRight />}
+          <Tooltip
+            label={isNextDisabled ? tabLockReason[activeTab + 1] : ""}
+            isDisabled={!isNextDisabled}
+            hasArrow
+            placement="top"
           >
-            Next
-          </Button>
+            <Box display="inline-block" cursor={isNextDisabled ? "not-allowed" : "pointer"}>
+              <Button
+                type="button"
+                colorScheme="brand"
+                onClick={() => setActiveTab((t) => t + 1)}
+                isDisabled={isNextDisabled}
+                pointerEvents={isNextDisabled ? "none" : "auto"}
+                rightIcon={<FaChevronRight />}
+              >
+                Skip/Next
+              </Button>
+            </Box>
+          </Tooltip>
         </>
       ) : isLastTab ? (
         <>
@@ -288,7 +350,6 @@ export const CustomerForm = () => {
         </>
       ) : (
         <>
-          {/* Middle tabs: Next always enabled — these tabs are optional */}
           <Button
             type="button"
             colorScheme="brand"
@@ -297,14 +358,25 @@ export const CustomerForm = () => {
           >
             Previous
           </Button>
-          <Button
-            type="button"
-            colorScheme="brand"
-            onClick={() => setActiveTab((t) => t + 1)}
-            rightIcon={<FaChevronRight />}
+          <Tooltip
+            label={isNextDisabled ? tabLockReason[activeTab + 1] : ""}
+            isDisabled={!isNextDisabled}
+            hasArrow
+            placement="top"
           >
-            Next
-          </Button>
+            <Box display="inline-block" cursor={isNextDisabled ? "not-allowed" : "pointer"}>
+              <Button
+                type="button"
+                colorScheme="brand"
+                onClick={() => setActiveTab((t) => t + 1)}
+                isDisabled={isNextDisabled}
+                pointerEvents={isNextDisabled ? "none" : "auto"}
+                rightIcon={<FaChevronRight />}
+              >
+                Skip/Next
+              </Button>
+            </Box>
+          </Tooltip>
         </>
       )}
     </Stack>
@@ -351,7 +423,6 @@ export const CustomerForm = () => {
           <Stack spacing={0} bg={"white"} borderRadius={"md"} boxShadow={"md"} overflow="hidden" minH="calc(95vh - 140px)">
 
             <Formiz connect={form}>
-              {/* isLazy intentionally removed — keeps all tab panels mounted so values persist on tab switch */}
               <Tabs
                 index={activeTab}
                 onChange={(index) => setActiveTab(index)}
@@ -359,28 +430,53 @@ export const CustomerForm = () => {
                 colorScheme="brand"
               >
                 <TabList overflowX="auto" overflowY="hidden" flexWrap="nowrap" width="100%">
-                  {TABS.map((tab) => (
-                    <Tab
+                  {TABS.map((tab, index) => (
+                    <Tooltip
                       key={tab}
-                      whiteSpace="nowrap"
-                      fontWeight="medium"
-                      bg={"gray.200"}
-                      flex={1}
-                      px={5}
-                      py={3}
-                      color={"gray.600"}
-                      _selected={{
-                        color: "white",
-                        bg: "#0C2556",
-                        borderBottomColor: "white",
-                        borderColor: "gray.200",
-                        fontWeight: "semibold",
-                      }}
-                      _hover={{ bg: "gray.300" }}
-                      _focus={{ boxShadow: "none" }}
+                      label={tabLockReason[index]}
+                      isDisabled={tabUnlocked[index]}
+                      hasArrow
+                      placement="bottom"
                     >
-                      {tab}
-                    </Tab>
+                      {/*
+                        Box is Tooltip's direct child and always keeps pointer-events
+                        active so mouse hover is detected and the tooltip fires.
+                        The Tab inside has pointer-events:none when locked to block
+                        actual tab switching — but the Box still receives the hover.
+                      */}
+                      <Box
+                        flex={1}
+                        display="flex"
+                        cursor={tabUnlocked[index] ? "pointer" : "not-allowed"}
+                      >
+                        <Tab
+                          width="100%"
+                          whiteSpace="nowrap"
+                          fontWeight="medium"
+                          px={5}
+                          py={3}
+                          display="flex"
+                          alignItems="center"
+                          justifyContent="center"
+                          gap={2}
+                          bg={tabUnlocked[index] ? "gray.200" : "gray.100"}
+                          color={tabUnlocked[index] ? "gray.600" : "gray.400"}
+                          opacity={tabUnlocked[index] ? 1 : 0.5}
+                          pointerEvents={tabUnlocked[index] ? "auto" : "none"}
+                          _selected={{
+                            color: "white",
+                            bg: "#0C2556",
+                            borderBottomColor: "white",
+                            borderColor: "gray.200",
+                            fontWeight: "semibold",
+                          }}
+                          _hover={{ bg: tabUnlocked[index] ? "gray.300" : "gray.100" }}
+                          _focus={{ boxShadow: "none" }}
+                        >
+                          {tab}
+                        </Tab>
+                      </Box>
+                    </Tooltip>
                   ))}
                 </TabList>
 
@@ -573,7 +669,7 @@ export const CustomerForm = () => {
                         />
                       </Stack>
 
-                      <TabNavigationButtons />
+                      {renderTabNavigationButtons()}
                     </Box>
                   </TabPanel>
 
@@ -588,7 +684,7 @@ export const CustomerForm = () => {
                         onEdit={editQcFields}
                         fieldPrefix="certificate"
                       />
-                      <TabNavigationButtons />
+                      {renderTabNavigationButtons()}
                     </Box>
                   </TabPanel>
 
@@ -601,7 +697,7 @@ export const CustomerForm = () => {
                         onRemove={(i) => setContactManagerFields(prev => prev.filter((_, idx) => idx !== i))}
                         onEdit={(i, d) => setContactManagerFields(prev => prev.map((b, idx) => idx === i ? { ...b, ...d } : b))}
                       />
-                      <TabNavigationButtons />
+                      {renderTabNavigationButtons()}
                     </Box>
                   </TabPanel>
 
@@ -614,7 +710,7 @@ export const CustomerForm = () => {
                         onRemove={(i) => setShippingAddressFields(prev => prev.filter((_, idx) => idx !== i))}
                         onEdit={(i, d) => setShippingAddressFields(prev => prev.map((b, idx) => idx === i ? { ...b, ...d } : b))}
                       />
-                      <TabNavigationButtons />
+                      {renderTabNavigationButtons()}
                     </Box>
                   </TabPanel>
 
@@ -627,7 +723,7 @@ export const CustomerForm = () => {
                         onRemove={(i) => setBankFields(prev => prev.filter((_, idx) => idx !== i))}
                         onEdit={(i, d) => setBankFields(prev => prev.map((b, idx) => idx === i ? { ...b, ...d } : b))}
                       />
-                      <TabNavigationButtons />
+                      {renderTabNavigationButtons()}
                     </Box>
                   </TabPanel>
 
@@ -640,7 +736,7 @@ export const CustomerForm = () => {
                         onRemove={(i) => setPrincipleOfOwnerFields(prev => prev.filter((_, idx) => idx !== i))}
                         onEdit={(i, d) => setPrincipleOfOwnerFields(prev => prev.map((p, idx) => idx === i ? { ...p, ...d } : p))}
                       />
-                      <TabNavigationButtons />
+                      {renderTabNavigationButtons()}
                     </Box>
                   </TabPanel>
 
@@ -653,7 +749,7 @@ export const CustomerForm = () => {
                         onRemove={(i) => setTraderReferenceFields(prev => prev.filter((_, idx) => idx !== i))}
                         onEdit={(i, d) => setTraderReferenceFields(prev => prev.map((p, idx) => idx === i ? { ...p, ...d } : p))}
                       />
-                      <TabNavigationButtons />
+                      {renderTabNavigationButtons()}
                     </Box>
                   </TabPanel>
 
