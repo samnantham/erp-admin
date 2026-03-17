@@ -9,9 +9,9 @@ import {
 } from '@chakra-ui/react';
 import { BiSolidFilePdf } from "react-icons/bi";
 import { HiArrowNarrowLeft } from 'react-icons/hi';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { Link, useNavigate } from 'react-router-dom';
-
+import { useEffect } from 'react';
 import { ResponsiveIconButton } from '@/components/ResponsiveIconButton';
 import { CustomerDetails } from '@/pages/Master/Customer/Info/CustomerDetails';
 import { useCustomerDetails } from '@/services/master/customer/service';
@@ -22,15 +22,31 @@ import { PDFPreviewModal } from '@/components/PDFPreview';
 export const CustomerInfo = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { data: details } = useCustomerDetails(id);
+  const [searchParams] = useSearchParams();
 
+  const { data: details } = useCustomerDetails(id);
   const { pdfUrl, pdfTitle, isOpen, openPreview, closePreview } = usePdfPreview();
 
+  // Manual preview button — waits for details to have business_name for the title
   const handleOpenPreview = () => {
     if (!details?.data?.id) return;
     const url = endPoints.preview.customer.replace(':id', details.data.id);
     openPreview(url, `Contact Preview - #${details.data.business_name}`);
   };
+
+  // ── Auto-open preview when ?preview=true is in the URL ────────────────────
+  // id from useParams is immediately available — no need to wait for details.
+  // Strips the param right away via replace so refresh never re-triggers.
+  useEffect(() => {
+    if (searchParams.get('preview') === 'true' && id) {
+      const url = endPoints.preview.customer.replace(':id', id);
+      openPreview(url, `Contact Preview`);
+
+      const stripped = new URLSearchParams(searchParams);
+      stripped.delete('preview');
+      navigate({ search: stripped.toString() }, { replace: true });
+    }
+  }, []);
 
   return (
     <Box>
@@ -51,7 +67,6 @@ export const CustomerInfo = () => {
             </BreadcrumbItem>
           </Breadcrumb>
         </Stack>
-
         <HStack spacing={2}>
           <ResponsiveIconButton
             colorScheme={'teal'}
@@ -59,7 +74,7 @@ export const CustomerInfo = () => {
             size={'sm'}
             fontWeight={'thin'}
             onClick={handleOpenPreview}
-            isDisabled={!details?.data?.id}  // ← disabled until data loads
+            isDisabled={!details?.data?.id}
           >
             Preview
           </ResponsiveIconButton>

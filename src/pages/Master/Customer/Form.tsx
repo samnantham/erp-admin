@@ -154,7 +154,7 @@ export const CustomerForm = () => {
         });
       } else {
         saveCustomer.mutate(payload, {
-          onSuccess: () => navigate("/contact-management/customer-master"),
+          onSuccess: ({data}) => navigate(`/contact-management/customer-master/info/${data?.id}?preview=true`),
         });
       }
     },

@@ -121,7 +121,7 @@ export const zCustomer = zStandardObject.extend({
   customer_status_id: z.string().uuid(),
   payment_mode_id: z.string().uuid(),
   payment_term_id: z.string().uuid(),
-  nature_of_business: z.string(),
+  nature_of_business: z.string().nullable().optional(),
   remarks: z.string().nullable().optional(),
   total_credit_amount: z.number().optional(),
   total_credit_period: z.number().optional(),
@@ -139,7 +139,7 @@ export const zCustomer = zStandardObject.extend({
   contact_type: zBasicObject.nullable().optional(),
   customer_status: zBasicObject.extend({
     code: z.string().nullable().optional(),
-  }),
+  }).nullable().optional(),
   currency: zBasicObject.nullable().optional(),
   payment_mode: zBasicObject.nullable().optional(),
   payment_term: zBasicObject.nullable().optional(),
@@ -176,7 +176,7 @@ export type CustomerDataColumn = z.infer<typeof zCustomerDataColumn>;
 /* ---------- Create / Update ---------- */
 
 export const zCreateResponsePayload = z.object({
-  id: z.string().uuid().optional(),
+  data: zCustomer.optional(),
   message: z.string(),
   status: z.boolean(),
 });
