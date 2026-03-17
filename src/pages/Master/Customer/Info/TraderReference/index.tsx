@@ -11,12 +11,12 @@ export function TraderReference(props: any) {
       meta: { searchable: true },
     },
     {
-      key: "address",
+      key: "address_line1",
       header: "Address",
       meta: { searchable: true },
       render: (row: any) => (
         <>
-          {row?.address ?? "-"}
+          {row?.address_line1 ?? "-"}
           <br />
           {row?.address_line2 ?? "-"}
         </>

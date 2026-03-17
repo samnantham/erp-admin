@@ -5,7 +5,6 @@ import {
   Button,
   Flex,
   IconButton,
-  Stack,
   Table,
   TableContainer,
   Tbody,
@@ -70,12 +69,12 @@ export const QualityCertificates = ({
   const deleteQC = (index: number) => {
     setDeleteIndex(index);
     toggleConfirmation(true);
-  }
+  };
 
   const confirmDelete = () => {
     onRemove(indexTODelete);
     toggleConfirmation(false);
-  }
+  };
 
   const openModal = (item: any, editStatus: boolean, editIndex?: number) => {
     setSelected(item);
@@ -85,13 +84,23 @@ export const QualityCertificates = ({
       setEditIndex(editIndex);
     }
   };
+
   return (
     <Box mt={1}>
       <Flex justify="space-between" align="center" mb={2}>
         <Text fontSize="md" fontWeight="600">
           Quality / Other Documents
         </Text>
+        <Button
+          leftIcon={<HiPlus />}
+          onClick={() => openModal(null, false)}
+          size="sm"
+          colorScheme="brand"
+        >
+          Add Document
+        </Button>
       </Flex>
+
       <TableContainer
         rounded={'md'}
         overflow={'auto'}
@@ -101,15 +110,21 @@ export const QualityCertificates = ({
         boxShadow="md"
       >
         <Table variant="simple" size="sm">
-          <Thead bg={'gray'}>
-            <Tr>
-              <Th color={'white'}>#</Th>
-              <Th color={'white'}>{name} Type</Th>
-              <Th color={'white'}>{name} File</Th>
-              <Th color={'white'}>{name} No</Th>
-              <Th color={'white'}>Issue. Date</Th>
-              <Th color={'white'}>Valid. Date</Th>
-              <Th color={'white'}>Action</Th>
+          <Thead bg={'#0C2556'}>
+            <Tr
+              sx={{
+                '& th': {
+                  color: 'white',
+                },
+              }}
+            >
+              <Th>#</Th>
+              <Th>{name} Type</Th>
+              <Th>{name} File</Th>
+              <Th>{name} No</Th>
+              <Th>Issue. Date</Th>
+              <Th>Valid. Date</Th>
+              <Th>Action</Th>
             </Tr>
           </Thead>
           <Tbody>
@@ -122,18 +137,17 @@ export const QualityCertificates = ({
                     size={'sm'}
                     url={field?.doc_url || ''}
                   />
-                  <Text mt={1} fontSize={'xs'} color={'green.400'}>{field?.doc_url}</Text>
-                  
+                  <Text mt={1} fontSize={'xs'} color={'green.400'}>
+                    {field?.doc_url}
+                  </Text>
                 </Td>
                 <Td>{field?.doc_no ?? ''}</Td>
                 <Td>
-                  {' '}
                   {field?.issue_date
                     ? dayjs(field?.issue_date).format('DD-MMM-YYYY')
                     : ' - '}
                 </Td>
                 <Td>
-                  {' '}
                   {field?.validity_date
                     ? dayjs(field?.validity_date).format('DD-MMM-YYYY')
                     : ' - '}
@@ -167,28 +181,7 @@ export const QualityCertificates = ({
           </Tbody>
         </Table>
       </TableContainer>
-      <Stack
-        direction={{ base: 'column', md: 'row' }}
-        justify={'center'}
-        alignItems={'center'}
-        display={'flex'}
-        mt={4}
-      >
-        <Button
-          leftIcon={<HiPlus />}
-          onClick={() => {
-            openModal(null, false);
-          }}
-          bg="brand.900"
-          color="white"
-          fontWeight="thin"
-          variant="solid"
-          size="sm"
-          _hover={{ bg: 'brand.700' }}
-        >
-          Add more
-        </Button>
-      </Stack>
+
       <ModalForm
         isOpen={isOpen}
         onClose={closeModal}
