@@ -13,7 +13,8 @@ export const endPoints = {
     user: '/user',
     submaster: '/submaster/:model',
     customer: '/contact-management/customer',
-    update_delete_request: "/update-delete-requests/:model/:action"
+    update_delete_request: "/update-delete-requests/:model/:action",
+    spare: "/spare-management/part-number"
   }, list: {
     role: '/role',
     department: '/department',
@@ -25,7 +26,8 @@ export const endPoints = {
     department: '/department/:id',
     user: '/user/:id',
     submaster: '/submaster/:model/:id',
-    customer: '/contact-management/customer/:id'
+    customer: '/contact-management/customer/:id',
+    spare: "/spare-management/part-number/:id"
   }, create: {
     role: '/role',
     department: '/department',
@@ -37,6 +39,7 @@ export const endPoints = {
     bank: '/contact-management/customer/:customer_id/banks',
     principle_of_owner: '/contact-management/customer/:customer_id/principle-owners',
     trader_reference: '/contact-management/customer/:customer_id/trader-references',
+    spare: "/spare-management/part-number"
   }, update: {
     role: '/role/:id',
     department: '/department/:id',
@@ -48,6 +51,7 @@ export const endPoints = {
     bank: '/contact-management/customer/:customer_id/banks/:id',
     principle_of_owner: '/contact-management/customer/:customer_id/principle-owners/:id',
     trader_reference: '/contact-management/customer/:customer_id/trader-references/:id',
+    spare: "/spare-management/part-number/:id"
   }, delete: {
     role: '/role/:id',
     department: '/department/:id',
@@ -59,9 +63,11 @@ export const endPoints = {
     bank: '/contact-management/customer/:customer_id/banks/:id',
     principle_of_owner: '/contact-management/customer/:customer_id/principle-owners/:id',
     trader_reference: '/contact-management/customer/:customer_id/trader-references/:id',
+    spare: "/spare-management/part-number/:id"
   }, drop_downs: {
     user: '/user/drop-downs',
-    customer: '/contact-management/customer/drop-downs'
+    customer: '/contact-management/customer/drop-downs',
+    spare: "/spare-management/part-number/drop-downs"
   },
   others: {
     upload: "/media/upload",
@@ -72,19 +78,26 @@ export const endPoints = {
     check_existing_unique_shipping_addresses: "/contact-management/customer/check-existing-unique-shipping-addresses",
     check_existing_unique_trader_references: "/contact-management/customer/check-existing-unique-trader-references",
     check_existing_unique_principle_of_owners: "/contact-management/customer/check-existing-unique-principle-owners",
+    check_existing_unique_spares: "/spare-management/part-number/check-existing-unique",
     update_delete_request_dashboard: "/update-delete-requests/dashboard",
     process_request: "/update-delete-requests/process/:change_id/:action",
     update_delete_request_history: "/update-delete-requests/history/:record_id",
+    create_alternate_spares: "/spare-management/part-number/map-alternates"
   },
   bulk_upload: {
-    customer : "/contact-management/customer/bulk-upload",
+    customer: "/contact-management/customer/bulk-upload",
     contact_manager: '/contact-management/customer/contact-managers/bulk-upload',
     shipping_address: '/contact-management/customer/shipping-addresses/bulk-upload',
     bank: '/contact-management/customer/banks/bulk-upload',
     principle_of_owner: '/contact-management/customer/principle-owners/bulk-upload',
     trader_reference: '/contact-management/customer/trader-references/bulk-upload',
+    spare: "/spare-management/part-number/bulk-upload",
   },
   preview: {
-    customer: "preview-pdf/customer/:id"
+    customer: "preview-pdf/customer/:id",
+    spare: "preview-pdf/part-number/:id",
+  },
+  search: {
+    spare: "/spare-management/part-number/search",
   }
 } as const;

@@ -1,5 +1,3 @@
-// /pages/UpdateDeleteRequests/config/module-model-config.ts
-
 export const MODULE_MODEL_OPTIONS: Record<string, { label: string; value: string }[]> = {
     contact_management: [
         { label: "Customers",          value: "customers" },
@@ -8,6 +6,9 @@ export const MODULE_MODEL_OPTIONS: Record<string, { label: string; value: string
         { label: "Shipping Addresses", value: "shipping_addresses" },
         { label: "Principle Owners",   value: "principle_owners" },
         { label: "Trader References",  value: "trader_references" },
+    ],
+    spare: [
+        { label: "Spares",          value: "part_numbers" }
     ],
     purchase: [
         { label: "Material Request",   value: "mr" },

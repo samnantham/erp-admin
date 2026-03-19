@@ -26,6 +26,7 @@ import {
 } from '@chakra-ui/react';
 import Axios from 'axios';
 import { IconType } from 'react-icons';
+import { HiMiniWrenchScrewdriver } from "react-icons/hi2";
 import {
   FaCalendarAlt,
   FaCheckCircle,
@@ -35,7 +36,8 @@ import {
   FaUserFriends,
   FaUsers,
   FaUsersCog,
-  FaClipboardList
+  FaClipboardList,
+  FaRulerCombined
 } from 'react-icons/fa';
 import {
   FaBox,
@@ -59,6 +61,7 @@ import {
   FaReceipt
 } from 'react-icons/fa6';
 import { PiListNumbersFill } from "react-icons/pi";
+import { BiSitemap } from "react-icons/bi";
 import { FiBell, FiChevronDown, FiMenu } from 'react-icons/fi';
 import { LuBarcode } from 'react-icons/lu';
 import { useQueryClient } from 'react-query';
@@ -148,6 +151,7 @@ const NavigationSections: Array<SectionProps> = [
           { name: 'Spare Model', icon: FaWrench, link: '/submaster/spare-models' },
           { name: 'Spare Type', icon: FaBox, link: '/submaster/spare-types' },
           { name: 'UN', icon: PiListNumbersFill, link: '/submaster/uns' },
+          { name: 'Unit of Measurement', icon: FaRulerCombined, link: '/submaster/unit_of_measures' },
           { name: 'Warehouse', icon: FaWarehouse, link: '/submaster/warehouses' },
         ],
       },
@@ -159,6 +163,18 @@ const NavigationSections: Array<SectionProps> = [
             name: 'Contact Master',
             icon: FaUsersCog,
             link: '/contact-management/customer-master',
+          }
+        ],
+      },
+
+      {
+        name: 'Spare Management',
+        icon: BiSitemap,
+        subItems: [
+          {
+            name: 'Spare Master',
+            icon: HiMiniWrenchScrewdriver,
+            link: '/spare-management/master',
           }
         ],
       },

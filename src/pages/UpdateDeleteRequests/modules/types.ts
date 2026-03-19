@@ -44,7 +44,7 @@ export type DisplayProp =
    View Actions
 ========================= */
 
-type ModalPayload<T> = { customerId: string; existValues: T };
+type ModalPayload<T> = { parentId: string; existValues: T };
 
 export type ModalType =
   | 'contact_manager'

@@ -37,7 +37,15 @@ import { CustomerForm } from '@/pages/Master/Customer/Form';
 import { CustomerInfo } from '@/pages/Master/Customer/Info';
 import { CustomerBulkUpload } from '@/pages/Master/Customer/BulkUpload';
 import { CustomerRelationsBulkUpload } from '@/pages/Master/Customer/RelationBulkUpload';
-// !<--!! Submaster Routes Ends !!-->!
+// !<--!! Contact Management Routes Ends !!-->!
+
+// !<--!! Spare Management Routes Starts !!-->!
+import { SpareMaster } from '@/pages/Master/Spare/Master';
+import { SpareForm } from '@/pages/Master/Spare/Form';
+import { SpareInfo } from '@/pages/Master/Spare/Info';
+import { SpareBulkUpload } from '@/pages/Master/Spare/BulkUpload';
+import { AssignAlternateParts } from '@/pages/Master/Spare/AssignAlternates';
+// !<--!! Spare Management Routes Ends !!-->!
 
 // !<--!! Update Delete Request Routes Starts !!-->!
 import { UpdateDeleteRequestDashboard } from '@/pages/UpdateDeleteRequests/Dashboard';
@@ -125,10 +133,26 @@ export const routes = [
                 children: [
                   { path: '', element: <CustomerMaster /> },
                   { path: 'form/:id?', element: <CustomerForm /> },
-                  { path: 'bulk-upload', element: <CustomerBulkUpload/> },
-                  { path: ':relationType/bulk-upload', element: <CustomerRelationsBulkUpload/> },
-                  { path: 'info/:id', element: <CustomerInfo />,
+                  { path: 'bulk-upload', element: <CustomerBulkUpload /> },
+                  { path: ':relationType/bulk-upload', element: <CustomerRelationsBulkUpload /> },
+                  {
+                    path: 'info/:id', element: <CustomerInfo />,
                   },
+                ],
+              }
+            ],
+          },
+          {
+            path: 'spare-management',
+            children: [
+              {
+                path: '',
+                children: [
+                  { path: 'master', element: <SpareMaster /> },
+                  { path: 'form/:id?', element: <SpareForm /> },
+                  { path: 'bulk-upload', element: <SpareBulkUpload /> },
+                  { path: 'info/:id', element: <SpareInfo /> },
+                  { path: 'assign-alternates/:id', element: <AssignAlternateParts /> },
                 ],
               }
             ],

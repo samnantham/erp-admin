@@ -21,7 +21,7 @@ import { formatModelTitle } from "@/helpers/commonHelper";
 import { useToastError } from "@/components/Toast";
 
 import { useApprovalLogIndex, useApprovalLogHistory, useProcessRequest } from "@/services/update-delete-requests/service";
-import { CUSTOMER_RELATION_CONFIG } from "@/pages/UpdateDeleteRequests/config/customer-relations-config";
+import { MODULE_CONFIG } from "@/pages/UpdateDeleteRequests/config/module-config";
 import { MODULE_MODEL_OPTIONS } from "@/pages/UpdateDeleteRequests/config/module-model-config";
 import { ModuleConfig } from "@/pages/UpdateDeleteRequests/modules/types";
 
@@ -143,7 +143,7 @@ export const UpdateDeleteRequestMaster = () => {
     });
 
     // Derived
-    const config = CUSTOMER_RELATION_CONFIG[queryParams.model ?? ""];
+    const config = MODULE_CONFIG[queryParams.model ?? ""];
 
     console.log(config, queryParams.model)
     const title = `${formatModelTitle(queryParams.model)} ${activeAction} Requests`;
@@ -222,27 +222,27 @@ export const UpdateDeleteRequestMaster = () => {
                 navigate(viewAction.url);
                 break;
             case "customer_bank":
-                setCustomerId(viewAction.payload.customerId);
+                setCustomerId(viewAction.payload.parentId);
                 setExistValues(viewAction.payload.existValues);
                 bankDisc.onOpen();
                 break;
             case "contact_manager":
-                setCustomerId(viewAction.payload.customerId);
+                setCustomerId(viewAction.payload.parentId);
                 setExistValues(viewAction.payload.existValues);
                 contactDisc.onOpen();
                 break;
             case "customer_shipping_address":
-                setCustomerId(viewAction.payload.customerId);
+                setCustomerId(viewAction.payload.parentId);
                 setExistValues(viewAction.payload.existValues);
                 shippingDisc.onOpen();
                 break;
             case "customer_principle_owner":
-                setCustomerId(viewAction.payload.customerId);
+                setCustomerId(viewAction.payload.parentId);
                 setExistValues(viewAction.payload.existValues);
                 ownerDisc.onOpen();
                 break;
             case "customer_trader_references":
-                setCustomerId(viewAction.payload.customerId);
+                setCustomerId(viewAction.payload.parentId);
                 setExistValues(viewAction.payload.existValues);
                 traderDisc.onOpen();
                 break;

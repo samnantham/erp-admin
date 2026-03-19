@@ -21,8 +21,6 @@ import {
   Tr,
 } from '@chakra-ui/react';
 
-import PartDetails from '@/components/PreviewContents/PartDetails';
-
 type ModalPopupProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -51,7 +49,7 @@ export const AltPartsResponseModal = ({
                   onClick={() => setSelectedTab(0)}
                   _hover={{ bg: selectedTab === 0 ? '#0C2556' : 'gray.300' }}
                 >
-                  Alt.Parts Assigned Successfully
+                  Successfully Assigned
                 </Tab>
                 <Tab
                   bg={selectedTab === 1 ? '#0C2556' : 'gray.200'}
@@ -59,7 +57,7 @@ export const AltPartsResponseModal = ({
                   onClick={() => setSelectedTab(1)}
                   _hover={{ bg: selectedTab === 1 ? '#0C2556' : 'gray.300' }}
                 >
-                  Alt.Parts Not Assigned
+                  Unmapped Alternates
                 </Tab>
               </TabList>
 
@@ -94,16 +92,10 @@ export const AltPartsResponseModal = ({
                               <Tr key={index}>
                                 <Td>{index + 1}</Td>
                                 <Td>
-                                  <PartDetails
-                                    partNumber={item?.part_number_id}
-                                    field={'part_number'}
-                                  />
+                                  {item?.part_number?.name}
                                 </Td>
                                 <Td>
-                                  <PartDetails
-                                    partNumber={item?.alternate_part_number_id}
-                                    field={'part_number'}
-                                  />
+                                  {item?.alternate_part_number?.name}
                                 </Td>
                                 <Td>{item.remark || ' - '}</Td>
                               </Tr>
@@ -143,16 +135,10 @@ export const AltPartsResponseModal = ({
                               <Tr key={index}>
                                 <Td>{index + 1}</Td>
                                 <Td>
-                                  <PartDetails
-                                    partNumber={item?.part_number_id}
-                                    field={'part_number'}
-                                  />
+                                  {item?.part_number?.name}
                                 </Td>
                                 <Td>
-                                  <PartDetails
-                                    partNumber={item?.alternate_part_number_id}
-                                    field={'part_number'}
-                                  />
+                                  {item?.alternate_part_number?.name}
                                 </Td>
                                 <Td>{item?.message}</Td>
                               </Tr>

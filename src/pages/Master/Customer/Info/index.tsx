@@ -31,7 +31,7 @@ export const CustomerInfo = () => {
   const handleOpenPreview = () => {
     if (!details?.data?.id) return;
     const url = endPoints.preview.customer.replace(':id', details.data.id);
-    openPreview(url, `Contact Preview - #${details.data.business_name}`);
+    openPreview(url, `Contact Preview -${details.data.business_name}`);
   };
 
   // ── Auto-open preview when ?preview=true is in the URL ────────────────────
@@ -58,7 +58,7 @@ export const CustomerInfo = () => {
             separator={<ChevronRightIcon boxSize={6} color="#0C2556" />}
           >
             <BreadcrumbItem color={'brand.500'}>
-              <BreadcrumbLink as={Link} to="/customer-master">
+              <BreadcrumbLink as={Link} to="/contact-management/customer-master">
                 Contact Management
               </BreadcrumbLink>
             </BreadcrumbItem>

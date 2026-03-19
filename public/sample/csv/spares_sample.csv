@@ -1,2 +1,2 @@
-Description,Spare Type,Hsc Code,Part Number,Spare Model,Is Shelf Life,Shelf Days,Is LLP,Is DG,Is Serialized,Un,ATA,Manufacturer Name,Cage Code
-Spare 1,AIRFRAME,HA1,PN001,LOKE,YES,10,NO,YES,YES,UN1088,ATAOFSPARE1,Bosch,No001
+name,description,unit_of_measure_id,spare_type_id,spare_model_id,hsc_code_id,ata,manufacturer_name,cage_code,is_shelf_life,total_shelf_life,is_llp,is_dg,is_serialized,un,remarks
+FFFFF,Spare 1,EA,YOKE,CLUTCH,CCC  333,LOKE,Bosch,No001,YES,10,NO,YES,YES,UN1088,ATAOFSPARE1
