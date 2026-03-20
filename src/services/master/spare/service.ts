@@ -148,6 +148,8 @@ type useCreateAltSpareBody = {
   part_number_id: string;
   alternate_part_number_id: string;
   remark: string;
+  alt_ref_doc?: string;
+  is_deleted?: boolean;
 };
 type useCreateAltSparePartsBody = useCreateAltSpareBody[];
 

@@ -7,7 +7,9 @@ import {
     Heading,
     Stack,
     Icon,
-    Flex
+    Flex,
+    Tooltip,
+    Badge
 } from '@chakra-ui/react';
 import { Formiz, useForm } from '@formiz/core';
 import { HiRefresh, HiOutlineSearch } from 'react-icons/hi';
@@ -129,7 +131,45 @@ export const SpareMaster = () => {
         if (!dropdownsFetched) return [];
 
         const baseColumnConfig: DynamicColumn<any>[] = [
-            { key: 'name', header: 'Part Number', meta: { sortable: true, sortParam: 'name' } },
+            {
+                key: 'name',
+                header: 'Part Number',
+                meta: { sortable: true, sortParam: 'name' },
+                render: (row: any) => (
+                    <HStack
+                        spacing={2}
+                        px={2}
+                        py={1}
+                        borderRadius="md"
+                        sx={
+                            row.is_alternate
+                                ? {
+                                    animation: "bgBlink 1s infinite",
+                                    "@keyframes bgBlink": {
+                                        "0%, 100%": { backgroundColor: "#ffb5b5" },
+                                        "50%": { backgroundColor: "transparent" }, // purple light
+                                    },
+                                }
+                                : {}
+                        }
+                    >
+                        <span>{row.name}</span>
+
+                        {row.is_alternate && (
+                            <Tooltip label={`Alternate for ${row.alternate_of_info?.name ?? ''}`} hasArrow placement="top" bg="green.500" color="white">
+                                <Badge
+                                    colorScheme="yellow"
+                                    fontSize="9px"
+                                    variant="solid"
+                                    borderRadius="sm"
+                                >
+                                    ALT
+                                </Badge>
+                            </Tooltip>
+                        )}
+                    </HStack>
+                ),
+            },
             { key: 'description', header: 'Description', meta: { sortable: true, sortParam: 'description' } },
             { key: 'manufacturer_name', header: 'Manufacturer', meta: { sortable: true, sortParam: 'manufacturer_name' } },
             { key: 'cage_code', header: 'Cage Code' },
@@ -185,14 +225,15 @@ export const SpareMaster = () => {
                     {
                         label: 'Delete',
                         icon: <BiTrash />,
-                        isDisabled: (row: any) => !!row.has_pending_request,
+                        isDisabled: (row: any) => !!row.has_pending_request || !!row.is_alternate,
                         onClick: (row: any) => ask('delete', row),
-                        disabledTooltip: (row: any) => row.pending_request_message,
+                        disabledTooltip: (row: any) =>
+                            row.is_alternate ? 'Cannot delete an alternate product from here' : row.pending_request_message,
                     },
                     {
-                        label: "Preview",
+                        label: 'Preview',
                         icon: <BiSolidFilePdf />,
-                        onClick: (row) => handleOpenPreview(row),
+                        onClick: (row: any) => handleOpenPreview(row),
                     },
                 ],
             },

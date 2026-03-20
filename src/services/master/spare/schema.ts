@@ -60,6 +60,7 @@ const zAlternate = z.object({
   part_number_id: z.string().uuid(),
   alternate_part_number_id: z.string().uuid(),
   remark: z.string().nullable().optional(),
+  alt_ref_doc: z.string().nullable().optional(),
   alternate_part_number: zPartNumber.nullable().optional(),
 });
 
@@ -80,7 +81,14 @@ export type PartNumberWithAlternates = z.infer<typeof zPartNumberWithAlternates>
 ========================================================= */
 
 export const zPartNumberIndexPayload = z.object({
-  data: z.array(zPartNumber),
+  data: z.array(zPartNumber.extend({
+    is_alternate: z.boolean().nullable().optional(),
+    alternate_of_info: z.object({
+      id: z.string().uuid(),
+      name: z.string().nullable().optional(),
+      description: z.string().nullable().optional(),
+    }).nullable().optional(),
+  })),
   pagination: zPagination,
 });
 export type PartNumberIndexPayload = z.infer<typeof zPartNumberIndexPayload>;
@@ -154,6 +162,7 @@ export const zAssignAltSparePartsRespPayload = () =>
         part_number_id: z.string().uuid(),
         alternate_part_number_id: z.string().uuid(),
         remark: z.string().nullable().optional(),
+        alt_ref_doc: z.string().nullable().optional(),
         alternate_part_number: zPartNumber.optional(),
         part_number: zPartNumber.optional()
       })
@@ -164,6 +173,7 @@ export const zAssignAltSparePartsRespPayload = () =>
         alternate_part_number_id: z.string().uuid(),
         message: z.string(),
         remark: z.string().nullable().optional(),
+        alt_ref_doc: z.string().nullable().optional(),
         alternate_part_number: zPartNumber.optional(),
         part_number: zPartNumber.optional()
       })

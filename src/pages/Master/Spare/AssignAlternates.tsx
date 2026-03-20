@@ -33,12 +33,13 @@ import { HiArrowNarrowLeft } from 'react-icons/hi';
 import { LuPlus } from 'react-icons/lu';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
+import { PairDocUpload } from '@/components/PairDocUpload';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import ConfirmationPopup from '@/components/ConfirmationPopup';
 import SpareCreateModal from '@/components/Modals/SpareMaster';
-import { AltPartsResponseModal } from '@/components/Modals/SpareMaster/AltPartsResponse';
 import { ResponsiveIconButton } from '@/components/ResponsiveIconButton';
 import { SlideIn } from '@/components/SlideIn';
+import { useToastError, useToastSuccess } from '@/components/Toast';
 
 import {
   fetchSpareDetails,
@@ -52,6 +53,8 @@ interface PartNumberItem {
   part_number_id: string;
   alternate_part_number_id: string;
   remark: string;
+  alt_ref_doc?: string;
+  is_deleted?: boolean;
 }
 
 interface GroupNode {
@@ -68,6 +71,7 @@ interface Pair {
   to_id: string;
   to_part: string;
   remark: string;
+  alt_ref_doc?: string;
   exists: boolean;
   enabled: boolean;
 }
@@ -144,12 +148,22 @@ export const AssignAlternateParts = () => {
   const [pairs, setPairs] = useState<Pair[]>([]);
   const [existingPairKeys, setExistingPairKeys] = useState<Set<string>>(new Set());
   const [pageLoading, setPageLoading] = useState(true);
-  const [responseData, setResponseData] = useState<any>(null);
-  const [respModalStatus, toggleRespModal] = useState(false);
 
   const [confirmRemoveNode, setConfirmRemoveNode] = useState(false);
   const [removeNodeTargetId, setRemoveNodeTargetId] = useState<string | null>(null);
   const [confirmSave, setConfirmSave] = useState(false);
+
+  // ── Track original server values to detect real changes ──────────────────
+  const [originalPairs, setOriginalPairs] = useState<Record<string, { remark: string; alt_ref_doc?: string }>>({});
+
+  // ── Helper: build snapshot from a pairs array ─────────────────────────────
+  const buildSnapshot = (allPairs: Pair[]) => {
+    const snapshot: Record<string, { remark: string; alt_ref_doc?: string }> = {};
+    allPairs.forEach((p) => {
+      if (p.exists) snapshot[p.key] = { remark: p.remark, alt_ref_doc: p.alt_ref_doc };
+    });
+    return snapshot;
+  };
 
   // ── Suggestion state ──────────────────────────────────────────────────────
   const [suggestions, setSuggestions] = useState<SuggestedPart[]>([]);
@@ -163,12 +177,24 @@ export const AssignAlternateParts = () => {
   // ── Derived ───────────────────────────────────────────────────────────────
   const mainNode = nodes.find((n) => n.isMain) ?? null;
   const newPairs = pairs.filter((p) => !p.exists && p.enabled);
-  const canSave = newPairs.length > 0;
 
-  const existingCount   = pairs.filter((p) => p.exists).length;
+  const pairsToDelete = pairs.filter(
+    (p) => p.exists && !p.enabled && p.from_id === id
+  );
+
+  const updatedExistingPairs = pairs.filter((p) => {
+    if (!p.exists || p.from_id !== id || !p.enabled) return false;
+    const orig = originalPairs[p.key];
+    if (!orig) return false;
+    return p.remark !== orig.remark || (p.alt_ref_doc ?? '') !== (orig.alt_ref_doc ?? '');
+  });
+
+  const canSave = newPairs.length > 0 || pairsToDelete.length > 0 || updatedExistingPairs.length > 0;
+
+  const existingCount = pairs.filter((p) => p.exists && p.enabled).length;
   const checkedNewCount = pairs.filter((p) => !p.exists && p.enabled).length;
-  const uncheckedCount  = pairs.filter((p) => !p.enabled).length;
-  const allNewChecked   = pairs.filter((p) => !p.exists).every((p) => p.enabled);
+  const uncheckedCount = pairs.filter((p) => !p.exists && !p.enabled).length;
+  const allNewChecked = pairs.filter((p) => !p.exists).every((p) => p.enabled);
   const allNewUnchecked = pairs.filter((p) => !p.exists).every((p) => !p.enabled);
 
   const nodeIds = useMemo(() => new Set(nodes.map((n) => n.id)), [nodes]);
@@ -204,7 +230,6 @@ export const AssignAlternateParts = () => {
   // ── Fetch suggestions ─────────────────────────────────────────────────────
   const fetchSuggestionsForNodes = async (targetNodes: GroupNode[]) => {
     const targetIds = targetNodes.map((n) => n.id);
-    // Seed loader for the target nodes
     setLoadingNodeIds((prev) => new Set([...prev, ...targetIds]));
     try {
       const newSuggestions: SuggestedPart[] = [];
@@ -213,9 +238,8 @@ export const AssignAlternateParts = () => {
           const spareInfo = await getSpareDetails(node.id);
           (spareInfo?.data?.alternates ?? []).forEach((sd: any) => {
             const altId = sd.alternate_part_number_id ?? sd.alternate_part_number?.id;
-            if (!altId || altId === id) return;          // skip main node
-            if (altId === node.id) return;               // skip self
-            // dedup by id + viaPartId so same part can appear under different nodes
+            if (!altId || altId === id) return;
+            if (altId === node.id) return;
             if (newSuggestions.some((s) => s.id === altId && s.viaPartId === node.id)) return;
             newSuggestions.push({
               id: altId,
@@ -278,7 +302,6 @@ export const AssignAlternateParts = () => {
           })
         );
 
-        // ✅ spareInfo?.data?.alternates for cross-pair keys
         memberSpareInfoMap.forEach((spareInfo, memberId) => {
           (spareInfo?.data?.alternates ?? []).forEach((sd: any) => {
             const crossId: string = sd.alternate_part_number_id ?? sd.alternate_part_number?.id;
@@ -307,24 +330,29 @@ export const AssignAlternateParts = () => {
           }
         }
 
+        // ── FIX 1: load remark AND alt_ref_doc from API response ─────────────
         details?.data?.alternates?.forEach((item: any) => {
           const k = pairKey(details?.data?.id, item.alternate_part_number.id);
           const pair = allPairs.find((p) => p.key === k);
-          if (pair) pair.remark = item.remark || '';
+          if (pair) {
+            pair.remark = item.remark || '';
+            pair.alt_ref_doc = item.alt_ref_doc || undefined;
+          }
         });
 
-        // ✅ spareInfo?.data?.alternates for remarks
         memberSpareInfoMap.forEach((spareInfo, memberId) => {
           (spareInfo?.data?.alternates ?? []).forEach((sd: any) => {
             const crossId: string = sd.alternate_part_number_id ?? sd.alternate_part_number?.id;
             if (!crossId) return;
             const k = pairKey(memberId, crossId);
             const pair = allPairs.find((p) => p.key === k);
-            if (pair) pair.remark = sd.remark || '';
+            if (pair) {
+              pair.remark = sd.remark || '';
+              pair.alt_ref_doc = sd.alt_ref_doc || undefined;
+            }
           });
         });
 
-        // ✅ Seed loadingNodeIds BEFORE setNodes so spinner shows immediately
         if (existingMembers.length > 0) {
           setLoadingNodeIds(new Set(existingMembers.map((n) => n.id)));
         }
@@ -334,6 +362,7 @@ export const AssignAlternateParts = () => {
         setPairs(allPairs);
         setGroupMemberIds(usedIds);
         setExceptIds(usedIds);
+        setOriginalPairs(buildSnapshot(allPairs));
 
         if (existingMembers.length > 0)
           await fetchSuggestionsForNodes(existingMembers);
@@ -363,7 +392,6 @@ export const AssignAlternateParts = () => {
     let spareInfo: any = null;
     try {
       spareInfo = await getSpareDetails(spare.id);
-      // ✅ spareInfo?.data?.alternates for cross-pair keys
       (spareInfo?.data?.alternates ?? []).forEach((sd: any) => {
         const crossId: string = sd.alternate_part_number_id ?? sd.alternate_part_number?.id;
         if (!crossId) return;
@@ -385,13 +413,15 @@ export const AssignAlternateParts = () => {
     });
 
     if (spareInfo) {
-      // ✅ spareInfo?.data?.alternates for remarks
       (spareInfo?.data?.alternates ?? []).forEach((sd: any) => {
         const crossId: string = sd.alternate_part_number_id ?? sd.alternate_part_number?.id;
         if (!crossId) return;
         const k = pairKey(spare.id, crossId);
         const pair = newPairsForNode.find((p) => p.key === k);
-        if (pair) pair.remark = sd.remark || '';
+        if (pair) {
+          pair.remark = sd.remark || '';
+          pair.alt_ref_doc = sd.alt_ref_doc || undefined;
+        }
       });
     }
 
@@ -402,7 +432,6 @@ export const AssignAlternateParts = () => {
     setExceptIds((prev) => [...prev, spare.id]);
     setAddingNodeId(null);
 
-    // ✅ Use fetchSuggestionsForNodes for consistency — loader + accordion work correctly
     await fetchSuggestionsForNodes([newNode]);
   };
 
@@ -416,7 +445,12 @@ export const AssignAlternateParts = () => {
   // ── Toggle pairs ──────────────────────────────────────────────────────────
   const togglePair = (key: string) => {
     setPairs((prev) =>
-      prev.map((p) => (p.key === key ? { ...p, enabled: !p.enabled } : p))
+      prev.map((p) => {
+        if (p.key !== key) return p;
+        if (p.exists && p.from_id === id) return { ...p, enabled: !p.enabled };
+        if (!p.exists) return { ...p, enabled: !p.enabled };
+        return p;
+      })
     );
   };
 
@@ -478,26 +512,91 @@ export const AssignAlternateParts = () => {
 
   // ── Assign API ────────────────────────────────────────────────────────────
   const assignAlternateParts = useAssignAltParts();
+  const toastSuccess = useToastSuccess();
+  const toastError = useToastError();
 
   const handleConfirmSave = () => {
-    const payload: PartNumberItem[] = newPairs.map((p) => ({
-      part_number_id: p.from_id,
-      alternate_part_number_id: p.to_id,
-      remark: p.remark,
-    }));
+    // Capture current lists before state mutation
+    const savedNewPairs = [...newPairs];
+    const savedPairsToDelete = [...pairsToDelete];
+
+    const payload: PartNumberItem[] = [
+      ...savedNewPairs.map((p) => ({
+        part_number_id: p.from_id,
+        alternate_part_number_id: p.to_id,
+        remark: p.remark,
+        alt_ref_doc: p.alt_ref_doc || undefined,
+        is_deleted: false,
+      })),
+      ...savedPairsToDelete.map((p) => ({
+        part_number_id: p.from_id,
+        alternate_part_number_id: p.to_id,
+        remark: p.remark,
+        alt_ref_doc: p.alt_ref_doc || undefined,
+        is_deleted: true,
+      })),
+      ...updatedExistingPairs.map((p) => ({
+        part_number_id: p.from_id,
+        alternate_part_number_id: p.to_id,
+        remark: p.remark,
+        alt_ref_doc: p.alt_ref_doc || undefined,
+        is_deleted: false,
+      })),
+    ];
+
     setConfirmSave(false);
     setPageLoading(true);
     assignAlternateParts.mutate(payload, {
       onSuccess: ({ successful_mappings, errors }) => {
-        setResponseData({ successfulItems: successful_mappings, erroredItems: errors });
-        toggleRespModal(true);
+        // Update pairs state + refresh snapshot so save button disables
+        setPairs((prevPairs) => {
+          const afterSave = prevPairs
+            .map((p) => {
+              if (savedNewPairs.some((np) => np.key === p.key)) return { ...p, exists: true };
+              return p;
+            })
+            .filter((p) => !savedPairsToDelete.some((dp) => dp.key === p.key));
+          setOriginalPairs(buildSnapshot(afterSave));
+          return afterSave;
+        });
+
+        const successCount = successful_mappings?.length ?? 0;
+        const errorCount = errors?.length ?? 0;
+
+        if (successCount > 0 && errorCount === 0) {
+          toastSuccess({
+            title: 'Mappings saved',
+            description: `${successCount} mapping${successCount !== 1 ? 's' : ''} saved successfully.`,
+          });
+        } else if (successCount > 0 && errorCount > 0) {
+          toastSuccess({
+            title: 'Partially saved',
+            description: `${successCount} saved, ${errorCount} failed.`,
+          });
+        } else {
+          toastError({
+            title: 'Save failed',
+            description: `${errorCount} mapping${errorCount !== 1 ? 's' : ''} could not be saved.`,
+          });
+        }
+
+        refreshPartdetails();
         setPageLoading(false);
       },
       onError: () => {
+        toastError({ title: 'Save failed', description: 'An unexpected error occurred.' });
         setPageLoading(false);
       },
     });
   };
+
+  // ── Save button label helper ──────────────────────────────────────────────
+  const saveLabel = (() => {
+    const parts: string[] = [];
+    if (checkedNewCount > 0) parts.push(`+${checkedNewCount} Add`);
+    if (pairsToDelete.length > 0) parts.push(`-${pairsToDelete.length} Remove`);
+    return parts.length > 0 ? `Save (${parts.join(', ')})` : 'Save';
+  })();
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -614,16 +713,15 @@ export const AssignAlternateParts = () => {
                 <Box overflowY="auto" flex={1}>
                   {nodes.map((node) => {
                     const nodeSuggestions = visibleSuggestions.filter((s) => s.viaPartId === node.id);
-                    const includedSuggestions  = nodeSuggestions.filter((s) => nodeIds.has(s.id));
+                    const includedSuggestions = nodeSuggestions.filter((s) => nodeIds.has(s.id));
                     const availableSuggestions = nodeSuggestions.filter((s) => !nodeIds.has(s.id));
-                    const isExpanded    = expandedNodeId === node.id;
+                    const isExpanded = expandedNodeId === node.id;
                     const isLoadingNode = loadingNodeIds.has(node.id);
-                    const totalCount    = nodeSuggestions.length;
+                    const totalCount = nodeSuggestions.length;
                     const hasSuggestions = totalCount > 0 || isLoadingNode;
 
                     return (
                       <Box key={node.id} borderBottom="1px solid" borderColor="gray.100">
-
                         <HStack px={4} py={3} justify="space-between"
                           _hover={{ bg: 'gray.50' }} transition="background 0.1s">
                           <Box minW={0} flex={1}>
@@ -723,8 +821,8 @@ export const AssignAlternateParts = () => {
                                   ))}
                                   {availableSuggestions.map((s) => (
                                     <HStack key={s.id} px={5} py={2.5} spacing={3}
-                                      borderBottom="1px solid" borderColor="green.100"
-                                      _hover={{ bg: 'green.100' }} transition="background 0.1s">
+                                      borderBottom="1px solid" borderColor="warning.100" bg={'warning.100'}
+                                      _hover={{ bg: 'warning.100' }} transition="background 0.1s">
                                       <Box flex={1} minW={0}>
                                         <Text fontSize="xs" fontWeight="semibold" color="gray.800" isTruncated>
                                           {s.name}
@@ -734,7 +832,7 @@ export const AssignAlternateParts = () => {
                                         )}
                                       </Box>
                                       <Tooltip label="Add to group and generate all pairs" hasArrow>
-                                        <Button size="xs" colorScheme="green" variant="solid"
+                                        <Button size="xs" colorScheme="warning" variant="solid"
                                           leftIcon={<LuPlus />}
                                           isLoading={addingNodeId === s.id}
                                           isDisabled={addingNodeId !== null}
@@ -776,10 +874,16 @@ export const AssignAlternateParts = () => {
                             <Badge colorScheme="orange" fontSize="12px" variant="solid">{checkedNewCount}</Badge>
                           </HStack>
                         )}
+                        {pairsToDelete.length > 0 && (
+                          <HStack spacing={1}>
+                            <Text>Pending removal</Text>
+                            <Badge colorScheme="red" fontSize="12px" variant="solid">{pairsToDelete.length}</Badge>
+                          </HStack>
+                        )}
                         {uncheckedCount > 0 && (
                           <HStack spacing={1}>
                             <Text>Unmapped</Text>
-                            <Badge colorScheme="red" fontSize="12px" variant="solid">{uncheckedCount}</Badge>
+                            <Badge colorScheme="gray" fontSize="12px" variant="solid">{uncheckedCount}</Badge>
                           </HStack>
                         )}
                       </HStack>
@@ -812,6 +916,9 @@ export const AssignAlternateParts = () => {
                     nodes.map((fromNode) => {
                       const nodePairs = pairs.filter((p) => p.from_id === fromNode.id);
                       if (nodePairs.length === 0) return null;
+
+                      const isMainFromNode = fromNode.id === id;
+
                       return (
                         <Box key={fromNode.id}>
                           <HStack px={5} py={2}
@@ -828,67 +935,120 @@ export const AssignAlternateParts = () => {
                               {nodePairs.filter((p) => p.enabled).length} out of {nodePairs.length} Mapped
                             </Text>
                           </HStack>
-                          {nodePairs.map((pair) => (
-                            <HStack key={pair.key} px={5} py={3} spacing={4}
-                              borderBottom="1px solid" borderColor="gray.100"
-                              bg={pair.enabled ? (pair.exists ? 'gray.50' : 'white') : 'red.50'}
-                              _hover={{ bg: pair.enabled ? (pair.exists ? 'gray.50' : 'blue.50') : 'red.100' }}
-                              transition="background 0.1s"
-                              cursor={pair.exists ? 'default' : 'pointer'}
-                              onClick={() => !pair.exists && togglePair(pair.key)}>
-                              <Box onClick={(e) => e.stopPropagation()} flexShrink={0}>
-                                {pair.exists ? (
-                                  <Tooltip label="Already saved — cannot be unchecked" hasArrow placement="right">
-                                    <span>
-                                      <Checkbox isChecked={pair.enabled}
-                                        colorScheme="green"
-                                        size="md"
-                                        isReadOnly
-                                        cursor="not-allowed"
-                                        sx={{ '& .chakra-checkbox__control': { cursor: 'not-allowed' } }}
-                                      />
-                                    </span>
-                                  </Tooltip>
-                                ) : (
-                                  <Checkbox isChecked={pair.enabled}
-                                    colorScheme="orange"
-                                    size="md"
-                                    onChange={() => togglePair(pair.key)} />
-                                )}
-                              </Box>
-                              <Badge
-                                colorScheme={pair.from_id === mainNode?.id ? 'blue' : 'gray'}
-                                variant="subtle" fontSize="xs" flexShrink={0} minW="80px" textAlign="center">
-                                {pair.from_part}
-                              </Badge>
-                              <Text color="gray.400" fontSize="sm" flexShrink={0}>→</Text>
-                              <Badge
-                                colorScheme={pair.to_id === mainNode?.id ? 'blue' : 'gray'}
-                                variant="subtle" fontSize="xs" flexShrink={0} minW="80px" textAlign="center">
-                                {pair.to_part}
-                              </Badge>
-                              <Box flex={1}>
-                                {pair.exists ? (
-                                  <Text fontSize="sm" color="gray.400">{pair.remark || '—'}</Text>
-                                ) : (
-                                  <Input placeholder="Remark (optional)" size="sm"
-                                    defaultValue={pair.remark} isDisabled={!pair.enabled}
-                                    onClick={(e) => e.stopPropagation()}
-                                    onChange={(e) => debouncedPairRemark(pair.key, e.target.value)}
-                                    borderRadius="md" />
-                                )}
-                              </Box>
-                              <Box flexShrink={0} w="90px" textAlign="right">
-                                {!pair.enabled ? (
-                                  <Badge colorScheme="red" fontSize="xs" variant="subtle">Not Mapped</Badge>
-                                ) : pair.exists ? (
-                                  <Badge colorScheme="green" fontSize="xs" variant="subtle">Mapped</Badge>
-                                ) : (
-                                  <Badge colorScheme="orange" fontSize="xs" variant="subtle">Newly Added</Badge>
-                                )}
-                              </Box>
-                            </HStack>
-                          ))}
+                          {nodePairs.map((pair) => {
+                            const isExistingMainPair = pair.exists && isMainFromNode;
+                            const isExistingLockedPair = pair.exists && !isMainFromNode;
+                            const isClickable = !pair.exists || isExistingMainPair;
+
+                            return (
+                              <HStack key={pair.key} px={5} py={3} spacing={4}
+                                borderBottom="1px solid" borderColor="gray.100"
+                                bg={
+                                  !pair.enabled
+                                    ? 'red.50'
+                                    : pair.exists
+                                      ? 'gray.50'
+                                      : 'white'
+                                }
+                                _hover={{
+                                  bg: isClickable
+                                    ? (pair.enabled ? (pair.exists ? 'gray.100' : 'blue.50') : 'red.100')
+                                    : undefined,
+                                }}
+                                transition="background 0.1s"
+                                cursor={isClickable ? 'pointer' : 'default'}
+                                onClick={() => isClickable && togglePair(pair.key)}>
+
+                                {/* Checkbox */}
+                                <Box onClick={(e) => e.stopPropagation()} flexShrink={0}>
+                                  {isExistingLockedPair ? (
+                                    <Tooltip label="This mapping is managed by the other part — cannot be changed here" hasArrow placement="right">
+                                      <span>
+                                        <Checkbox isChecked={pair.enabled} colorScheme="green" size="md"
+                                          isReadOnly cursor="not-allowed"
+                                          sx={{ '& .chakra-checkbox__control': { cursor: 'not-allowed' } }}
+                                        />
+                                      </span>
+                                    </Tooltip>
+                                  ) : isExistingMainPair ? (
+                                    <Tooltip
+                                      label={pair.enabled ? 'Uncheck to remove this mapping' : 'Re-check to keep this mapping'}
+                                      hasArrow placement="right"
+                                    >
+                                      <span>
+                                        <Checkbox isChecked={pair.enabled}
+                                          colorScheme={pair.enabled ? 'green' : 'red'}
+                                          size="md" onChange={() => togglePair(pair.key)}
+                                        />
+                                      </span>
+                                    </Tooltip>
+                                  ) : (
+                                    <Checkbox isChecked={pair.enabled} colorScheme="orange"
+                                      size="md" onChange={() => togglePair(pair.key)}
+                                    />
+                                  )}
+                                </Box>
+
+                                <Badge colorScheme={pair.from_id === mainNode?.id ? 'blue' : 'gray'}
+                                  variant="subtle" fontSize="xs" flexShrink={0} minW="80px" textAlign="center">
+                                  {pair.from_part}
+                                </Badge>
+                                <Text color="gray.400" fontSize="sm" flexShrink={0}>→</Text>
+                                <Badge colorScheme={pair.to_id === mainNode?.id ? 'blue' : 'gray'}
+                                  variant="subtle" fontSize="xs" flexShrink={0} minW="80px" textAlign="center">
+                                  {pair.to_part}
+                                </Badge>
+
+                                {/* Remark input */}
+                                <Box w="200px" flexShrink={0} onClick={(e) => e.stopPropagation()}>
+                                  {isExistingLockedPair ? (
+                                    <Text fontSize="sm" color="gray.400" isTruncated>{pair.remark || '—'}</Text>
+                                  ) : (
+                                    <Input
+                                      placeholder="Remark (optional)"
+                                      size="sm"
+                                      borderRadius="md"
+                                      isDisabled={!pair.enabled}
+                                      defaultValue={pair.remark}
+                                      onChange={(e) => debouncedPairRemark(pair.key, e.target.value)}
+                                    />
+                                  )}
+                                </Box>
+
+                                {/* Doc upload */}
+                                <Box w="220px" flexShrink={0} onClick={(e) => e.stopPropagation()}>
+                                  {isExistingLockedPair ? (
+                                    pair.alt_ref_doc
+                                      ? <Text fontSize="xs" color="blue.400" isTruncated>📎 {pair.alt_ref_doc.split('/').pop()}</Text>
+                                      : <Text fontSize="xs" color="gray.300">—</Text>
+                                  ) : (
+                                    <PairDocUpload
+                                      existingUrl={pair.alt_ref_doc}
+                                      isDisabled={!pair.enabled}
+                                      onValueChange={(url) => {
+                                        setPairs((prev) =>
+                                          prev.map((p) => p.key === pair.key ? { ...p, alt_ref_doc: url ?? undefined } : p)
+                                        );
+                                      }}
+                                    />
+                                  )}
+                                </Box>
+
+                                {/* Status badge */}
+                                <Box flexShrink={0} w="110px" textAlign="right">
+                                  {isExistingMainPair && !pair.enabled ? (
+                                    <Badge colorScheme="red" fontSize="xs" variant="solid">Pending Removal</Badge>
+                                  ) : !pair.enabled ? (
+                                    <Badge colorScheme="red" fontSize="xs" variant="subtle">Not Mapped</Badge>
+                                  ) : pair.exists ? (
+                                    <Badge colorScheme="green" fontSize="xs" variant="subtle">Mapped</Badge>
+                                  ) : (
+                                    <Badge colorScheme="orange" fontSize="xs" variant="subtle">Newly Added</Badge>
+                                  )}
+                                </Box>
+                              </HStack>
+                            );
+                          })}
                         </Box>
                       );
                     })
@@ -897,11 +1057,11 @@ export const AssignAlternateParts = () => {
 
                 <Box px={5} py={4} borderTop="1px solid" borderColor="gray.200" bg="gray.50">
                   <HStack justify="space-between">
-                    <Tooltip label={!canSave ? 'No new pairs selected' : ''} hasArrow isDisabled={canSave}>
+                    <Tooltip label={!canSave ? 'No changes to save' : ''} hasArrow isDisabled={canSave}>
                       <Box>
                         <Button colorScheme="green" size="sm" leftIcon={<FiSave />}
                           isDisabled={!canSave} onClick={() => setConfirmSave(true)} minW="160px">
-                          Save {canSave ? `(${checkedNewCount})` : ''} Alternate{checkedNewCount !== 1 ? 's' : ''}
+                          {saveLabel}
                         </Button>
                       </Box>
                     </Tooltip>
@@ -917,7 +1077,13 @@ export const AssignAlternateParts = () => {
           onClose={() => setConfirmSave(false)}
           onConfirm={handleConfirmSave}
           headerText="Save Mappings"
-          bodyText={`Save ${checkedNewCount} new pair${checkedNewCount !== 1 ? 's' : ''}?${uncheckedCount > 0 ? ` (${uncheckedCount} pair${uncheckedCount !== 1 ? 's' : ''} excluded.)` : ''}`}
+          bodyText={(() => {
+            const parts: string[] = [];
+            if (checkedNewCount > 0) parts.push(`Add ${checkedNewCount} new pair${checkedNewCount !== 1 ? 's' : ''}`);
+            if (pairsToDelete.length > 0) parts.push(`Remove ${pairsToDelete.length} pair${pairsToDelete.length !== 1 ? 's' : ''}`);
+            if (updatedExistingPairs.length > 0) parts.push(`Update ${updatedExistingPairs.length} existing pair${updatedExistingPairs.length !== 1 ? 's' : ''}`);
+            return (parts.length > 0 ? parts.join(', ') : 'Save changes') + '?';
+          })()}
         />
 
         <ConfirmationPopup
@@ -928,11 +1094,6 @@ export const AssignAlternateParts = () => {
           bodyText="Remove this part from the group? All pairs involving this part will also be removed."
         />
 
-        <AltPartsResponseModal
-          isOpen={respModalStatus}
-          onClose={() => { toggleRespModal(false); setResponseData(null); refreshPartdetails(); }}
-          response={responseData}
-        />
         <SpareCreateModal
           isOpen={isNewSpareModalOpen}
           onClose={handleCloseSpareModal}
