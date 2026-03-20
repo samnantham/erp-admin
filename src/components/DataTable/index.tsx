@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
   Center,
@@ -60,6 +60,7 @@ export type DataTableProps<Data extends object> = {
   containerProps?: TableContainerProps;
   tableProps?: TableProps;
   stickyColumns?: number;
+  stickyLastColumn?: boolean;
 
   sortBy?: string;
   sortDirection?: "asc" | "desc";
@@ -119,58 +120,31 @@ const sortFnFor = (type?: string): SortingFn<any> => {
   }
 };
 
-// ── Row height sync hook ───────────────────────────────────────────────────
-// Measures every row in the RIGHT table and mirrors the exact pixel height
-// onto the corresponding row in the LEFT (frozen) table.
-// Uses ResizeObserver so it re-fires whenever content reflows.
-function useSyncRowHeights(
-  leftTbodyRef: React.RefObject<HTMLTableSectionElement>,
-  rightTbodyRef: React.RefObject<HTMLTableSectionElement>,
-  rowCount: number,
-  enabled: boolean
+// ── Sticky offset calculator ───────────────────────────────────────────────
+function useStickyOffsets(
+  theadRef: React.RefObject<HTMLTableSectionElement>,
+  stickyColumns: number,
+  stickyLastColumn: boolean,
+  totalColumns: number,
+  rowCount: number
 ) {
-  useLayoutEffect(() => {
-    if (!enabled) return;
-    const left  = leftTbodyRef.current;
-    const right = rightTbodyRef.current;
-    if (!left || !right) return;
+  const [leftOffsets, setLeftOffsets] = useState<number[]>([]);
 
-    const sync = () => {
-      const rightRows = right.querySelectorAll<HTMLTableRowElement>("tr");
-      const leftRows  = left.querySelectorAll<HTMLTableRowElement>("tr");
-      rightRows.forEach((rr, i) => {
-        if (leftRows[i]) {
-          const h = rr.getBoundingClientRect().height;
-          leftRows[i].style.height = `${h}px`;
-        }
-      });
-    };
+  useEffect(() => {
+    const thead = theadRef.current;
+    if (!thead) return;
+    const ths = Array.from(thead.querySelectorAll<HTMLTableCellElement>("th"));
+    if (ths.length === 0) return;
+    const offsets: number[] = [];
+    let accumulated = 0;
+    for (let i = 0; i < stickyColumns; i++) {
+      offsets[i] = accumulated;
+      accumulated += ths[i]?.getBoundingClientRect().width ?? 0;
+    }
+    setLeftOffsets(offsets);
+  }, [stickyColumns, stickyLastColumn, totalColumns, rowCount]);
 
-    sync();
-
-    const ro = new ResizeObserver(sync);
-    right.querySelectorAll("tr").forEach((tr) => ro.observe(tr));
-
-    return () => ro.disconnect();
-  }, [enabled, rowCount]);
-
-  // Also sync the single header row
-  const leftTheadRef  = useRef<HTMLTableSectionElement>(null);
-  const rightTheadRef = useRef<HTMLTableSectionElement>(null);
-
-  useLayoutEffect(() => {
-    if (!enabled) return;
-    const lh = leftTheadRef.current?.querySelector("tr") as HTMLTableRowElement | null;
-    const rh = rightTheadRef.current?.querySelector("tr") as HTMLTableRowElement | null;
-    if (!lh || !rh) return;
-    const sync = () => { lh.style.height = `${rh.getBoundingClientRect().height}px`; };
-    sync();
-    const ro = new ResizeObserver(sync);
-    ro.observe(rh);
-    return () => ro.disconnect();
-  }, [enabled]);
-
-  return { leftTheadRef, rightTheadRef };
+  return { leftOffsets };
 }
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -185,6 +159,7 @@ export function DataTable<Data extends object>({
   containerProps,
   tableProps,
   stickyColumns = 0,
+  stickyLastColumn = false,
   sortBy,
   sortDirection,
   onSortChange,
@@ -316,22 +291,67 @@ export function DataTable<Data extends object>({
   const startRecord = overallCount === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const endRecord   = Math.min(currentPage * pageSize, overallCount);
 
-  // ── Row height sync ───────────────────────────────────────────────────────
-  const hasStickyColumns = stickyColumns > 0 && table.getRowModel().rows.length > 0;
-  const leftTbodyRef  = useRef<HTMLTableSectionElement>(null);
-  const rightTbodyRef = useRef<HTMLTableSectionElement>(null);
-  const { leftTheadRef, rightTheadRef } = useSyncRowHeights(
-    leftTbodyRef,
-    rightTbodyRef,
-    table.getRowModel().rows.length,
-    hasStickyColumns
+  const rowCount  = table.getRowModel().rows.length;
+  const totalCols = finalColumns.length;
+
+  // ── Sticky offsets ────────────────────────────────────────────────────────
+  const theadRef = useRef<HTMLTableSectionElement>(null);
+  const { leftOffsets } = useStickyOffsets(
+    theadRef, stickyColumns, stickyLastColumn, totalCols, rowCount
   );
 
-  // ── Shared header/row renderers ───────────────────────────────────────────
+  // ── Colour constants ──────────────────────────────────────────────────────
+  const HEADER_BG   = "#0C2556";
+  const EVEN_ROW_BG = "#ffffff";
+  const ODD_ROW_BG  = "#F7FAFC";
+
+  // ── Per-cell sticky style ─────────────────────────────────────────────────
+  // STACKING CONTEXT RULES:
+  //   - Header sticky cells get zIndex:3 so they cover scrolling body rows.
+  //   - Body sticky cells get NO zIndex. Setting any zIndex on a positioned
+  //     element creates a new stacking context, which would trap portalled
+  //     children (Chakra Menu/Popover/Tooltip rendered at <body> level) inside
+  //     that context and make them appear behind neighbouring sticky cells.
+  //   - The scroll wrapper also has NO transform/filter/will-change/isolation
+  //     for the same reason — those also create stacking contexts.
+  const getStickyStyle = (
+    colIndex: number,
+    isHeader: boolean,
+    rowIndex?: number
+  ): React.CSSProperties => {
+    const isLeftSticky  = colIndex < stickyColumns;
+    const isRightSticky = stickyLastColumn && colIndex === totalCols - 1;
+
+    if (!isLeftSticky && !isRightSticky) return {};
+
+    const bg = isHeader
+      ? HEADER_BG
+      : rowIndex !== undefined && rowIndex % 2 !== 0
+        ? ODD_ROW_BG
+        : EVEN_ROW_BG;
+
+    if (isLeftSticky) {
+      return {
+        position: "sticky",
+        left: leftOffsets[colIndex] ?? 0,
+        zIndex: isHeader ? 1 : undefined, // NO zIndex on body cells
+        background: bg
+      };
+    }
+
+    return {
+      position: "sticky",
+      right: 0,
+      zIndex: isHeader ? 1 : undefined, // NO zIndex on body cells
+      background: bg
+    };
+  };
+
+  // ── Shared header renderer ────────────────────────────────────────────────
   const renderHeaderRow = (tableHeaders: Header<Data, unknown>[]) =>
-    tableHeaders.map((header) => {
-      const meta      = header.column.columnDef.meta as ColumnMeta | undefined;
-      const sortParam = meta?.sortParam ?? header.column.id;
+    tableHeaders.map((header, colIndex) => {
+      const meta       = header.column.columnDef.meta as ColumnMeta | undefined;
+      const sortParam  = meta?.sortParam ?? header.column.id;
       const isSortable = meta?.sortable === true;
       const isSorted   = enableClientSideSearch
         ? !!header.column.getIsSorted()
@@ -349,6 +369,7 @@ export function DataTable<Data extends object>({
           h="46px"
           cursor={isSortable ? "pointer" : "default"}
           onClick={isSortable ? () => handleSort(sortParam) : undefined}
+          style={{ background: "#0C2556", ...getStickyStyle(colIndex, true) }}
         >
           <Box display="flex" alignItems="center">
             {flexRender(header.column.columnDef.header, header.getContext())}
@@ -374,6 +395,19 @@ export function DataTable<Data extends object>({
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <Box>
+      {/*
+        When a Chakra Menu is open (MenuButton gets aria-expanded="true"),
+        this CSS rule elevates the entire <tr> containing that button above
+        all other sticky cells. This works even when strategy="fixed" because
+        the fixed-position MenuList still needs its TRIGGER (the MenuButton
+        inside the sticky td) to be painted on top so Popper.js positions
+        the list correctly relative to the viewport.
+      */}
+      <style>{`
+        tr:has([aria-expanded="true"]) td {
+          z-index: 2 !important;
+        }
+      `}</style>
 
       {/* Title bar */}
       {(title || enableClientSideSearch || enablePagination || headerAction) && showtitleBar && (
@@ -413,79 +447,40 @@ export function DataTable<Data extends object>({
       )}
 
       {/*
-        Two-table layout for sticky columns.
+        TWO-BOX layout to prevent stacking context from trapping portalled menus:
 
-        Why two tables instead of CSS sticky:
-        - CSS `position:sticky` on <th>/<td> requires `border-collapse:separate`
-          which breaks the existing striped variant border rendering.
-        - More importantly: sticky <th> cells with bg="inherit" don't reliably
-          pick up the #0C2556 header background on scroll in all browsers,
-          creating the visible color-break shown in the screenshot.
+        OUTER box  — provides the visible border. Has NO overflow, NO transform,
+                     NO filter, NO will-change, NO isolation. It is a plain
+                     block box and creates no stacking context, so Chakra Menu /
+                     Popover / Tooltip portals rendered at <body> can float
+                     freely above the table.
 
-        Why the old two-table approach had the scroll glitch:
-        - Row heights in the left table didn't match the right when content
-          wrapped, causing the two scrolling surfaces to desync visually.
+        INNER box  — the ONLY element with overflow:auto (needed for scrolling).
+                     Also has none of the stacking-context triggers above.
 
-        Fix: keep two tables, but use ResizeObserver (useSyncRowHeights) to
-        mirror the exact pixel height of every right-table row onto the
-        corresponding left-table row. This eliminates the height mismatch
-        while preserving correct bg colours in both tables.
+        If the outer box had overflow:hidden/auto AND border/shadow, some
+        browsers promote it to a stacking context. Splitting them avoids this.
       */}
-      <Flex
+      <Box
         {...containerProps}
         border="1px"
         borderColor="gray.500"
-        boxShadow="md"
         borderTopWidth="0"
-        overflow="hidden"
         width="100%"
-        minWidth={0}
+        overflow="visible"
       >
-
-        {/* ── LEFT: frozen columns ── */}
-        {hasStickyColumns && (
-          <Box overflow="hidden" flexShrink={0}>
-            <Table
-              size={tableProps?.size ?? "sm"}
-              variant="striped"
-              bg="#0C2556"
-              minWidth="max-content"
-            >
-              <Thead ref={leftTheadRef}>
-                {table.getHeaderGroups().map((hg) => (
-                  <Tr key={hg.id}>
-                    {renderHeaderRow(hg.headers.slice(0, stickyColumns))}
-                  </Tr>
-                ))}
-              </Thead>
-              <Tbody ref={leftTbodyRef} bg="white">
-                {table.getRowModel().rows.map((row) => {
-                  const rowProps = getRowProps?.(row) ?? {};
-                  return (
-                    <Tr
-                      key={row.id}
-                      {...rowProps}
-                      bg={row.index % 2 === 0 ? "white" : "gray.50"}
-                    >
-                      {row.getVisibleCells().slice(0, stickyColumns).map((cell) => (
-                        <Td key={cell.id}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </Td>
-                      ))}
-                    </Tr>
-                  );
-                })}
-              </Tbody>
-            </Table>
-          </Box>
-        )}
-
-        {/* ── RIGHT: scrollable columns ── */}
         <Box
-          flex={1}
-          minWidth={0}
           overflowX="auto"
+          width="100%"
           sx={{
+            "& table": {
+              borderCollapse: "separate",
+              borderSpacing: 0,
+            },
+            "& th, & td": {
+              borderBottom: "1px solid",
+              borderColor: "gray.200",
+            },
             scrollbarWidth: "thin",
             scrollbarColor: "#718096 transparent",
             "&::-webkit-scrollbar":             { height: "8px" },
@@ -497,48 +492,52 @@ export function DataTable<Data extends object>({
           <Table
             {...tableProps}
             size={tableProps?.size ?? "sm"}
-            variant="striped"
-            bg="#0C2556"
+            variant="unstyled"
+            bg={HEADER_BG}
             minWidth="max-content"
+            width="100%"
           >
-            <Thead ref={rightTheadRef}>
+            <Thead ref={theadRef}>
               {table.getHeaderGroups().map((hg) => (
                 <Tr key={hg.id}>
-                  {renderHeaderRow(hg.headers.slice(stickyColumns))}
+                  {renderHeaderRow(hg.headers)}
                 </Tr>
               ))}
             </Thead>
-            <Tbody ref={rightTbodyRef} bg="white">
-              {table.getRowModel().rows.length === 0 ? (
+
+            <Tbody>
+              {rowCount === 0 ? (
                 <Tr>
-                  <Td
-                    colSpan={finalColumns.length - stickyColumns}
-                    textAlign="center"
-                    py={8}
-                  >
+                  <Td colSpan={totalCols} textAlign="center" py={8} bg={EVEN_ROW_BG}>
                     {searchValue ? "No matching results found" : "No items to display"}
                   </Td>
                 </Tr>
               ) : (
                 table.getRowModel().rows.map((row) => {
                   const rowProps = getRowProps?.(row) ?? {};
+                  const visibleCells = row.getVisibleCells();
+                  const rowBg = row.index % 2 === 0 ? EVEN_ROW_BG : ODD_ROW_BG;
                   return (
-                    <Tr
-                      key={row.id}
-                      {...rowProps}
-                      bg={row.index % 2 === 0 ? "white" : "gray.50"}
-                    >
-                      {row.getVisibleCells().slice(stickyColumns).map((cell) => (
-                        <Td
-                          key={cell.id}
-                          maxW="200px"
-                          whiteSpace="normal"
-                          wordBreak="break-word"
-                          lineHeight="1.6"
-                        >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </Td>
-                      ))}
+                    <Tr key={row.id} {...rowProps}>
+                      {visibleCells.map((cell, colIndex) => {
+                        const isSticky =
+                          colIndex < stickyColumns ||
+                          (stickyLastColumn && colIndex === totalCols - 1);
+                        return (
+                          <Td
+                            key={cell.id}
+                            isNumeric={(cell.column.columnDef.meta as ColumnMeta)?.isNumeric}
+                            maxW={isSticky ? undefined : "200px"}
+                            whiteSpace={isSticky ? undefined : "normal"}
+                            wordBreak={isSticky ? undefined : "break-word"}
+                            lineHeight="1.6"
+                            bg={rowBg}
+                            style={getStickyStyle(colIndex, false, row.index)}
+                          >
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </Td>
+                        );
+                      })}
                     </Tr>
                   );
                 })
@@ -546,7 +545,7 @@ export function DataTable<Data extends object>({
             </Tbody>
           </Table>
         </Box>
-      </Flex>
+      </Box>
 
       {/* Pagination footer */}
       <Flex mt={4} px={2} justify="space-between" align="center" flexWrap="wrap">

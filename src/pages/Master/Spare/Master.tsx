@@ -389,6 +389,7 @@ export const SpareMaster = () => {
                             totalCount={paginationData?.total}
                             pageSize={itemsPerPage}
                             stickyColumns={5}
+                            stickyLastColumn={true}
                             onPageChange={(page) =>
                                 setQueryParams((prev: any) => ({ ...prev, page }))
                             }

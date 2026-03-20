@@ -533,6 +533,7 @@ export const CustomerMaster = () => {
                                 totalCount={paginationData?.total}
                                 pageSize={itemsPerPage}
                                 stickyColumns={3}
+                                stickyLastColumn={true}
                                 onPageChange={(page) =>
                                     setQueryParams((prev: any) => ({
                                         ...prev,

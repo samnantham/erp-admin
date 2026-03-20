@@ -85,7 +85,7 @@ export function buildColumns<T extends object>(
           if (!visibleActions?.length) return null;
 
           return (
-            <Menu placement="bottom-end">
+            <Menu placement="bottom-end" strategy="fixed" isLazy>
               <MenuButton
                 as={Button}
                 size="sm"
@@ -100,7 +100,8 @@ export function buildColumns<T extends object>(
                 Actions
               </MenuButton>
 
-              <MenuList
+              <MenuList 
+                zIndex={9999}
                 width="120px"
                 maxW="120px"
                 minW="120px"
