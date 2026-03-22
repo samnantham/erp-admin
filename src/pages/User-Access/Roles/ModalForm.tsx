@@ -1,38 +1,28 @@
+// src/pages/User-Access/Roles/ModalForm.tsx
+
 import { FieldInput } from '@/components/FieldInput';
 import { CreateUpdateModal } from '@/components/ReUsable/CreateUpdateModal';
+import { useSaveRole } from '@/services/user-access/role/services';
 
-import {
-  useCreateRole,
-  useUpdateRole,
-} from '@/services/user-access/role/services';
-
-import { BasicForm } from '@/types/global-types';
-
-export default function ModalForm({
-  isOpen,
-  onClose,
-  isEdit,
-  existInfo,
-}: any) {
-  const createEndPoint = useCreateRole();
-  const updateEndPoint = useUpdateRole();
+export default function ModalForm({ isOpen, onClose, isEdit, existInfo }: any) {
+  const saveEndpoint = useSaveRole();
 
   return (
-    <CreateUpdateModal<BasicForm>
+    <CreateUpdateModal
       isOpen={isOpen}
       onClose={onClose}
       title="User Role"
       isEdit={isEdit}
       existInfo={existInfo}
-      createMutation={createEndPoint}
-      updateMutation={updateEndPoint}
+      createMutation={saveEndpoint as any}
+      updateMutation={saveEndpoint as any}
       invalidateKeys={['userRoleIndex', 'userRoleList']}
-      fields={['name']} 
+      fields={['name']}
     >
       <FieldInput
         name="name"
         placeholder="Enter Role Name"
-        required="Role name required"
+        required="Role name is required"
         defaultValue={existInfo?.name ?? ''}
       />
     </CreateUpdateModal>

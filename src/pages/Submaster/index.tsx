@@ -26,40 +26,46 @@ import { endPoints } from "@/api/endpoints";
 
 import { useSubmasterItemIndex } from "@/services/submaster/service";
 import { submasterConfig } from "@/pages/Submaster/submasterConfig";
+import { useRouterContext } from "@/services/auth/RouteContext";
 
 type ConfirmMode = null | "soft" | "restore" | "permanent";
 
 export const SubmasterPage = () => {
-  const queryClient = useQueryClient();
-  const { model } = useParams<{ model: string }>();
+  const { otherPermissions } = useRouterContext();
 
-  const title = formatModelTitle(model);
-  const config = submasterConfig[model ?? ""] ?? submasterConfig.default;
+  const canCreate = otherPermissions.create === 1;
+  const canUpdate = otherPermissions.update === 1;
+  const canDelete = otherPermissions.update === 1;
+
+  const queryClient = useQueryClient();
+  const { model }   = useParams<{ model: string }>();
+
+  const title          = formatModelTitle(model);
+  const config         = submasterConfig[model ?? ""] ?? submasterConfig.default;
   const visibleColumns = config.columns ?? ["name"];
 
-  type ExtraFields = typeof config.extraFields;
+  type ExtraFields     = typeof config.extraFields;
   type ModelDataColumn = DataColumn<ExtraFields>;
 
   const navigate = useNavigate();
-  const [isOpen, toggleModal] = useState(false);
+  const [isOpen, toggleModal]   = useState(false);
   const [selected, setSelected] = useState<ModelDataColumn | null>(null);
-  const [isEdit, toggleEdit] = useState(false);
+  const [isEdit, toggleEdit]    = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const [queryParams, setQueryParams] = useState<TODO>({
     status: "all",
     page: 1,
-    limit: itemsPerPage
+    limit: itemsPerPage,
   });
 
-  const [sortBy, setSortBy] = useState("");
+  const [sortBy, setSortBy]           = useState("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm]   = useState("");
 
   /* ================= Modal ================= */
 
   const openModal = (item: ModelDataColumn | null, editStatus?: boolean) => {
-
     if (config.formType === "page") {
       if (item) {
         navigate(`/submaster/${model}/form/${item.id}/edit`);
@@ -68,7 +74,6 @@ export const SubmasterPage = () => {
       }
       return;
     }
-
     setSelected(item);
     toggleModal(true);
     toggleEdit(!!editStatus);
@@ -77,7 +82,6 @@ export const SubmasterPage = () => {
   const closeModal = () => {
     queryClient.invalidateQueries(["submasterItemIndex", model]);
     refreshData();
-
     setSelected(null);
     toggleEdit(false);
     toggleModal(false);
@@ -98,20 +102,14 @@ export const SubmasterPage = () => {
     refetch: refreshData,
   } = useSubmasterItemIndex(model ?? "", queryParams);
 
-  const paginationData: TODO = itemList?.pagination ?? {};
-
-  const data: ModelDataColumn[] = itemList?.data ?? [];
-
-  console.log(paginationData)
+  const paginationData: TODO       = itemList?.pagination ?? {};
+  const data: ModelDataColumn[]    = itemList?.data       ?? [];
 
   /* ================= Delete / Restore ================= */
 
-  const [mutatingRowId, setMutatingRowId] = useState<
-    string | number | undefined
-  >(undefined);
-
-  const [confirmMode, setConfirmMode] = useState<ConfirmMode>(null);
-  const [activeItem, setActiveItem] = useState<ModelDataColumn | null>(null);
+  const [mutatingRowId, setMutatingRowId] = useState<string | number | undefined>(undefined);
+  const [confirmMode, setConfirmMode]     = useState<ConfirmMode>(null);
+  const [activeItem, setActiveItem]       = useState<ModelDataColumn | null>(null);
 
   const deleteItem = useDelete({
     url: endPoints.delete.submaster.replace(":model", model ?? ""),
@@ -120,54 +118,32 @@ export const SubmasterPage = () => {
 
   const mutateItem = (item: ModelDataColumn) => {
     setMutatingRowId(item.id);
-
     deleteItem.mutate(
       { id: item.id },
       {
-        onSuccess: () => {
-          closeConfirm();
-          setMutatingRowId(undefined);
-        },
-        onError: () => {
-          setMutatingRowId(undefined);
-        },
+        onSuccess: () => { closeConfirm(); setMutatingRowId(undefined); },
+        onError:   () => { setMutatingRowId(undefined); },
       }
     );
   };
 
-  const openSoft = (item: ModelDataColumn) => {
-    setActiveItem(item);
-    setConfirmMode("soft");
-  };
+  const openSoft      = (item: ModelDataColumn) => { setActiveItem(item); setConfirmMode("soft"); };
+  const openRestore   = (item: ModelDataColumn) => { setActiveItem(item); setConfirmMode("restore"); };
+  const openPermanent = (item: ModelDataColumn) => { setActiveItem(item); setConfirmMode("permanent"); };
+  const closeConfirm  = () => { setConfirmMode(null); setActiveItem(null); };
 
-  const openRestore = (item: ModelDataColumn) => {
-    setActiveItem(item);
-    setConfirmMode("restore");
-  };
-
-  const openPermanent = (item: ModelDataColumn) => {
-    setActiveItem(item);
-    setConfirmMode("permanent");
-  };
-
-  const closeConfirm = () => {
-    setConfirmMode(null);
-    setActiveItem(null);
-  };
-
-  const handleSoftDelete = mutateItem;
-  const handleRestore = mutateItem;
+  const handleSoftDelete      = mutateItem;
+  const handleRestore         = mutateItem;
   const handlePermanentDelete = mutateItem;
 
   /* ================= Status Filter ================= */
 
-  const handleStatusChange = (next: any) => {
+  const handleStatusChange = (next: any) =>
     setQueryParams((prev: any) => ({ ...prev, status: next }));
-  };
 
   /* ================= Columns ================= */
 
-  const baseColumns = getBaseColumns<ModelDataColumn>();
+  const baseColumns  = getBaseColumns<ModelDataColumn>();
 
   const extraColumns = visibleColumns
     .filter((col: string) => col !== "name")
@@ -175,96 +151,70 @@ export const SubmasterPage = () => {
       id: col,
       header: config.extraFields?.[col] ?? formatModelTitle(col),
       accessorKey: col,
-      meta: {
-        sortable: true,
-        searchable: true,
-        sortType: 'string',
-      },
+      meta: { sortable: true, searchable: true, sortType: 'string' },
       cell: ({ row }: any) => {
         const value = row.original[col];
-
-        if (typeof value === "boolean") {
-          return value ? "Yes" : "No";
-        }
-
+        if (typeof value === "boolean") return value ? "Yes" : "No";
         return value;
       },
     }));
 
-
-  const beforeName = baseColumns.filter(
-    (col: any) => col.id === "sNo"
+  const beforeName = baseColumns.filter((col: any) => col.id === "sNo");
+  const nameColumn = baseColumns.find((col: any) => col.id === "name");
+  const afterName  = baseColumns.filter((col: any) =>
+    ["created_at", "updated_at", "deleted_at"].includes(col.id)
   );
 
-  const nameColumn = baseColumns.find(
-    (col: any) => col.id === "name"
-  );
+  const filteredColumns = [...beforeName, nameColumn, ...extraColumns, ...afterName];
 
-  const afterName = baseColumns.filter(
-    (col: any) =>
-      ["created_at", "updated_at", "deleted_at"].includes(col.id)
-  );
-
-  const filteredColumns = [
-    ...beforeName,
-    nameColumn,
-    ...extraColumns,
-    ...afterName,
-  ];
+  const actionColumnConfig = {
+    mutatingRowId,
+    actionLoaderStatus: deleteItem.isLoading,
+    openModal:           canUpdate ? openModal     : () => {},
+    openSoftDelete:      canDelete ? openSoft      : () => {},
+    openPermenantDelete: canDelete ? openPermanent : () => {},
+    openRestore:         canUpdate ? openRestore   : () => {},
+    hideEdit:            !canUpdate,
+    hideDelete:          !canDelete,
+  };
 
   const columns =
     queryParams.status === "trashed"
       ? [
-        ...filteredColumns,
-        getStatusColumn<ModelDataColumn>(),
-        getDeletedColumn<ModelDataColumn>(),
-        getActionColumn<ModelDataColumn>({
-          mutatingRowId,
-          actionLoaderStatus: deleteItem.isLoading,
-          openModal,
-          openSoftDelete: openSoft,
-          openPermenantDelete: openPermanent,
-          openRestore,
-        }),
-      ]
+          ...filteredColumns,
+          getStatusColumn<ModelDataColumn>(),
+          getDeletedColumn<ModelDataColumn>(),
+          getActionColumn<ModelDataColumn>(actionColumnConfig),
+        ]
       : [
-        ...filteredColumns,
-        getStatusColumn<ModelDataColumn>(),
-        getActionColumn<ModelDataColumn>({
-          mutatingRowId,
-          actionLoaderStatus: deleteItem.isLoading,
-          openModal,
-          openSoftDelete: openSoft,
-          openPermenantDelete: openPermanent,
-          openRestore,
-        }),
-      ];
+          ...filteredColumns,
+          getStatusColumn<ModelDataColumn>(),
+          getActionColumn<ModelDataColumn>(actionColumnConfig),
+        ];
 
   return (
     <SlideIn>
       <Stack pl={2} spacing={4}>
         <HStack justify={"space-between"}>
-          <Heading as="h4" size={"md"}>
-            SubMaster - {title}
-          </Heading>
-
-          <ResponsiveIconButton
-            variant={"@primary"}
-            icon={<LuPlus />}
-            size={{ base: "sm", md: "md" }}
-            onClick={() => openModal(null, false)}
-          >
-            Add New
-          </ResponsiveIconButton>
+          <Heading as="h4" size={"md"}>SubMaster - {title}</Heading>
+          {canCreate && (
+            <ResponsiveIconButton
+              variant={"@primary"}
+              icon={<LuPlus />}
+              size={{ base: "sm", md: "md" }}
+              onClick={() => openModal(null, false)}
+            >
+              Add New
+            </ResponsiveIconButton>
+          )}
         </HStack>
 
         <Box borderRadius={4}>
-
           <DataTable
             columns={columns}
             data={data}
             sortBy={sortBy}
-            resetKey={model} 
+            resetKey={model}
             key={model}
             sortDirection={sortDirection}
             onSortChange={handleSortChange}
@@ -281,20 +231,14 @@ export const SubmasterPage = () => {
             enablePagination={true}
             currentPage={paginationData?.current_page}
             totalCount={paginationData?.total}
-            pageSize={itemsPerPage}                // ✅ required
-            onPageChange={(page) =>      // ✅ required
-              setQueryParams((prev: any) => ({
-                ...prev,
-                page
-              }))
+            pageSize={itemsPerPage}
+            onPageChange={(page) =>
+              setQueryParams((prev: any) => ({ ...prev, page }))
             }
-            onPageSizeChange={(limit) =>  {
-              setItemsPerPage(limit);   // ✅ required
-              setQueryParams((prev: any) => ({
-                ...prev,
-                limit,
-                page: 1
-              }))}}
+            onPageSizeChange={(limit) => {
+              setItemsPerPage(limit);
+              setQueryParams((prev: any) => ({ ...prev, limit, page: 1 }));
+            }}
           />
 
           <ModalForm
@@ -311,17 +255,11 @@ export const SubmasterPage = () => {
             onClose={closeConfirm}
             onConfirm={() => {
               if (!activeItem) return;
-
-              if (confirmMode === "restore") handleRestore(activeItem);
-              if (confirmMode === "soft") handleSoftDelete(activeItem);
-              if (confirmMode === "permanent")
-                handlePermanentDelete(activeItem);
+              if (confirmMode === "restore")   handleRestore(activeItem);
+              if (confirmMode === "soft")      handleSoftDelete(activeItem);
+              if (confirmMode === "permanent") handlePermanentDelete(activeItem);
             }}
-            isLoading={
-              !!activeItem &&
-              mutatingRowId === activeItem.id &&
-              deleteItem.isLoading
-            }
+            isLoading={!!activeItem && mutatingRowId === activeItem.id && deleteItem.isLoading}
             headerText={confirmMode === "restore" ? "Restore !!" : "Delete !!"}
             bodyText={
               confirmMode === "restore"

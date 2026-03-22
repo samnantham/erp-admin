@@ -14,6 +14,8 @@ import { isEmail, isMinLength } from "@formiz/validations";
 import { HiArrowNarrowLeft } from "react-icons/hi";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
+import { convertToOptions } from '@/helpers/commonHelper';
+
 import { FieldInput } from "@/components/FieldInput";
 import { FieldPhone } from "@/components/FieldPhone";
 import { FieldSelect } from "@/components/FieldSelect";
@@ -25,8 +27,10 @@ import {
   useCreateAdminUser,
   useUpdateAdminUser,
   useAdminUserDetails,
-  useAdminUserDropdowns,
 } from "@/services/user-access/adminuser/services";
+
+import { useDepartmentList } from "@/services/user-access/department/services";
+
 import LoadingOverlay from '@/components/LoadingOverlay';
 
 
@@ -34,13 +38,23 @@ export const AdminUserForm = () => {
   const navigate = useNavigate();
 
   const { id, mode } = useParams<{id?: string, mode?: string }>();
-
+  const [rolesOptions, setRoleOptions] = useState([]);
+  const [departmentOptions, setDepartmentOptions] = useState([]);
   const isEdit = mode === "edit";
   const isView = mode === "view";
 
-  const { data: dropdownData, isLoading } = useAdminUserDropdowns();
-  const departmentOptions = dropdownData?.departments ?? [];
-  const rolesOptions = dropdownData?.roles ?? [];
+  const { data: dropdownData, isLoading } = useDepartmentList();
+
+  const handleDepartmentChange = (value: any) => {
+    if(value){
+      const selected = dropdownData?.data?.find((emp) => String(emp.id) === String(value));
+      if (selected && selected?.roles && selected?.roles.length > 0) {
+        setRoleOptions(convertToOptions(selected?.roles, 'department_role_id'));
+      } else {
+        setRoleOptions([]);
+      }
+    }
+  };
 
   const { data: userData, isLoading: infoLoading } = useAdminUserDetails(id, { enabled: !!id });
 
@@ -54,7 +68,7 @@ export const AdminUserForm = () => {
         first_name: values.first_name,
         last_name: values.last_name,
         department_id: values.department_id,
-        role_id: values.role_id,
+        department_role_id: values.department_role_id,
         email: values.email,
         phone: values.phone,
       };
@@ -84,6 +98,8 @@ export const AdminUserForm = () => {
   useEffect(() => {
     if (userData?.data) {
       const user = userData.data;
+
+      handleDepartmentChange(user?.department_id)
       let initialValues = {
         username: user.username,
         first_name: user.first_name,
@@ -91,12 +107,19 @@ export const AdminUserForm = () => {
         email: user.email,
         phone: user.phone,
         department_id: user.department_id,
-        role_id: user.role_id,
+        department_role_id: user.department_role_id,
       }
       setInitialValues(initialValues);
       form.setValues(initialValues);
     }
-  }, [userData]);
+  }, [userData, dropdownData]);
+
+    useEffect(() => {
+    if (dropdownData?.data) {
+      setDepartmentOptions(convertToOptions(dropdownData?.data));
+    }
+  }, [dropdownData]);
+  
   const [initialValues, setInitialValues] = useState<any>(null);
   const fields = useFormFields({ connect: form });
   const isFormValuesChanged = isFormFieldsChanged({
@@ -238,19 +261,21 @@ export const AdminUserForm = () => {
                   }}
                   isDisabled={isView}
                   className={isView ? 'disabled-input' : ''}
+                  onValueChange={(v) => handleDepartmentChange(v)}
                 />
 
                 <FieldSelect
                   label="User Role"
-                  name={"role_id"}
+                  name={"department_role_id"}
                   placeholder="Select..."
                   options={rolesOptions}
                   required={"User Role is required"}
                   selectProps={{
                     isLoading: isLoading,
                   }}
-                  isDisabled={isView}
                   className={isView ? 'disabled-input' : ''}
+                  isDisabled={isView || !fields?.department_id?.value}
+                  onValueChange={(v) => console.log(v)}
                 />
               </Stack>
 

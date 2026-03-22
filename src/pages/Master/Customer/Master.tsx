@@ -27,24 +27,29 @@ import { useCustomerIndex, useCustomerDropdowns, useUpdateCustomerStatus } from 
 import { buildColumns, DynamicColumn } from '@/components/ReUsable/table-columns/buildColumns';
 import { ConfirmationWithReasonPopup } from "@/components/ConfirmationWithReasonPopup";
 import { DownloadSampleOptions, contactManagementPageConfig, DownloadSampleKeys } from '@/constants';
-import {
-    handleDownload
-} from '@/helpers/commonHelper';
+import { handleDownload } from '@/helpers/commonHelper';
 import { CompletionProgressBar } from '@/components/CompletionProgressBar';
 import { ActionMenu } from '@/components/ActionMenu';
-
 import { useSubmasterItemIndex } from "@/services/submaster/service";
 import { CustomerDetails } from '@/pages/Master/Customer/Info/CustomerDetails';
 import { useDelete } from '@/api/useDelete';
 import { endPoints } from '@/api/endpoints';
 import { usePdfPreview } from '@/hooks/usePdfPreview';
 import { PDFPreviewModal } from '@/components/PDFPreview';
+import { useRouterContext } from '@/services/auth/RouteContext';
 
 type ConfirmMode = null | "delete" | "status-update";
 
-
 export const CustomerMaster = () => {
     const navigate = useNavigate();
+    const { otherPermissions } = useRouterContext();
+
+    const canCreate = otherPermissions.create === 1;
+    const canUpdate = otherPermissions.update === 1;
+    const canDelete = otherPermissions.update === 1;
+    const canView = otherPermissions.view === 1;
+    const canBulkUpload = otherPermissions.bulk_upload === 1;
+
     const { data: dropdownData, isLoading: dropdownLoading, isSuccess: dropdownsFetched } = useCustomerDropdowns();
     const contactTypeOptions = dropdownData?.contact_types ?? [];
     const businessTypeOptions = dropdownData?.business_types ?? [];
@@ -52,6 +57,7 @@ export const CustomerMaster = () => {
     const paymentTermOptions = dropdownData?.payment_terms ?? [];
     const customerOptions = dropdownData?.customers ?? [];
     const currencyOptions = dropdownData?.currencies ?? [];
+
     const [activeItem, setActiveItem] = useState<any>(null);
     const [confirmMode, setConfirmMode] = useState<ConfirmMode>(null);
 
@@ -61,7 +67,6 @@ export const CustomerMaster = () => {
         const url = endPoints.preview.customer.replace(':id', custInfo.id);
         openPreview(url, `Contact Preview - #${custInfo.business_name}`);
     };
-
 
     const handleDownloadSampleFunction = (value: DownloadSampleKeys) => {
         const csvPath = contactManagementPageConfig[value]?.csv;
@@ -73,15 +78,13 @@ export const CustomerMaster = () => {
         navigate(contactManagementPageConfig[value].uploadRoute);
     };
 
-    const [pendingStatus, setPendingStatus] = useState<{
-        row: any;
-        newStatus: string;
-    } | null>(null);
+    const [pendingStatus, setPendingStatus] = useState<{ row: any; newStatus: string } | null>(null);
 
     const { data: customerStatuses, isSuccess: statusFetched } = useSubmasterItemIndex("customer-statuses", {});
     const statusOptions = customerStatuses?.data ?? [];
 
     const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [mutatingRowId, setMutatingRowId] = useState<string | null>(null);
 
     const updateFilter = (key: string, value: any) => {
         setQueryParams((prev: any) => ({
@@ -94,13 +97,8 @@ export const CustomerMaster = () => {
 
     const onConfirmStatusUpdate = (reason: string) => {
         if (!pendingStatus) return;
-
         triggerStatusUpdate(
-            {
-                id: pendingStatus.row.id,
-                customer_status_id: pendingStatus.newStatus,
-                reason,
-            },
+            { id: pendingStatus.row.id, customer_status_id: pendingStatus.newStatus, reason },
             {
                 onSettled: () => {
                     closeConfirm();
@@ -118,88 +116,55 @@ export const CustomerMaster = () => {
     };
 
     const getFilteredStatusOptions = (status_id: string) => {
-        const currentStatus = statusOptions.find(
-            (opt: any) => String(opt.id) === String(status_id)
-        );
-
+        const currentStatus = statusOptions.find((opt: any) => String(opt.id) === String(status_id));
         const currentStatusCode = currentStatus?.code;
-
         const statusMapping: Record<string, string[]> = {
             UNAPPROVED: ["ACTIVE"],
             ACTIVE: ["HOLD", "INACTIVE"],
             HOLD: ["ACTIVE", "INACTIVE"],
             INACTIVE: ["ACTIVE", "HOLD"],
         };
-
         return statusOptions
-            .filter((opt: any) =>
-                statusMapping[currentStatusCode]?.includes(opt.code)
-            )
+            .filter((opt: any) => statusMapping[currentStatusCode]?.includes(opt.code))
             .map((opt: any) => ({
                 ...opt,
-                label:
-                    currentStatusCode === "UNAPPROVED" && opt.code === "ACTIVE"
-                        ? "Approve"
-                        : opt.label,
+                label: currentStatusCode === "UNAPPROVED" && opt.code === "ACTIVE" ? "Approve" : opt.label,
             }));
     };
 
     const initialQueryParams = {
-        page: 1,
-        limit: itemsPerPage,
-        search: '',
-        id: '',
-        customer_status_id: '',
-        business_type_id: '',
-        currency_id: '',
-        payment_term_id: '',
-        payment_mode_id: '',
-        contact_type_id: '',
+        page: 1, limit: itemsPerPage, search: '', id: '',
+        customer_status_id: '', business_type_id: '', currency_id: '',
+        payment_term_id: '', payment_mode_id: '', contact_type_id: '',
     };
     const [queryParams, setQueryParams] = useState<TODO>(initialQueryParams);
     const [formKey, setFormKey] = useState(0);
+
     const form = useForm({
-        onValidSubmit: (values) => {
-            setQueryParams({ search: values });
-        },
+        onValidSubmit: (values) => setQueryParams({ search: values }),
     });
-    const [mutatingRowId, setMutatingRowId] = useState<string | null>(null);
+
     const { mutate: triggerDelete, isLoading: isDeleting } = useDelete({
         url: endPoints.delete.customer,
         invalidate: ['customerIndex', 'customerDetails'],
     });
-
     const { mutate: triggerStatusUpdate, isLoading: isUpdating } = useUpdateCustomerStatus();
-
 
     const onConfirmDelete = (reason: string) => {
         if (!activeItem) return;
-
         triggerDelete(
             { id: activeItem.id, deleted_reason: reason },
-            {
-                onSuccess: () => {
-                    refreshIndex();
-                },
-                onSettled: closeConfirm,
-            }
+            { onSuccess: () => refreshIndex(), onSettled: closeConfirm }
         );
     };
 
-    const ask = (mode: ConfirmMode, row: any) => {
-        setActiveItem(row);
-        setConfirmMode(mode);
-    };
+    const ask = (mode: ConfirmMode, row: any) => { setActiveItem(row); setConfirmMode(mode); };
+    const closeConfirm = () => { setConfirmMode(null); setActiveItem(null); };
 
-    const closeConfirm = () => {
-        setConfirmMode(null);
-        setActiveItem(null);
-    };
-
-    const { data: listData, isSuccess: listFetched, isLoading: listDataLoading, refetch: refreshIndex, } = useCustomerIndex(queryParams);
+    const { data: listData, isSuccess: listFetched, isLoading: listDataLoading, refetch: refreshIndex } =
+        useCustomerIndex(queryParams);
 
     const allApiDataLoaded = dropdownsFetched && listFetched && statusFetched;
-
     const data = listData?.data ?? [];
     const paginationData = listData?.pagination;
 
@@ -207,32 +172,18 @@ export const CustomerMaster = () => {
     const [sortBy, setSortBy] = useState<string>('created_at');
 
     const handleSortChange = (columnId: string, direction: 'asc' | 'desc') => {
-        setSortDirection((prevDirection) =>
-            prevDirection !== direction ? direction : prevDirection
-        );
-        setSortBy((prevSortBy) =>
-            prevSortBy !== columnId ? columnId : prevSortBy
-        );
-
-        setQueryParams((prevParams: TODO) => {
-            if (
-                prevParams.sort_field !== columnId ||
-                prevParams.sort_order !== direction
-            ) {
-                return {
-                    ...prevParams,
-                    sort_field: columnId,
-                    sort_order: direction,
-                    page: 1,
-                };
+        setSortDirection((prev) => prev !== direction ? direction : prev);
+        setSortBy((prev) => prev !== columnId ? columnId : prev);
+        setQueryParams((prev: TODO) => {
+            if (prev.sort_field !== columnId || prev.sort_order !== direction) {
+                return { ...prev, sort_field: columnId, sort_order: direction, page: 1 };
             }
-            return prevParams;
+            return prev;
         });
     };
 
     const getColumnConfig = (queryParams: any, cols: DynamicColumn<any>[]) => {
         const priorityKeys: string[] = [];
-
         if (queryParams.id) priorityKeys.push("code");
         if (queryParams.customer_status_id) priorityKeys.push("customer_status.name");
         if (queryParams.business_type_id) priorityKeys.push("business_type.name");
@@ -240,13 +191,10 @@ export const CustomerMaster = () => {
         if (queryParams.payment_mode_id) priorityKeys.push("payment_mode.name");
         if (queryParams.currency_id) priorityKeys.push("currency.name");
         if (queryParams.contact_type_id) priorityKeys.push("contact_type.name");
-
         const priorityColumns = cols.filter(c => priorityKeys.includes(c.key));
         const remainingColumns = cols.filter(c => !priorityKeys.includes(c.key));
-
         return [...priorityColumns, ...remainingColumns];
     };
-
 
     const columns = useMemo(() => {
         if (!dropdownsFetched) return [];
@@ -259,7 +207,6 @@ export const CustomerMaster = () => {
             { key: "contact_type.name", header: "Cont.Type", meta: { sortable: true, isNumeric: false, sortParam: 'contact_type_id' } },
             { key: "business_type.name", header: "Busi.Type", meta: { sortable: true, isNumeric: false, sortParam: 'business_type_id' } },
             { key: "currency.name", header: "Currency", meta: { sortable: true, isNumeric: false, sortParam: 'currency_id' } },
-
             {
                 key: "customer_status.name",
                 header: "Status",
@@ -268,13 +215,9 @@ export const CustomerMaster = () => {
                     <Menu placement="bottom-start">
                         <MenuButton
                             colorScheme={
-                                row.customer_status?.code === "UNAPPROVED"
-                                    ? "yellow"
-                                    : row.customer_status?.code === "ACTIVE"
-                                        ? "green"
-                                        : row.customer_status?.code === "HOLD"
-                                            ? "orange"
-                                            : "red"
+                                row.customer_status?.code === "UNAPPROVED" ? "yellow" :
+                                    row.customer_status?.code === "ACTIVE" ? "green" :
+                                        row.customer_status?.code === "HOLD" ? "orange" : "red"
                             }
                             as={Button}
                             size="sm"
@@ -287,17 +230,9 @@ export const CustomerMaster = () => {
                         >
                             {row.customer_status?.name}
                         </MenuButton>
-
-                        <MenuList width="130px"
-                            maxW="130px"
-                            minW="130px"
-                            boxShadow="md"
-                            sx={{ overflow: "hidden", padding: "4px" }}>
+                        <MenuList width="130px" maxW="130px" minW="130px" boxShadow="md" sx={{ overflow: "hidden", padding: "4px" }}>
                             {getFilteredStatusOptions(row.customer_status_id).map((status: any) => (
-                                <MenuItem
-                                    key={status.id}
-                                    onClick={() => handleStatusChange(row, status.id)}
-                                >
+                                <MenuItem key={status.id} onClick={() => handleStatusChange(row, status.id)}>
                                     {status.name}
                                 </MenuItem>
                             ))}
@@ -305,92 +240,77 @@ export const CustomerMaster = () => {
                     </Menu>
                 ),
             },
-
             { key: "payment_term.name", header: "Pay.Term", meta: { sortable: true, isNumeric: false, sortParam: 'payment_term_id' } },
             { key: "payment_mode.name", header: "Pay.Mode", meta: { sortable: true, isNumeric: false, sortParam: 'payment_mode_id' } },
             {
                 key: "completion_percentage",
                 header: "Completion (%)",
                 meta: { sortable: false },
-                render: (row: any) => {
-                    return (
-                        <CompletionProgressBar value={row.completion_percentage} trackColor="#7b8085" />
-                    );
-                },
+                render: (row: any) => <CompletionProgressBar value={row.completion_percentage} trackColor="#7b8085" />,
             },
             {
                 key: "actions",
                 header: "Actions",
                 type: "actions",
                 actions: [
-                    {
+                    // View — shown only if canView
+                    ...(canView ? [{
                         label: "View",
                         icon: <BiInfoCircle />,
                         onClick: (row: any) => navigate(`/contact-management/customer-master/info/${row.id}`),
-                    },
-                    {
+                    }] : []),
+                    // Edit — shown only if canUpdate
+                    ...(canUpdate ? [{
                         label: "Edit",
                         icon: <BiEdit />,
-                        isDisabled: (row) => row.is_fixed || !!row.has_pending_request,
+                        isDisabled: (row: any) => row.is_fixed || !!row.has_pending_request,
                         onClick: (row: any) => navigate(`/contact-management/customer-master/form/${row.id}`),
-                        disabledTooltip: (row) => row.pending_request_message,
-                    },
-                    {
+                        disabledTooltip: (row: any) => row.pending_request_message,
+                    }] : []),
+                    // Delete — shown only if canDelete
+                    ...(canDelete ? [{
                         label: "Delete",
                         icon: <BiTrash />,
-                        isDisabled: (row) => row.is_fixed || !!row.has_pending_request,
-                        onClick: (row) => ask("delete", row),
-                        disabledTooltip: (row) => row.pending_request_message,
-                    },
-
+                        isDisabled: (row: any) => row.is_fixed || !!row.has_pending_request,
+                        onClick: (row: any) => ask("delete", row),
+                        disabledTooltip: (row: any) => row.pending_request_message,
+                    }] : []),
+                    // Preview — always visible
                     {
                         label: "Preview",
                         icon: <BiSolidFilePdf />,
-                        onClick: (row) => handleOpenPreview(row),
+                        onClick: (row: any) => handleOpenPreview(row),
                     },
                 ],
             },
         ];
 
         const columnConfig = getColumnConfig(queryParams, baseColumnConfig);
-
         return buildColumns(columnConfig, { showSerial: true });
-
-    }, [dropdownsFetched, statusOptions, queryParams]);
+    }, [dropdownsFetched, statusOptions, queryParams, canView, canUpdate, canDelete]);
 
     return (
         <SlideIn>
             <Stack pl={2} spacing={4}>
                 <HStack justify={'space-between'}>
-                    <Heading as="h4" size={'md'}>
-                        Contact Management
-                    </Heading>
-                    <ResponsiveIconButton
-                        variant={'@primary'}
-                        icon={<LuPlus />}
-                        size={{ base: 'sm', md: 'md' }}
-                        onClick={() => navigate('/contact-management/customer-master/form')}
-                    >
-                        Add New
-                    </ResponsiveIconButton>
-
+                    <Heading as="h4" size={'md'}>Contact Management</Heading>
+                    {canCreate && (
+                        <ResponsiveIconButton
+                            variant={'@primary'}
+                            icon={<LuPlus />}
+                            size={{ base: 'sm', md: 'md' }}
+                            onClick={() => navigate('/contact-management/customer-master/form')}
+                        >
+                            Add New
+                        </ResponsiveIconButton>
+                    )}
                 </HStack>
 
                 <Formiz autoForm connect={form}>
-
-                    <Box
-                        sx={{
-                            bg: 'green.200',
-                            width: '100%',
-                            padding: '4',
-                            borderRadius: '4',
-                        }}
-                    >
+                    <Box sx={{ bg: 'green.200', width: '100%', padding: '4', borderRadius: '4' }}>
                         <Box bg="white" p={6} borderRadius={4} mt={2}>
-
                             {/* Row 1 */}
                             <Stack direction={{ base: "column", md: "row" }} spacing={4} mb={4}>
-
                                 <FieldInput
                                     name="keyword"
                                     placeholder="Search"
@@ -398,23 +318,16 @@ export const CustomerMaster = () => {
                                     rightElement={<Icon as={HiOutlineSearch} color="gray.300" />}
                                     size={'sm'}
                                 />
-
                                 <FieldSelect
                                     key={`customer_id_${formKey}`}
                                     name="id"
                                     placeholder="Contact Code"
                                     options={customerOptions}
                                     selectProps={{ isLoading: dropdownLoading }}
-                                    onValueChange={(v) => setQueryParams({
-                                        ...initialQueryParams,
-                                        id: v ?? "",
-                                        page: 1,
-                                        limit: itemsPerPage
-                                    })}
+                                    onValueChange={(v) => setQueryParams({ ...initialQueryParams, id: v ?? "", page: 1, limit: itemsPerPage })}
                                     isClearable={true}
                                     size={'sm'}
                                 />
-
                                 <FieldSelect
                                     key={`customer_status_${formKey}`}
                                     name="customer_status_id"
@@ -426,7 +339,6 @@ export const CustomerMaster = () => {
                                     isClearable={true}
                                     size={'sm'}
                                 />
-
                                 <FieldSelect
                                     key={`business_type_${formKey}`}
                                     name="business_type_id"
@@ -438,12 +350,10 @@ export const CustomerMaster = () => {
                                     isClearable={true}
                                     size={'sm'}
                                 />
-
                             </Stack>
 
                             {/* Row 2 */}
                             <Stack direction={{ base: "column", md: "row" }} spacing={4}>
-
                                 <FieldSelect
                                     key={`currency_${formKey}`}
                                     name="currency_id"
@@ -455,7 +365,6 @@ export const CustomerMaster = () => {
                                     isClearable={true}
                                     size={'sm'}
                                 />
-
                                 <FieldSelect
                                     key={`payment_term_${formKey}`}
                                     name="payment_term_id"
@@ -467,7 +376,6 @@ export const CustomerMaster = () => {
                                     isClearable={true}
                                     size={'sm'}
                                 />
-
                                 <FieldSelect
                                     key={`payment_mode_${formKey}`}
                                     name="payment_mode_id"
@@ -479,7 +387,6 @@ export const CustomerMaster = () => {
                                     isClearable={true}
                                     size={'sm'}
                                 />
-
                                 <FieldSelect
                                     key={`contact_type_${formKey}`}
                                     name="contact_type_id"
@@ -491,7 +398,6 @@ export const CustomerMaster = () => {
                                     isClearable={true}
                                     size={'sm'}
                                 />
-
                             </Stack>
 
                             {/* Reset */}
@@ -509,7 +415,6 @@ export const CustomerMaster = () => {
                                     Reset Form
                                 </Button>
                             </Stack>
-
                         </Box>
                     </Box>
                 </Formiz>
@@ -534,45 +439,38 @@ export const CustomerMaster = () => {
                                 pageSize={itemsPerPage}
                                 stickyColumns={3}
                                 stickyLastColumn={true}
-                                onPageChange={(page) =>
-                                    setQueryParams((prev: any) => ({
-                                        ...prev,
-                                        page,
-                                    }))
-                                }
+                                onPageChange={(page) => setQueryParams((prev: any) => ({ ...prev, page }))}
                                 onPageSizeChange={(limit) => {
                                     setItemsPerPage(limit);
-                                    setQueryParams((prev: any) => ({
-                                        ...prev,
-                                        limit,
-                                        page: 1,
-                                    }));
+                                    setQueryParams((prev: any) => ({ ...prev, limit, page: 1 }));
                                 }}
                                 headerAction={
                                     <HStack ml="auto">
+                                        {canBulkUpload && (
+                                            <Flex alignItems="center">
+                                                <ActionMenu
+                                                    label="Bulk Upload"
+                                                    icon={<LuUpload />}
+                                                    colorScheme="green"
+                                                    options={DownloadSampleOptions}
+                                                    onClick={handleUploadPageRedirection}
+                                                    isDisabled={!allApiDataLoaded}
+                                                />
+                                            </Flex>
+                                        )}
 
-
-                                        <Flex alignItems="center">
-                                            <ActionMenu
-                                                label="Bulk Upload"
-                                                icon={<LuUpload />}
-                                                colorScheme="green"
-                                                options={DownloadSampleOptions}
-                                                onClick={handleUploadPageRedirection}
-                                                isDisabled={!allApiDataLoaded}
-                                            />
-                                        </Flex>
-
-                                        <Flex alignItems="center">
-                                            <ActionMenu
-                                                label="Download Sample"
-                                                icon={<LuDownload />}
-                                                colorScheme="blue"
-                                                options={DownloadSampleOptions}
-                                                onClick={handleDownloadSampleFunction}
-                                                isDisabled={!allApiDataLoaded}
-                                            />
-                                        </Flex>
+                                        {canBulkUpload && (
+                                            <Flex alignItems="center">
+                                                <ActionMenu
+                                                    label="Download Sample"
+                                                    icon={<LuDownload />}
+                                                    colorScheme="blue"
+                                                    options={DownloadSampleOptions}
+                                                    onClick={handleDownloadSampleFunction}
+                                                    isDisabled={!allApiDataLoaded}
+                                                />
+                                            </Flex>
+                                        )}
                                     </HStack>
                                 }
                             />
@@ -583,22 +481,12 @@ export const CustomerMaster = () => {
                 <ConfirmationWithReasonPopup
                     isOpen={confirmMode === "delete" || confirmMode === "status-update"}
                     onClose={closeConfirm}
-                    onConfirm={
-                        confirmMode === "delete"
-                            ? onConfirmDelete
-                            : onConfirmStatusUpdate
-                    }
-                    headerText={
-                        confirmMode === "delete"
-                            ? "Confirm Delete"
-                            : "Confirm Status Update"
-                    }
+                    onConfirm={confirmMode === "delete" ? onConfirmDelete : onConfirmStatusUpdate}
+                    headerText={confirmMode === "delete" ? "Confirm Delete" : "Confirm Status Update"}
                     showBody={false}
                     isInputRequired
                     isLoading={isDeleting || isUpdating}
-                    placeholder={confirmMode === "delete"
-                        ? "Enter Reason to delete"
-                        : "Enter Reason"}
+                    placeholder={confirmMode === "delete" ? "Enter Reason to delete" : "Enter Reason"}
                 />
 
                 <PDFPreviewModal

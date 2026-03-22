@@ -159,15 +159,14 @@ export const removeHtmlTags = (html: string): string => {
   return tempDiv.textContent || tempDiv.innerText || '';
 };
 
-export const convertToOptions = (options: any) => {
-  let convertedOptions: any = [];
-  options.forEach((item: any) => {
-    let object: any = {};
-    object.value = item.id.toString();
-    object.label = item.name;
-    convertedOptions.push(object);
-  });
-  return convertedOptions;
+export const convertToOptions = (
+  options: any,
+  valueKey: string = "id"
+) => {
+  return options.map((item: any) => ({
+    value: item?.[valueKey]?.toString(),
+    label: item?.name,
+  }));
 };
 
 export const convertArrayToOptions = (options: any, prefix: string = '') => {

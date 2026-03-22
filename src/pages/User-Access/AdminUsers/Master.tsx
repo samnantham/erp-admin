@@ -19,14 +19,19 @@ import { FieldSelect } from '@/components/FieldSelect';
 import { ResponsiveIconButton } from '@/components/ResponsiveIconButton';
 import { SlideIn } from '@/components/SlideIn';
 import { useAdminUserIndex, useAdminUserDropdowns } from '@/services/user-access/adminuser/services';
-
-import { buildColumns, DynamicColumn } from '@/components/ReUsable/table-columns/buildColumns'
+import { buildColumns, DynamicColumn } from '@/components/ReUsable/table-columns/buildColumns';
+import { useRouterContext } from '@/services/auth/RouteContext';
 
 export const AdminUserMaster = () => {
+  const { otherPermissions } = useRouterContext();
+
+  const canCreate = otherPermissions.create === 1;
+  const canUpdate = otherPermissions.update === 1;
+
   const { data: dropdownData, isLoading } = useAdminUserDropdowns();
 
   const departmentOptions = dropdownData?.departments ?? [];
-  const rolesOptions = dropdownData?.roles ?? [];
+  const rolesOptions      = dropdownData?.roles       ?? [];
 
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const initialQueryParams = {
@@ -35,51 +40,47 @@ export const AdminUserMaster = () => {
     search: '',
     department_id: '',
     role_id: '',
+    is_fixed: false,
   };
   const [queryParams, setQueryParams] = useState<TODO>(initialQueryParams);
-  const navigate = useNavigate();
+  const navigate  = useNavigate();
   const [formKey, setFormKey] = useState(0);
+
   const form = useForm({
-    onValidSubmit: (values) => {
-      setQueryParams({ search: values });
-    },
+    onValidSubmit: (values) => setQueryParams({ search: values }),
   });
 
-  const {
-    data: itemList,
-    isLoading: listLoading
-  } = useAdminUserIndex(queryParams);
+  const { data: itemList, isLoading: listLoading } = useAdminUserIndex(queryParams);
 
-  const data = itemList?.data ?? [];
-  const paginationData: TODO = itemList?.pagination ?? {};
+  const data           = itemList?.data       ?? [];
+   const paginationData: TODO = itemList?.pagination ?? {};
 
   const columnConfig: DynamicColumn<any>[] = [
-    { key: "first_name", header: "First Name" },
-    { key: "last_name", header: "Last Name" },
-    { key: "username", header: "User Name" },
-    { key: "role.name", header: "Role" },
-    { key: "department.name", header: "Department" },
-    { key: "email", header: "Email" },
-    { key: "phone", header: "Phone" },
-
+    { key: "first_name",                      header: "First Name"  },
+    { key: "last_name",                       header: "Last Name"   },
+    { key: "username",                        header: "User Name"   },
+    { key: "department_role.role.name",       header: "Role"        },
+    { key: "department_role.department.name", header: "Department"  },
+    { key: "email",                           header: "Email"       },
+    { key: "phone",                           header: "Phone"       },
     {
       key: "actions",
       header: "Actions",
       type: "actions",
-      // isDisabled: (row) => row.is_fixed,
-
       actions: [
+        // View — always visible
         {
           label: "View",
           icon: <ViewIcon />,
           onClick: (row: any) => navigate(`/user-access/admin-users/form/${row.id}/view`),
         },
-        {
+        // Edit — shown only if canUpdate
+        ...(canUpdate ? [{
           label: "Edit",
           icon: <EditIcon />,
-          isDisabled: (row) => row.is_fixed,
+          isDisabled: (row: any) => row.is_fixed,
           onClick: (row: any) => navigate(`/user-access/admin-users/form/${row.id}/edit`),
-        },
+        }] : []),
       ],
     },
   ];
@@ -93,15 +94,16 @@ export const AdminUserMaster = () => {
           <Heading as="h4" size={'md'}>
             User Access - Admin User's
           </Heading>
-          <ResponsiveIconButton
-            variant={'@primary'}
-            icon={<LuPlus />}
-            size={{ base: 'sm', md: 'md' }}
-            onClick={() => navigate('/user-access/admin-users/form')}
-          >
-            Add New
-          </ResponsiveIconButton>
-
+          {canCreate && (
+            <ResponsiveIconButton
+              variant={'@primary'}
+              icon={<LuPlus />}
+              size={{ base: 'sm', md: 'md' }}
+              onClick={() => navigate('/user-access/admin-users/form')}
+            >
+              Add New
+            </ResponsiveIconButton>
+          )}
         </HStack>
 
         <Formiz autoForm connect={form}>
@@ -121,63 +123,40 @@ export const AdminUserMaster = () => {
               placeholder="Search"
               w={{ base: 'full', md: '20%' }}
             />
-
             <FieldSelect
               key={`desk_dept_${formKey}`}
               name="department_id"
               placeholder={'Select Department'}
               options={departmentOptions}
               w={{ base: 'full', md: '20%' }}
-              selectProps={{
-                isLoading: isLoading
-              }}
-              onValueChange={(value) => {
-                setQueryParams((prevState: any) => ({
-                  ...prevState,
-                  department_id: value ?? '',
-                  page: 1,
-                  limit: itemsPerPage
-                }));
-              }}
+              selectProps={{ isLoading }}
+              onValueChange={(value) =>
+                setQueryParams((prev: any) => ({ ...prev, department_id: value ?? '', page: 1, limit: itemsPerPage }))
+              }
             />
-
             <FieldSelect
               key={`desk_role_${formKey}`}
               name="role_id"
               placeholder={'Select User Role'}
               options={rolesOptions}
               w={{ base: 'full', md: '20%' }}
-              selectProps={{
-                isLoading: isLoading
-              }}
-              onValueChange={(value) => {
-                setQueryParams((prevState: any) => ({
-                  ...prevState,
-                  role_id: value ?? '',
-                  page: 1,
-                  limit: itemsPerPage
-                }));
-              }}
+              selectProps={{ isLoading }}
+              onValueChange={(value) =>
+                setQueryParams((prev: any) => ({ ...prev, role_id: value ?? '', page: 1, limit: itemsPerPage }))
+              }
             />
-
-            <Button
-              type="submit"
-              variant="@primary"
-              w={{ base: 'full', md: 'auto' }}
-              leftIcon={<HiOutlineSearch />}
-            >
+            <Button type="submit" variant="@primary" w={{ base: 'full', md: 'auto' }} leftIcon={<HiOutlineSearch />}>
               Search
             </Button>
-
             <Button
               type="reset"
               bg={'gray.200'}
               leftIcon={<HiOutlineXCircle />}
               w={{ base: 'full', md: 'auto' }}
               onClick={() => {
-                form.setValues({ [`department_id`]: '', [`role_id`]: '' });
+                form.setValues({ department_id: '', role_id: '' });
                 form.reset();
-                setFormKey((prevKey) => prevKey + 1);
+                setFormKey((k) => k + 1);
                 setQueryParams(initialQueryParams);
               }}
             >
@@ -191,24 +170,17 @@ export const AdminUserMaster = () => {
             columns={columns}
             data={data}
             loading={listLoading}
-            title={' Admin User List'}
-            enablePagination={true}
+            title={'Admin User List'}
+            enablePagination
             currentPage={paginationData?.current_page}
             totalCount={paginationData?.total}
-            pageSize={itemsPerPage}                // ✅ required
-            onPageChange={(page) =>      // ✅ required
-              setQueryParams((prev: any) => ({
-                ...prev,
-                page
-              }))
+            pageSize={itemsPerPage}
+            onPageChange={(page) =>
+              setQueryParams((prev: any) => ({ ...prev, page }))
             }
             onPageSizeChange={(limit) => {
-              setItemsPerPage(limit);   // ✅ required
-              setQueryParams((prev: any) => ({
-                ...prev,
-                limit,
-                page: 1
-              }))
+              setItemsPerPage(limit);
+              setQueryParams((prev: any) => ({ ...prev, limit, page: 1 }));
             }}
           />
         </Box>

@@ -18,30 +18,29 @@ import { useCustomerDetails } from '@/services/master/customer/service';
 import { endPoints } from '@/api/endpoints';
 import { usePdfPreview } from '@/hooks/usePdfPreview';
 import { PDFPreviewModal } from '@/components/PDFPreview';
+import { useRouterContext } from '@/services/auth/RouteContext';
 
 export const CustomerInfo = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
+  const { otherPermissions } = useRouterContext();
+
+  const canUpdate = otherPermissions.update === 1;
 
   const { data: details } = useCustomerDetails(id);
   const { pdfUrl, pdfTitle, isOpen, openPreview, closePreview } = usePdfPreview();
 
-  // Manual preview button — waits for details to have business_name for the title
   const handleOpenPreview = () => {
     if (!details?.data?.id) return;
     const url = endPoints.preview.customer.replace(':id', details.data.id);
     openPreview(url, `Contact Preview -${details.data.business_name}`);
   };
 
-  // ── Auto-open preview when ?preview=true is in the URL ────────────────────
-  // id from useParams is immediately available — no need to wait for details.
-  // Strips the param right away via replace so refresh never re-triggers.
   useEffect(() => {
     if (searchParams.get('preview') === 'true' && id) {
       const url = endPoints.preview.customer.replace(':id', id);
       openPreview(url, `Contact Preview`);
-
       const stripped = new URLSearchParams(searchParams);
       stripped.delete('preview');
       navigate({ search: stripped.toString() }, { replace: true });
@@ -78,16 +77,18 @@ export const CustomerInfo = () => {
           >
             Preview
           </ResponsiveIconButton>
-          <ResponsiveIconButton
-            colorScheme={'green'}
-            icon={<EditIcon />}
-            size={'sm'}
-            fontWeight={'thin'}
-            onClick={() => navigate(`/contact-management/customer-master/form/${id}`)}
-            isDisabled={!!details?.data?.has_pending_request}
-          >
-            Edit
-          </ResponsiveIconButton>
+          {canUpdate && (
+            <ResponsiveIconButton
+              colorScheme={'green'}
+              icon={<EditIcon />}
+              size={'sm'}
+              fontWeight={'thin'}
+              onClick={() => navigate(`/contact-management/customer-master/form/${id}`)}
+              isDisabled={!!details?.data?.has_pending_request}
+            >
+              Edit
+            </ResponsiveIconButton>
+          )}
           <ResponsiveIconButton
             variant={'@primary'}
             icon={<HiArrowNarrowLeft />}
@@ -100,7 +101,6 @@ export const CustomerInfo = () => {
         </HStack>
       </HStack>
 
-      {/* ── PDF Preview Modal ── */}
       <PDFPreviewModal
         isOpen={isOpen}
         onClose={closePreview}

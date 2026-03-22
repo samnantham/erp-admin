@@ -77,7 +77,7 @@ interface CreateAdminUserVariables {
   email: string;
   phone: string;
   department_id: string;
-  role_id: string;
+  department_role_id: string;
   password: string;
 }
 
@@ -101,7 +101,7 @@ interface UpdateAdminUserVariables {
   email: string;
   phone: string;
   department_id: string;
-  role_id: string;
+  department_role_id: string;
   password?: string;
 }
 

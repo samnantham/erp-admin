@@ -117,6 +117,7 @@ export const zCreatePayload = z.object({
 
 export interface QueryParams {
   status?: string;
+  is_fixed?: boolean;
 }
 
 

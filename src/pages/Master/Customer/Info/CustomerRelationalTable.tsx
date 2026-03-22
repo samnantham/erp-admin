@@ -9,6 +9,7 @@ import { useDelete } from "@/api/useDelete";
 import { BiEdit, BiInfoCircle, BiTrash } from "react-icons/bi";
 import { handleDownload } from '@/helpers/commonHelper';
 import { useNavigate } from 'react-router-dom';
+
 type ConfirmMode = null | "delete" | "restore";
 
 type Props = {
@@ -31,6 +32,9 @@ type Props = {
 
   downloadFileUrl: string;
   navigateURLComponent: string;
+
+  // false = actions visible, true = actions hidden (no update permission)
+  actionStatus?: boolean;
 };
 
 export function CustomerRelationalTable({
@@ -45,17 +49,16 @@ export function CustomerRelationalTable({
   refreshCustomerDetails,
   deleteUrl,
   downloadFileUrl,
-  navigateURLComponent
+  navigateURLComponent,
+  actionStatus = false,
 }: Props) {
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [confirmMode, setConfirmMode] = useState<ConfirmMode>(null);
-
   const [existValues, setExistValues] = useState<any>(null);
   const [activeItem, setActiveItem] = useState<any>(null);
-
   const [isEdit, setIsEdit] = useState(false);
   const [isView, setIsView] = useState(false);
 
@@ -91,13 +94,10 @@ export function CustomerRelationalTable({
 
   const onConfirmDelete = (reason: string) => {
     if (!activeItem) return;
-
     triggerDelete(
       { id: activeItem.id, deleted_reason: reason },
       {
-        onSuccess: () => {
-          refreshCustomerDetails();
-        },
+        onSuccess: () => refreshCustomerDetails(),
         onSettled: closeConfirm,
       }
     );
@@ -108,37 +108,38 @@ export function CustomerRelationalTable({
     header: "Actions",
     type: "actions",
     actions: [
+      // View — always visible
       {
         label: "View",
         onClick: (row) => openModalFor("view", row),
         icon: <BiInfoCircle />,
       },
-      {
-        label: "Edit",
-        onClick: (row) => openModalFor("edit", row),
-        icon: <BiEdit />,
-        isDisabled: (row) => !!row.has_pending_request,
-        disabledTooltip: (row) => row.pending_request_message,
-      },
-      {
-        label: "Delete",
-        icon: <BiTrash />,
-        onClick: (row) => ask("delete", row),
-        isDisabled: (row) => !!row.has_pending_request,
-        disabledTooltip: (row) => row.pending_request_message,
-      }
+      // Edit & Delete — hidden when actionStatus is true (no update permission)
+      ...(actionStatus ? [] : [
+        {
+          label: "Edit",
+          onClick: (row: any) => openModalFor("edit", row),
+          icon: <BiEdit />,
+          isDisabled: (row: any) => !!row.has_pending_request,
+          disabledTooltip: (row: any) => row.pending_request_message,
+        },
+        {
+          label: "Delete",
+          icon: <BiTrash />,
+          onClick: (row: any) => ask("delete", row),
+          isDisabled: (row: any) => !!row.has_pending_request,
+          disabledTooltip: (row: any) => row.pending_request_message,
+        },
+      ]),
     ],
   };
 
   const columns = useMemo(() => {
-    return buildColumns([...columnConfig, actionsColumn], {
-      showSerial: true,
-    });
-  }, [data]);
+    return buildColumns([...columnConfig, actionsColumn], { showSerial: true });
+  }, [data, actionStatus]);
 
   return (
     <Box bg="white" borderRadius="md" boxShadow="md" borderWidth={1} p={4}>
-
       <DataTable
         columns={columns}
         data={data}
@@ -151,41 +152,43 @@ export function CustomerRelationalTable({
         noTitlePadding={true}
         headerAction={
           <HStack ml="auto">
-            <Flex alignItems="center">
-              <Button
-                leftIcon={<HiOutlineUpload />}
-                size="sm"
-                colorScheme="green"
-                onClick={() => navigate(`/contact-management/customer-master/${navigateURLComponent}/bulk-upload`)}
-              >
-                Bulk Upload
-              </Button>
-            </Flex>
+            {/* Bulk Upload & Add — hidden when no update permission */}
+            {!actionStatus && (
+              <>
+                <Flex alignItems="center">
+                  <Button
+                    leftIcon={<HiOutlineUpload />}
+                    size="sm"
+                    colorScheme="green"
+                    onClick={() => navigate(`/contact-management/customer-master/${navigateURLComponent}/bulk-upload`)}
+                  >
+                    Bulk Upload
+                  </Button>
+                </Flex>
+                <Flex alignItems="center">
+                  <Button
+                    leftIcon={<HiPlus />}
+                    size="sm"
+                    colorScheme="brand"
+                    onClick={() => openModalFor("add")}
+                  >
+                    {addButtonLabel}
+                  </Button>
+                </Flex>
 
-            <Flex alignItems="center">
-              <Button
-                leftIcon={<HiOutlineDownload />}
-                size="sm"
-                colorScheme="teal"
-                onClick={() => handleDownload(downloadFileUrl)}
-              >
-                Download Sample
-              </Button>
-            </Flex>
-
-            <Flex alignItems="center">
-              <Button
-                leftIcon={<HiPlus />}
-                size="sm"
-                colorScheme="brand"
-                onClick={() => openModalFor("add")}
-              >
-                {addButtonLabel}
-              </Button>
-            </Flex>
+                <Flex alignItems="center">
+                  <Button
+                    leftIcon={<HiOutlineDownload />}
+                    size="sm"
+                    colorScheme="teal"
+                    onClick={() => handleDownload(downloadFileUrl)}
+                  >
+                    Download Sample
+                  </Button>
+                </Flex>
+              </>
+            )}
           </HStack>
-
-
         }
       />
 
@@ -207,6 +210,7 @@ export function CustomerRelationalTable({
         showBody={false}
         isInputRequired
         isLoading={isDeleting}
+        placeholder="Enter reason to delete"
       />
     </Box>
   );

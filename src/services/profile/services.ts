@@ -8,18 +8,37 @@ import {
   zUpdateResponsePayload,
 } from '@/services/profile/schema';
 
-export const useProfileInfo = () =>
-  useQuery({
+import { useQueryClient } from 'react-query';
+import { useNavigate } from 'react-router-dom';
+
+import { useAuthContext } from '@/services/auth/AuthContext';
+
+export const useProfileInfo = () => {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { updateToken } = useAuthContext();
+
+  return useQuery({
     queryKey: ['ProfileInfo'],
     queryFn: () =>
       getRequest(
-        endPoints.profile.info,          // ✅ from endpoints.ts
+        endPoints.profile.info,
         zProfileDetailsPayload
       ),
     keepPreviousData: true,
     refetchOnWindowFocus: false,
-    retry: 2,
+    retry: false, // ❗ important (avoid infinite retries)
+
+    onError: (error: any) => {
+      // 🔥 Check for unauthorized (adjust based on your API)
+      if (error?.response?.status === 401) {
+        updateToken(null);
+        queryClient.clear();
+        navigate('/login');
+      }
+    },
   });
+};
 
 /* ================= Update Profile ================= */
 

@@ -3,6 +3,49 @@ import { zBasicObject, zPagination } from '@/services/global-schema';
 
 /* ================= User ================= */
 
+export const zRole = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  is_fixed: z.boolean().nullable().optional(),
+  is_super_admin: z.boolean().nullable().optional(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  deleted_at: z.string().nullable().optional(),
+});
+
+export const zDepartmentRoleItem = z.object({
+  department_role_id: z.string().uuid(),
+  role_id: z.string().uuid(),
+  name: z.string(),
+  is_fixed: z.boolean().nullable().optional(),
+  is_super_admin: z.boolean().nullable().optional(),
+});
+
+export const zDepartmentWithRoles = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  is_fixed: z.boolean().nullable().optional(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  deleted_at: z.string().nullable().optional(),
+  roles: z.array(zDepartmentRoleItem),
+});
+
+export const zDepartmentRole = z.object({
+  id: z.string().uuid(), // same as department_role_id
+  department_role_id: z.string().uuid().optional(), // optional (sometimes same as id)
+  department_id: z.string().uuid(),
+  role_id: z.string().uuid(),
+
+  is_fixed: z.boolean().nullable().optional(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  deleted_at: z.string().nullable().optional(),
+
+  department: zDepartmentWithRoles,
+  role: zRole,
+});
+
 export const zUser = z.object({
   id: z.string().uuid(),
   username: z.string(),
@@ -10,13 +53,12 @@ export const zUser = z.object({
   last_name: z.string(),
   full_name: z.string(),
   email: z.string().email(),
-  phone: z.string(),
-
-  department_id: z.string().uuid(),
+  phone: z.string().nullable().optional(),
+  department_role_id: z.string().uuid().nullable().optional(),
+  department_role: zDepartmentRole.optional().nullable(),
+  department_id: z.string().uuid().nullable().optional(),
   department: zBasicObject,
   is_fixed: z.boolean().nullable().optional(),
-  role_id: z.string().uuid(),
-  role: zBasicObject,
   created_at: z.string(),
   updated_at: z.string(),
   deleted_At: z.string().nullable().optional(),

@@ -39,7 +39,7 @@ export const submasterConfig: Record<string, any> = {
         }),
     },
 
-        "hsc-codes": {
+    "hsc-codes": {
         title: "HSC Code",
         formType: "modal",
         fields: [

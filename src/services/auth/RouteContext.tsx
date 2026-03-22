@@ -1,15 +1,14 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useUserContext } from '@/services/auth/UserContext';
-import { replaceNumbersWithID } from '@/helpers/commonHelper'
-
 interface Permission {
     list: number;
     create: number;
     update: number;
-    view: number
-};
+    view: number;
+    bulk_upload: number;
+    assign_alternates: number;
+}
 
 interface RouteContextType {
     otherPermissions: Permission;
@@ -18,143 +17,119 @@ interface RouteContextType {
 
 export const RouteContext = createContext<RouteContextType | undefined>(undefined);
 
+const FULL_PERMISSIONS: Permission = { list: 1, create: 1, update: 1, view: 1, bulk_upload: 1, assign_alternates: 1 };
+const EMPTY_PERMISSIONS: Permission = { list: 0, create: 0, update: 0, view: 0, bulk_upload: 0, assign_alternates: 0 };
+
+/**
+ * Maps each module's actions to their actual route URLs.
+ * Permissions are resolved by checking these URLs against userInfo.permissions at runtime.
+ */
+const MODULE_URL_MAP: Record<string, {
+    list: string;
+    view: string;
+    create: string;
+    update: string;
+    bulk_upload?: string;
+    assign_alternates?: string;
+}> = {
+    admin_users: {
+        list:   '/user-access/admin-users',
+        view:   '/user-access/admin-users',
+        create: '/user-access/admin-users',
+        update: '/user-access/admin-users',
+    },
+    user_roles: {
+        list:   '/user-access/roles',
+        view:   '/user-access/roles',
+        create: '/user-access/roles',
+        update: '/user-access/roles',
+    },
+    departments: {
+        list:   '/user-access/departments',
+        view:   '/user-access/departments',
+        create: '/user-access/departments',
+        update: '/user-access/departments',
+    },
+    spare_management: {
+        list:            '/spare-management/master',
+        view:            '/spare-management/info',
+        create:          '/spare-management/form',
+        update:          '/spare-management/form',
+        bulk_upload:     '/spare-management/bulk-upload',
+        assign_alternates: '/spare-management/assign-alternates',
+    },
+    contact_management: {
+        list:        '/contact-management/customer-master',
+        view:        '/contact-management/customer-master/info',
+        create:      '/contact-management/customer-master/form',
+        update:      '/contact-management/customer-master/form',
+        bulk_upload: '/contact-management/customer-master/bulk-upload',
+    },
+    // Submaster has no separate form page — modal is used for create/update.
+    // All actions gated by the single /submaster/:model permission.
+    submaster: {
+        list:   '/submaster/:model',
+        view:   '/submaster/:model',
+        create: '/submaster/:model',
+        update: '/submaster/:model',
+    },
+};
+
+const resolveModuleKey = (pathname: string): string => {
+    return pathname.slice(1).replace(/-/g, '_').split('/')[0];
+};
+
 export const RouteProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const initialaPermissions: TODO = {list: 0, create: 0, update: 0, view: 0};
-    const [otherPermissions, setOtherPermissions] = useState<TODO>(initialaPermissions);
-    const [permissions, setPermissions] = useState<TODO>({});
+    const [otherPermissions, setOtherPermissions] = useState<Permission>(EMPTY_PERMISSIONS);
     const [hasPermission, setHasPermission] = useState<boolean>(true);
-    const currentPermissions: any = {
-        admin_users: {
-          list: {
-            name: "listing",
-            label: "List",
-            url: "/admin-users",
-            hasPermission: 1
-          },
-          view: {
-            name: "view",
-            label: "View",
-            url: "/admin-users/:id",
-            hasPermission: 1
-          },
-          create: {
-            name: "create",
-            label: "Create",
-            url: "/admin-users/create",
-            hasPermission: 1
-          },
-          update: {
-            name: "update",
-            label: "Update",
-            url: "/admin-users/:id/edit",
-            hasPermission: 1
-          }
-        },
-        user_roles: {
-            list: {
-              name: "listing",
-              label: "List",
-              url: "/user-roles",
-              hasPermission: 1
-            },
-            view: {
-              name: "view",
-              label: "View",
-              url: "/user-role/:id",
-              hasPermission: 1
-            },
-            create: {
-              name: "create",
-              label: "Create",
-              url: "/user-role/create",
-              hasPermission: 1
-            },
-            update: {
-              name: "update",
-              label: "Update",
-              url: "/user-role/:id/edit",
-              hasPermission: 1
-            }
-          },
-          departments: {
-            list: {
-              name: "listing",
-              label: "List",
-              url: "/departments",
-              hasPermission: 1
-            },
-            view: {
-              name: "view",
-              label: "View",
-              url: "/department/:id",
-              hasPermission: 1
-            },
-            create: {
-              name: "create",
-              label: "Create",
-              url: "/department/create",
-              hasPermission: 1
-            },
-            update: {
-              name: "update",
-              label: "Update",
-              url: "/department/:id/edit",
-              hasPermission: 1
-            }
-          }
-    };
+
     const location = useLocation();
     const navigate = useNavigate();
     const currentUrl = location.pathname;
     const { userInfo } = useUserContext();
+    const isSuperAdmin: boolean = userInfo?.is_super_admin == true;
 
     useEffect(() => {
-        console.log('Current URL:', currentUrl);
-        console.log(replaceNumbersWithID(currentUrl, ':id'))
-    }, [ navigate]);
-
-    useEffect(() => {
-        if(Object.keys(userInfo).length > 0){
-            let clonedURL = currentUrl;
-            let updatedURL = clonedURL.slice(1).replace("-", "_");
-            let urlParts = updatedURL.split('/');
-            setPermissions(currentPermissions[urlParts[0]] ? currentPermissions[urlParts[0]] : {});
-        }
-        
-    }, [userInfo, currentUrl]);
-
-    useEffect(() => {
-        if(Object.keys(permissions).length > 0){
-            Object.keys(permissions).forEach((item: any) => {
-                if(permissions[item].url === replaceNumbersWithID(currentUrl, ':id')){
-                    setOtherPermissions((prevData: any) => ({
-                        ...prevData,
-                        ['list'] : permissions['list'].hasPermission,
-                        ['view'] : permissions['view'].hasPermission,
-                        ['create'] : permissions['create'].hasPermission,
-                        ['update'] : permissions['update'].hasPermission,
-                    }));
-
-                    setHasPermission(permissions[item].hasPermission === 1 ? true : false);
-                }
-            });
-        }else{
-            console.log('Module not added for permission');
+        // Super admin always gets full access
+        if (isSuperAdmin) {
+            setOtherPermissions(FULL_PERMISSIONS);
             setHasPermission(true);
+            return;
         }
-        
-    }, [permissions]);
+
+        if (!userInfo || Object.keys(userInfo).length === 0) return;
+
+        const userPermissions: string[] = Array.isArray(userInfo.permissions) ? userInfo.permissions : [];
+        const moduleKey = resolveModuleKey(currentUrl);
+        const moduleUrls = MODULE_URL_MAP[moduleKey];
+
+        if (!moduleUrls) {
+            // Module not registered — allow through with full access
+            setOtherPermissions(FULL_PERMISSIONS);
+            setHasPermission(true);
+            return;
+        }
+
+        // Check each action URL against the user's actual permissions array
+        const resolved: Permission = {
+            list:             userPermissions.includes(moduleUrls.list)                          ? 1 : 0,
+            view:             userPermissions.includes(moduleUrls.view)                          ? 1 : 0,
+            create:           userPermissions.includes(moduleUrls.create)                        ? 1 : 0,
+            update:           userPermissions.includes(moduleUrls.update)                        ? 1 : 0,
+            bulk_upload:      moduleUrls.bulk_upload      ? (userPermissions.includes(moduleUrls.bulk_upload)      ? 1 : 0) : 0,
+            assign_alternates: moduleUrls.assign_alternates ? (userPermissions.includes(moduleUrls.assign_alternates) ? 1 : 0) : 0,
+        };
+
+        setOtherPermissions(resolved);
+        setHasPermission(resolved.list === 1);
+    }, [userInfo, currentUrl, isSuperAdmin]);
 
     useEffect(() => {
-        if(!hasPermission){
-            console.log('you dont have permitted');
+        if (!hasPermission) {
+            console.log('You do not have permission for this route');
             navigate('/unauthorized');
         }
     }, [hasPermission]);
-
-    useEffect(() => {
-        //console.log(otherPermissions)
-    }, [otherPermissions]);
 
     return (
         <RouteContext.Provider value={{ otherPermissions, setOtherPermissions }}>
@@ -166,7 +141,7 @@ export const RouteProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 export const useRouterContext = (): RouteContextType => {
     const context = useContext(RouteContext);
     if (!context) {
-        throw new Error('useUrl must be used within a UrlProvider');
+        throw new Error('useRouterContext must be used within a RouteProvider');
     }
     return context;
 };

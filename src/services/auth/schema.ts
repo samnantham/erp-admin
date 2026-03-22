@@ -1,11 +1,11 @@
 import { z } from 'zod';
-import { zAdminUser } from '@/services/profile/schema';
+import { zUser } from '@/services/user-access/adminuser/schema';
 
 export const zLoginPayload = () =>
   z.object({
     status: z.boolean(),
     message: z.string(),
-    data: zAdminUser.extend({
+    data: zUser.extend({
       token: z.string(),
     }),
   });

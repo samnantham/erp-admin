@@ -285,6 +285,7 @@ export const CustomerBulkUpload = () => {
       rows: allRows.map((row) => ({
         business_name: row.business_name,
         email: row.email,
+        contact_type_id: row.contact_type_id,
       })),
     };
 

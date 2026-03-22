@@ -25,17 +25,25 @@ import { PrincipleOfOwner } from '@/pages/Master/Customer/Info/PrincipleOfOwner'
 import { ShippingAddress } from '@/pages/Master/Customer/Info/ShippingAddress';
 import { TraderReference } from '@/pages/Master/Customer/Info/TraderReference';
 import { CompletionProgressBar } from '@/components/CompletionProgressBar';
+import { useRouterContext } from '@/services/auth/RouteContext';
 
 type CustomerDetailsProps = {
   customerId: string;
+  // disableActionBtns can still be passed explicitly from parent (e.g. from Info page)
+  // If not passed, it is derived from update permission automatically.
   disableActionBtns?: boolean;
 };
 
-// ── Main component ───────────────────────────────────────────────────────────
 export const CustomerDetails = ({
   customerId,
-  disableActionBtns = false,
+  disableActionBtns,
 }: CustomerDetailsProps) => {
+  const { otherPermissions } = useRouterContext();
+
+  // If disableActionBtns is explicitly passed, respect it.
+  // Otherwise derive from update permission — no update permission = actions disabled.
+  const actionsDisabled = disableActionBtns ?? otherPermissions.update !== 1;
+
   const {
     data: details,
     isLoading,
@@ -151,33 +159,63 @@ export const CustomerDetails = ({
       id: 'contact',
       label: 'Contact Manager',
       icon: BiSupport,
-      panel: <ContactManager customerId={customerId} contactManagerData={d?.contact_managers ?? []} refreshCustomerDetails={refreshDetails} actionStatus={disableActionBtns} customerInfo={d} />,
+      panel: <ContactManager
+        customerId={customerId}
+        contactManagerData={d?.contact_managers ?? []}
+        refreshCustomerDetails={refreshDetails}
+        actionStatus={actionsDisabled}
+        customerInfo={d}
+      />,
     },
     {
       id: 'shipping',
       label: 'Shipping Address',
       icon: HiOutlineLocationMarker,
-      panel: <ShippingAddress customerId={customerId} shippingData={d?.shipping_addresses ?? []} refreshCustomerDetails={refreshDetails} customerInfo={d} actionStatus={disableActionBtns} />,
+      panel: <ShippingAddress
+        customerId={customerId}
+        shippingData={d?.shipping_addresses ?? []}
+        refreshCustomerDetails={refreshDetails}
+        customerInfo={d}
+        actionStatus={actionsDisabled}
+      />,
     },
     {
       id: 'banking',
       label: 'Banking',
       icon: HiOutlineLibrary,
-      panel: <Bank customerId={customerId} bankData={d?.banks ?? []} refreshCustomerDetails={refreshDetails} customerInfo={d} actionStatus={disableActionBtns} />,
+      panel: <Bank
+        customerId={customerId}
+        bankData={d?.banks ?? []}
+        refreshCustomerDetails={refreshDetails}
+        customerInfo={d}
+        actionStatus={actionsDisabled}
+      />,
     },
     {
       id: 'principle',
       label: 'Principle of Owner',
       icon: FaUsersRays,
-      panel: <PrincipleOfOwner customerId={customerId} principleData={d?.principle_owners ?? []} refreshCustomerDetails={refreshDetails} customerInfo={d} actionStatus={disableActionBtns} />,
+      panel: <PrincipleOfOwner
+        customerId={customerId}
+        principleData={d?.principle_owners ?? []}
+        refreshCustomerDetails={refreshDetails}
+        customerInfo={d}
+        actionStatus={actionsDisabled}
+      />,
     },
     {
       id: 'trader',
       label: 'Trader Reference',
       icon: AiOutlineStock,
-      panel: <TraderReference customerId={customerId} traderReferenceData={d?.trader_references ?? []} refreshCustomerDetails={refreshDetails} customerInfo={d} actionStatus={disableActionBtns} />,
+      panel: <TraderReference
+        customerId={customerId}
+        traderReferenceData={d?.trader_references ?? []}
+        refreshCustomerDetails={refreshDetails}
+        customerInfo={d}
+        actionStatus={actionsDisabled}
+      />,
     },
-  ], [customerId, d, disableActionBtns]);
+  ], [customerId, d, actionsDisabled]);
 
   return (
     <SlideIn>
@@ -216,17 +254,24 @@ export const CustomerDetails = ({
 
               <HStack justify="space-between" mt={4}>
                 <ButtonGroup isAttached variant="outline">
-                  <Button onClick={() => setTabIndex((p) => Math.max(p - 1, 0))} isDisabled={tabIndex === 0} leftIcon={<Icon as={FiChevronLeft} />}>
+                  <Button
+                    onClick={() => setTabIndex((p) => Math.max(p - 1, 0))}
+                    isDisabled={tabIndex === 0}
+                    leftIcon={<Icon as={FiChevronLeft} />}
+                  >
                     Previous
                   </Button>
-                  <Button onClick={() => setTabIndex((p) => Math.min(p + 1, TAB_CONFIG.length - 1))} isDisabled={tabIndex === TAB_CONFIG.length - 1} rightIcon={<Icon as={FiChevronRight} />}>
+                  <Button
+                    onClick={() => setTabIndex((p) => Math.min(p + 1, TAB_CONFIG.length - 1))}
+                    isDisabled={tabIndex === TAB_CONFIG.length - 1}
+                    rightIcon={<Icon as={FiChevronRight} />}
+                  >
                     Next
                   </Button>
                 </ButtonGroup>
               </HStack>
             </TabPanels>
           </Tabs>
-
         </LoadingOverlay>
       </Stack>
     </SlideIn>

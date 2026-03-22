@@ -30,11 +30,20 @@ import { usePartNumberIndex, usePartNumberDropdowns } from '@/services/master/sp
 import { TbReplaceFilled } from "react-icons/tb";
 import { usePdfPreview } from '@/hooks/usePdfPreview';
 import { PDFPreviewModal } from '@/components/PDFPreview';
+import { useRouterContext } from '@/services/auth/RouteContext';
 
 type ConfirmMode = null | 'delete';
 
 export const SpareMaster = () => {
     const navigate = useNavigate();
+    const { otherPermissions } = useRouterContext();
+
+    const canCreate          = otherPermissions.create === 1;
+    const canUpdate          = otherPermissions.update === 1;
+    const canDelete          = otherPermissions.update === 1; // delete uses same update permission
+    const canView            = otherPermissions.view === 1;
+    const canBulkUpload      = otherPermissions.bulk_upload === 1;
+    const canAssignAlternates = otherPermissions.assign_alternates === 1;
 
     const { data: dropdownData, isLoading: dropdownLoading, isSuccess: dropdownsFetched } = usePartNumberDropdowns();
     const spareTypeOptions = dropdownData?.spare_types ?? [];
@@ -147,22 +156,16 @@ export const SpareMaster = () => {
                                     animation: "bgBlink 1s infinite",
                                     "@keyframes bgBlink": {
                                         "0%, 100%": { backgroundColor: "#ffb5b5" },
-                                        "50%": { backgroundColor: "transparent" }, // purple light
+                                        "50%": { backgroundColor: "transparent" },
                                     },
                                 }
                                 : {}
                         }
                     >
                         <span>{row.name}</span>
-
                         {row.is_alternate && (
                             <Tooltip label={`Alternate for ${row.alternate_of_info?.name ?? ''}`} hasArrow placement="top" bg="green.500" color="white">
-                                <Badge
-                                    colorScheme="yellow"
-                                    fontSize="9px"
-                                    variant="solid"
-                                    borderRadius="sm"
-                                >
+                                <Badge colorScheme="yellow" fontSize="9px" variant="solid" borderRadius="sm">
                                     ALT
                                 </Badge>
                             </Tooltip>
@@ -178,58 +181,47 @@ export const SpareMaster = () => {
             { key: 'spare_model.name', header: 'Model', meta: { sortable: true, sortParam: 'spare_model_id' } },
             { key: 'hsc_code.name', header: 'HSC Code', meta: { sortable: true, sortParam: 'hsc_code_id' } },
             { key: 'unit_of_measure.name', header: 'UOM', meta: { sortable: true, sortParam: 'unit_of_measure_id' } },
-            {
-                key: 'is_shelf_life',
-                header: 'Shelf Life',
-                render: (row: any) => (row.is_shelf_life ? 'Yes' : 'No'),
-            },
-            {
-                key: 'is_llp',
-                header: 'LLP',
-                render: (row: any) => (row.is_llp ? 'Yes' : 'No'),
-            },
-            {
-                key: 'is_serialized',
-                header: 'Serialized',
-                render: (row: any) => (row.is_serialized ? 'Yes' : 'No'),
-            },
-            {
-                key: 'is_dg',
-                header: 'DG',
-                render: (row: any) => (row.is_dg ? 'Yes' : 'No'),
-            },
+            { key: 'is_shelf_life', header: 'Shelf Life', render: (row: any) => (row.is_shelf_life ? 'Yes' : 'No') },
+            { key: 'is_llp', header: 'LLP', render: (row: any) => (row.is_llp ? 'Yes' : 'No') },
+            { key: 'is_serialized', header: 'Serialized', render: (row: any) => (row.is_serialized ? 'Yes' : 'No') },
+            { key: 'is_dg', header: 'DG', render: (row: any) => (row.is_dg ? 'Yes' : 'No') },
             {
                 key: 'actions',
                 header: 'Actions',
                 type: 'actions',
                 actions: [
-                    {
+                    // View — shown only if canView
+                    ...(canView ? [{
                         label: 'View',
                         icon: <BiInfoCircle />,
                         onClick: (row: any) => navigate(`/spare-management/info/${row.id}`),
-                    },
-                    {
+                    }] : []),
+                    // Edit — shown only if canUpdate
+                    ...(canUpdate ? [{
                         label: 'Edit',
                         icon: <BiEdit />,
                         isDisabled: (row: any) => !!row.has_pending_request,
                         onClick: (row: any) => navigate(`/spare-management/form/${row.id}`),
                         disabledTooltip: (row: any) => row.pending_request_message,
-                    },
-                    {
+                    }] : []),
+                    // Alternates — shown only if canAssignAlternates
+                    ...(canAssignAlternates ? [{
                         label: 'Alternates',
                         icon: <TbReplaceFilled />,
                         isDisabled: (row: any) => !!row.has_pending_request,
                         onClick: (row: any) => navigate(`/spare-management/assign-alternates/${row.id}`),
                         disabledTooltip: (row: any) => row.pending_request_message,
-                    },
-                    {
+                    }] : []),
+                    // Delete — shown only if canDelete
+                    ...(canDelete ? [{
                         label: 'Delete',
                         icon: <BiTrash />,
                         isDisabled: (row: any) => !!row.has_pending_request || !!row.is_alternate,
                         onClick: (row: any) => ask('delete', row),
                         disabledTooltip: (row: any) =>
                             row.is_alternate ? 'Cannot delete an alternate product from here' : row.pending_request_message,
-                    },
+                    }] : []),
+                    // Preview — always visible
                     {
                         label: 'Preview',
                         icon: <BiSolidFilePdf />,
@@ -240,29 +232,28 @@ export const SpareMaster = () => {
         ];
 
         return buildColumns(baseColumnConfig, { showSerial: true });
-    }, [dropdownsFetched, queryParams]);
+    }, [dropdownsFetched, queryParams, canView, canUpdate, canDelete, canAssignAlternates]);
 
     return (
         <SlideIn>
             <Stack pl={2} spacing={4}>
                 <HStack justify="space-between">
-                    <Heading as="h4" size="md">
-                        Spare Master
-                    </Heading>
-                    <ResponsiveIconButton
-                        variant="@primary"
-                        icon={<LuPlus />}
-                        size={{ base: 'sm', md: 'md' }}
-                        onClick={() => navigate('/spare-management/master/form')}
-                    >
-                        Add New
-                    </ResponsiveIconButton>
+                    <Heading as="h4" size="md">Spare Master</Heading>
+                    {canCreate && (
+                        <ResponsiveIconButton
+                            variant="@primary"
+                            icon={<LuPlus />}
+                            size={{ base: 'sm', md: 'md' }}
+                            onClick={() => navigate('/spare-management/form')}
+                        >
+                            Add New
+                        </ResponsiveIconButton>
+                    )}
                 </HStack>
 
                 <Formiz autoForm connect={form}>
                     <Box sx={{ bg: 'green.200', width: '100%', padding: '4', borderRadius: '4' }}>
                         <Box bg="white" p={6} borderRadius={4} mt={2}>
-
                             {/* Row 1 */}
                             <Stack direction={{ base: 'column', md: 'row' }} spacing={4} mb={4}>
                                 <FieldInput
@@ -320,10 +311,7 @@ export const SpareMaster = () => {
                                     key={`is_dg_${formKey}`}
                                     name="is_dg"
                                     placeholder="DG"
-                                    options={[
-                                        { value: 'true', label: 'Yes' },
-                                        { value: 'false', label: 'No' },
-                                    ]}
+                                    options={[{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }]}
                                     onValueChange={(v) => updateFilter('is_dg', v)}
                                     isClearable
                                     size="sm"
@@ -332,10 +320,7 @@ export const SpareMaster = () => {
                                     key={`is_llp_${formKey}`}
                                     name="is_llp"
                                     placeholder="LLP"
-                                    options={[
-                                        { value: 'true', label: 'Yes' },
-                                        { value: 'false', label: 'No' },
-                                    ]}
+                                    options={[{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }]}
                                     onValueChange={(v) => updateFilter('is_llp', v)}
                                     isClearable
                                     size="sm"
@@ -344,10 +329,7 @@ export const SpareMaster = () => {
                                     key={`is_serialized_${formKey}`}
                                     name="is_serialized"
                                     placeholder="Serialized"
-                                    options={[
-                                        { value: 'true', label: 'Yes' },
-                                        { value: 'false', label: 'No' },
-                                    ]}
+                                    options={[{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }]}
                                     onValueChange={(v) => updateFilter('is_serialized', v)}
                                     isClearable
                                     size="sm"
@@ -399,20 +381,20 @@ export const SpareMaster = () => {
                             }}
                             headerAction={
                                 <HStack ml="auto">
-
-
-                                    <Flex alignItems="center">
-                                        <Button
-                                            leftIcon={<LuUpload />}
-                                            colorScheme="green"
-                                            variant="solid"
-                                            size="sm"
-                                            onClick={() => navigate(`/spare-management/bulk-upload`)}
-                                        >
-                                            Bulk Upload
-                                        </Button>
-                                    </Flex>
-
+                                    {canBulkUpload && (
+                                        <Flex alignItems="center">
+                                            <Button
+                                                leftIcon={<LuUpload />}
+                                                colorScheme="green"
+                                                variant="solid"
+                                                size="sm"
+                                                onClick={() => navigate(`/spare-management/bulk-upload`)}
+                                            >
+                                                Bulk Upload
+                                            </Button>
+                                        </Flex>
+                                    )}
+                                    {canBulkUpload && (
                                     <Flex alignItems="center">
                                         <Button
                                             leftIcon={<LuDownload />}
@@ -423,6 +405,7 @@ export const SpareMaster = () => {
                                             Download Sample
                                         </Button>
                                     </Flex>
+                                    )}
                                 </HStack>
                             }
                         />

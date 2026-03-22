@@ -4,6 +4,7 @@ import BasicTableActions, { ActionsHeader } from '@/components/ReUsable/table-co
 type Props<T> = {
   mutatingRowId?: number | string;
   actionLoaderStatus?: boolean;
+  hideDelete?: boolean;
   openModal: (item: T, edit?: boolean) => void;
   openSoftDelete: (item: T) => void;
   openPermenantDelete?: (item: T) => void;

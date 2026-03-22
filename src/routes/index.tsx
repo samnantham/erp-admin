@@ -23,6 +23,9 @@ import { AdminUserForm } from '@/pages/User-Access/AdminUsers/Form';
 import { DepartmentList } from '@/pages/User-Access/Departments/Master';
 //User Role Routes
 import { RoleList } from '@/pages/User-Access/Roles/Master';
+import { RouteList } from '@/pages/User-Access/Routes/Master';
+import { PermissionPage } from '@/pages/User-Access/Permissions/Master';
+
 import AuthenticatedRouteGuard from '@/pages/Auth/AuthenticatedRouteGuard';
 // !<--!! User Access Routes Ends !!-->!
 
@@ -52,6 +55,8 @@ import { UpdateDeleteRequestDashboard } from '@/pages/UpdateDeleteRequests/Dashb
 import { UpdateDeleteRequestMaster } from '@/pages/UpdateDeleteRequests/Master';
 // !<--!! Update Delete Request Routes Ends !!-->!
 
+import PermissionGuard from '@/pages/Auth/PermissionGuard';
+
 export const routes = [
   {
     path: '/',
@@ -78,6 +83,7 @@ export const routes = [
           </PublicRouteGuard>
         ),
       },
+
       /**
        * Authenticated Routes
        */
@@ -88,7 +94,10 @@ export const routes = [
             <UserProvider>
               <RouteProvider>
                 <Layout>
-                  <Outlet />
+                  {/* PermissionGuard wraps all child routes — redirects to /unauthorized if not permitted */}
+                  <PermissionGuard>
+                    <Outlet />
+                  </PermissionGuard>
                 </Layout>
               </RouteProvider>
             </UserProvider>
@@ -109,21 +118,23 @@ export const routes = [
               { path: '', element: <AdminUserMaster /> },
               { path: 'roles', element: <RoleList /> },
               { path: 'departments', element: <DepartmentList /> },
+              { path: 'permissions/:id', element: <PermissionPage /> },
               {
                 path: 'admin-users',
                 children: [
                   { path: '', element: <AdminUserMaster /> },
                   { path: 'form/:id?/:mode?', element: <AdminUserForm /> },
                 ],
-              }
+              },
+              { path: 'pages', element: <RouteList /> },
             ],
           },
           {
-            path: "submaster/:model",
+            path: 'submaster/:model',
             children: [
               { path: '', element: <SubmasterPage /> },
               { path: 'form/:id?/:mode?', element: <SubmasterForm /> },
-            ]
+            ],
           },
           {
             path: 'contact-management',
@@ -135,11 +146,9 @@ export const routes = [
                   { path: 'form/:id?', element: <CustomerForm /> },
                   { path: 'bulk-upload', element: <CustomerBulkUpload /> },
                   { path: ':relationType/bulk-upload', element: <CustomerRelationsBulkUpload /> },
-                  {
-                    path: 'info/:id', element: <CustomerInfo />,
-                  },
+                  { path: 'info/:id', element: <CustomerInfo /> },
                 ],
-              }
+              },
             ],
           },
           {
@@ -154,14 +163,14 @@ export const routes = [
                   { path: 'info/:id', element: <SpareInfo /> },
                   { path: 'assign-alternates/:id', element: <AssignAlternateParts /> },
                 ],
-              }
+              },
             ],
           },
           {
             path: 'update-delete-requests',
             children: [
               { path: 'dashboard', element: <UpdateDeleteRequestDashboard /> },
-              { path: ':module', element: <UpdateDeleteRequestMaster /> }
+              { path: ':module', element: <UpdateDeleteRequestMaster /> },
             ],
           },
         ],
