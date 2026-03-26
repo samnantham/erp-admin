@@ -29,7 +29,7 @@ export type TableAction<T> = {
  */
 export type DynamicColumn<T> = {
   key: string;
-  header: string;
+  header: string | React.ReactNode | (() => React.ReactNode);
   type?: "text" | "nested" | "actions";
   render?: (row: T) => React.ReactNode;
   actions?: TableAction<T>[];
@@ -53,6 +53,9 @@ const getNestedValue = (obj: any, path: string) => {
   return path.split(".").reduce((acc, part) => acc?.[part], obj);
 };
 
+const resolveHeader = (header: string | React.ReactNode | (() => React.ReactNode)) =>
+  typeof header === "function" ? header() : header;
+
 /**
  * Main reusable column builder
  */
@@ -69,7 +72,7 @@ export function buildColumns<T extends object>(
     if (col.type === "actions" && col.actions) {
       return columnHelper.display({
         id: col.key,
-        header: () => <Text textAlign="end">{col.header}</Text>,
+        header: () => <Text textAlign="end">{resolveHeader(col.header)}</Text>,
         size: col.size,
         meta: {
           isNumeric: col.isNumeric,
@@ -100,7 +103,7 @@ export function buildColumns<T extends object>(
                 Actions
               </MenuButton>
 
-              <MenuList 
+              <MenuList
                 zIndex={9999}
                 width="120px"
                 maxW="120px"
@@ -151,7 +154,7 @@ export function buildColumns<T extends object>(
     if (col.render) {
       return columnHelper.display({
         id: col.key,
-        header: col.header,
+        header: () => <>{resolveHeader(col.header)}</>, // ← wrap in function to accept ReactNode
         size: col.size,
         meta: {
           isNumeric: col.isNumeric,
@@ -166,7 +169,7 @@ export function buildColumns<T extends object>(
      */
     return columnHelper.accessor((row) => getNestedValue(row, col.key), {
       id: col.key,
-      header: col.header,
+      header: () => <>{resolveHeader(col.header)}</>,// ← wrap in function to accept ReactNode
       size: col.size,
       meta: {
         isNumeric: col.isNumeric,

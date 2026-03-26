@@ -17,8 +17,8 @@ import axios from 'axios';
 type PDFPreviewModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  pdfUrlOrEndpoint: string; // URL or API endpoint
-  isEndpoint?: boolean; // true = API endpoint (default), false = direct PDF URL
+  pdfUrlOrEndpoint: string;
+  isEndpoint?: boolean;
   title?: string;
 };
 
@@ -31,52 +31,71 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
 }) => {
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [iframeLoading, setIframeLoading] = useState(false);
 
   useEffect(() => {
-    if (isOpen && isEndpoint) {
-      const fetchPdf = async () => {
-        setLoading(true);
-        try {
-          if (pdfBlobUrl) {
-            URL.revokeObjectURL(pdfBlobUrl);
-            setPdfBlobUrl(null); // Clear before reusing
-          }
+    if (!isOpen) return;
 
+    const fetchPdf = async () => {
+      setLoading(true);
+      setIframeLoading(true);
+
+      try {
+        // cleanup old blob
+        if (pdfBlobUrl) {
+          URL.revokeObjectURL(pdfBlobUrl);
+          setPdfBlobUrl(null);
+        }
+
+        if (isEndpoint) {
           const response = await axios.get(pdfUrlOrEndpoint, {
             responseType: 'arraybuffer',
             headers: { Accept: 'application/pdf' },
           });
 
-          const blob = new Blob([response.data], { type: 'application/pdf' });
-          const url = URL.createObjectURL(blob);
-          setPdfBlobUrl(url);
-        } catch (err) {
-          console.error('PDF fetch failed:', err);
-          setPdfBlobUrl(null); // Ensure reset on failure
-        } finally {
-          setLoading(false);
-        }
-      };
+          const blob = new Blob([response.data], {
+            type: 'application/pdf',
+          });
 
-      fetchPdf();
-    } else if (!isEndpoint) {
-      setPdfBlobUrl(pdfUrlOrEndpoint); // Direct link
-    }
+          const url = URL.createObjectURL(blob);
+
+          // 👇 ensure loader is visible even for fast APIs
+          setTimeout(() => {
+            setPdfBlobUrl(url);
+          }, 200);
+        } else {
+          // direct URL case
+          setTimeout(() => {
+            setPdfBlobUrl(pdfUrlOrEndpoint);
+          }, 100);
+        }
+      } catch (err) {
+        console.error('PDF fetch failed:', err);
+        setPdfBlobUrl(null);
+        setLoading(false);
+        setIframeLoading(false);
+      }
+    };
+
+    fetchPdf();
   }, [isOpen, pdfUrlOrEndpoint, isEndpoint]);
 
   const handleClose = () => {
     onClose();
+
     if (pdfBlobUrl) {
       URL.revokeObjectURL(pdfBlobUrl);
     }
+
     setPdfBlobUrl(null);
+    setLoading(false);
+    setIframeLoading(false);
   };
 
   useEffect(() => {
     return () => {
       if (pdfBlobUrl && isEndpoint) {
         URL.revokeObjectURL(pdfBlobUrl);
-        setPdfBlobUrl(null);
       }
     };
   }, [pdfBlobUrl, isEndpoint]);
@@ -91,6 +110,7 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
       motionPreset="none"
     >
       <ModalOverlay />
+
       <ModalContent
         maxW="900px"
         w="90vw"
@@ -100,6 +120,7 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
       >
         <ModalHeader textAlign="center">{title}</ModalHeader>
         <ModalCloseButton />
+
         <ModalBody
           flex="1"
           p={0}
@@ -109,8 +130,15 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
           bg="gray.50"
           position="relative"
         >
-          <Box w="100%" h="100%" bg="white" position="relative" boxShadow="md">
-            {loading ? (
+          <Box
+            w="100%"
+            h="100%"
+            bg="white"
+            position="relative"
+            boxShadow="md"
+          >
+            {/* ✅ Loader */}
+            {(loading || iframeLoading) && (
               <Flex
                 position="absolute"
                 top="0"
@@ -124,7 +152,10 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
               >
                 <Spinner size="xl" />
               </Flex>
-            ) : pdfBlobUrl ? (
+            )}
+
+            {/* ✅ PDF */}
+            {pdfBlobUrl ? (
               <iframe
                 key={pdfBlobUrl}
                 src={`${pdfBlobUrl}#zoom=80&toolbar=0&navpanes=0&scrollbar=0`}
@@ -132,21 +163,26 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
                 height="100%"
                 title="PDF Preview"
                 style={{ border: 'none', display: 'block' }}
+                onLoad={() => {
+                  setIframeLoading(false);
+                  setLoading(false); // 👈 stop loader only after render
+                }}
               />
             ) : (
-              <Flex
-                position="absolute"
-                top="0"
-                left="0"
-                right="0"
-                bottom="0"
-                justify="center"
-                align="center"
-                bg="white"
-                zIndex={1}
-              >
-                <Text p={4}>Unable to load PDF</Text>
-              </Flex>
+              !loading && (
+                <Flex
+                  position="absolute"
+                  top="0"
+                  left="0"
+                  right="0"
+                  bottom="0"
+                  justify="center"
+                  align="center"
+                  bg="white"
+                >
+                  <Text p={4}>Unable to load PDF</Text>
+                </Flex>
+              )
             )}
           </Box>
         </ModalBody>

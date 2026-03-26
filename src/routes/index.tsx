@@ -55,6 +55,16 @@ import { UpdateDeleteRequestDashboard } from '@/pages/UpdateDeleteRequests/Dashb
 import { UpdateDeleteRequestMaster } from '@/pages/UpdateDeleteRequests/Master';
 // !<--!! Update Delete Request Routes Ends !!-->!
 
+// !<--!! Sales Log Routes Starts !!-->!
+import { SalesLogMaster } from '@/pages/Sales-Log/Master';
+import { SalesLogForm } from '@/pages/Sales-Log/Form';
+// !<--!! Update Delete Request Routes Ends !!-->!
+
+// !<--!! Material Request Routes Starts !!-->!
+import { MaterialRequestMaster } from '@/pages/Purchase/Material-Request/Master';
+import { MaterialRequestForm } from '@/pages/Purchase/Material-Request/Form';
+// !<--!! Update Delete Request Routes Ends !!-->!
+
 import PermissionGuard from '@/pages/Auth/PermissionGuard';
 
 export const routes = [
@@ -162,6 +172,30 @@ export const routes = [
                   { path: 'bulk-upload', element: <SpareBulkUpload /> },
                   { path: 'info/:id', element: <SpareInfo /> },
                   { path: 'assign-alternates/:id', element: <AssignAlternateParts /> },
+                ],
+              },
+            ],
+          },
+          {
+            path: 'sales-management',
+            children: [
+              {
+                path: '',
+                children: [
+                  { path: 'sales-log/master', element: <SalesLogMaster /> },
+                  { path: 'sales-log/form/:id?', element: <SalesLogForm /> },
+                ],
+              },
+            ],
+          },
+          {
+            path: 'purchase',
+            children: [
+              {
+                path: 'material-request',
+                children: [
+                  { path: 'master', element: <MaterialRequestMaster /> },
+                  { path: 'form/:id?', element: <MaterialRequestForm /> },
                 ],
               },
             ],

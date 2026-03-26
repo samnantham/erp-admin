@@ -46,3 +46,12 @@ export function useApiMutation<
     },
   });
 }
+
+export function useFileMutation<TVariables = unknown>(
+  mutationFn: (vars: TVariables) => Promise<string>,
+  options: UseMutationOptions<string, AxiosError, TVariables> = {}
+) {
+  return useMutation<string, AxiosError, TVariables>(mutationFn, {
+    ...options,
+  });
+}

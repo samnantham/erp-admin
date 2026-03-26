@@ -11,6 +11,7 @@ import {
   Progress,
   Text,
   Tooltip,
+  useDisclosure
 } from '@chakra-ui/react';
 import { FieldProps, useField } from '@formiz/core';
 import { HiEye, HiOutlineUpload, HiX } from 'react-icons/hi';
@@ -67,13 +68,13 @@ export const FieldUpload = ({
 
   const toastSuccess = useToastSuccess();
 
-  const [openModal, setOpenModal] = useState<boolean>(false);
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const [fileType, setFileType] = useState<'image' | 'pdf' | 'ppt'>('image');
   const [fileUrl, setFileUrl] = useState<string>('');
   const [existingFileName, setExistingFileName] = useState<string>('');
   const closeModal = () => {
     setFileUrl('');
-    setOpenModal(false);
+    onClose();
   };
 
   const clickView = () => {
@@ -93,22 +94,17 @@ export const FieldUpload = ({
           setFileUrl(`${import.meta.env.VITE_PUBLIC_DOC_URL}${uploadedFile}`);
         }
       }
+      onOpen();
     }
   };
 
   useEffect(() => {
-    if (fileUrl != '') {
-      setOpenModal(true);
+    if (field.value) {
+      setUploadedFile(field.value);
+      setFileName(field.value.split("/").pop() || "");
+      setUploadComplete(true);
     }
-  }, [fileUrl]);
-
-  useEffect(() => {
-  if (field.value) {
-    setUploadedFile(field.value);
-    setFileName(field.value.split("/").pop() || "");
-    setUploadComplete(true);
-  }
-}, [field.value]);
+  }, [field.value]);
 
   const formGroupProps = {
     ...rest,
@@ -129,46 +125,46 @@ export const FieldUpload = ({
   const [uploadedFile, setUploadedFile] = useState<any>('');
   const allowedExtensions = '.png, .jpg, .jpeg, .gif, .pdf';
 
-useEffect(() => {
-  if (existingFileUrl) {
-    setUploadedFile(existingFileUrl);
-    field.setValue(existingFileUrl as TODO);
-    setUploadComplete(true);
-  } else {
-    field.setValue(null);
-    setUploadedFile('');
-    setFileName('');
+  useEffect(() => {
+    if (existingFileUrl) {
+      setUploadedFile(existingFileUrl);
+      field.setValue(existingFileUrl as TODO);
+      setUploadComplete(true);
+    } else {
+      field.setValue(null);
+      setUploadedFile('');
+      setFileName('');
+      setUploadComplete(false);
+    }
+  }, [existingFileUrl]);
+
+  const uploadFile = useFileUpload({
+    onSuccess: ({ data }) => {
+      setUploading(false);
+      setUploadComplete(true);
+
+      setUploadedFile(data.file_path);
+      field.setValue(data.file_path as string);
+    },
+  });
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    setFileName(file.name);
+    setUploading(true);
     setUploadComplete(false);
-  }
-}, [existingFileUrl]);
+    setUserInteracted(true);
 
-const uploadFile = useFileUpload({
-  onSuccess: ({ data }) => {
-    setUploading(false);
-    setUploadComplete(true);
+    const formData = new FormData();
+    formData.append("file", file);
 
-    setUploadedFile(data.file_path);
-    field.setValue(data.file_path as string);
-  },
-});
+    uploadFile.mutate(formData);
 
- const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-  const file = event.target.files?.[0];
-
-  if (!file) return;
-
-  setFileName(file.name);
-  setUploading(true);
-  setUploadComplete(false);
-  setUserInteracted(true);
-
-  const formData = new FormData();
-  formData.append("file", file);
-
-  uploadFile.mutate(formData);
-
-  event.target.value = "";
-};
+    event.target.value = "";
+  };
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -179,17 +175,17 @@ const uploadFile = useFileUpload({
 
   const handleDeleteExistingFile = () => {
     field.setValue(null); // Set to null instead of empty string
-  setFileName('');
-  setUploadedFile('');
-  setUserInteracted(true);
-  setUploadComplete(false);
-    
+    setFileName('');
+    setUploadedFile('');
+    setUserInteracted(true);
+    setUploadComplete(false);
+
     // Call the onDelete function if provided
     if (onDelete) {
       onDelete();
       field.setValue('' as TODO);
     }
-    
+
     toastSuccess({
       title: 'Existing document marked for deletion',
     });
@@ -229,7 +225,7 @@ const uploadFile = useFileUpload({
   }, [userInteracted, existingFileUrl, field]);
 
   useEffect(() => {
-     field.setValue(existingFileName ? existingFileName as TODO : null);
+    field.setValue(existingFileName ? existingFileName as TODO : null);
   }, [existingFileName]);
 
   const addonWidth =
@@ -331,8 +327,8 @@ const uploadFile = useFileUpload({
       {children}
 
       <FilePreview
-        open={openModal}
-        onClose={() => closeModal()}
+        open={isOpen}
+        onClose={closeModal}
         fileType={fileType}
         fileUrl={fileUrl}
       />

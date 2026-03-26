@@ -26,7 +26,7 @@ import {
 } from '@chakra-ui/react';
 import Axios from 'axios';
 import { IconType } from 'react-icons';
-import { HiMiniWrenchScrewdriver } from "react-icons/hi2";
+import { HiMiniWrenchScrewdriver } from 'react-icons/hi2';
 import {
   FaCalendarAlt,
   FaCheckCircle,
@@ -38,7 +38,9 @@ import {
   FaUsersCog,
   FaClipboardList,
   FaRulerCombined,
-  FaNotesMedical
+  FaNotesMedical,
+  FaShoppingBag,
+  FaClipboardCheck
 } from 'react-icons/fa';
 import {
   FaBox,
@@ -59,10 +61,12 @@ import {
   FaUsersGear,
   FaWarehouse,
   FaWrench,
-  FaReceipt
+  FaReceipt,
+  FaRankingStar,
+  FaChartLine,
 } from 'react-icons/fa6';
-import { PiListNumbersFill } from "react-icons/pi";
-import { BiSitemap } from "react-icons/bi";
+import { PiListNumbersFill } from 'react-icons/pi';
+import { BiSitemap } from 'react-icons/bi';
 import { FiBell, FiChevronDown, FiMenu } from 'react-icons/fi';
 import { LuBarcode } from 'react-icons/lu';
 import { useQueryClient } from 'react-query';
@@ -84,6 +88,8 @@ interface LinkItemProps {
   name: string;
   icon: IconType;
   link?: string;
+  activeBase?: string;
+  state?: any;
   subItems?: LinkItemProps[];
 }
 
@@ -104,13 +110,15 @@ const NavigationSections: Array<SectionProps> = [
     items: [
       { name: 'Dashboard', icon: FaHome, link: '/' },
       {
-        name: 'User Access', icon: FaUsersGear, subItems: [
+        name: 'User Access',
+        icon: FaUsersGear,
+        subItems: [
           { icon: FaBuildingUser, link: '/user-access/roles', name: 'User Roles' },
           { icon: FaTableList, link: '/user-access/departments', name: 'Departments' },
           { icon: FaUserPlus, link: '/user-access/admin-users', name: 'Admin Users' },
           { icon: FaNotesMedical, link: '/user-access/pages', name: 'Pages/Routes' },
-        ]
-      }
+        ],
+      },
     ],
   },
   {
@@ -157,7 +165,12 @@ const NavigationSections: Array<SectionProps> = [
         name: 'Spare Management',
         icon: BiSitemap,
         subItems: [
-          { name: 'Spare Master', icon: HiMiniWrenchScrewdriver, link: '/spare-management/master' },
+          {
+            name: 'Spare Master',
+            icon: HiMiniWrenchScrewdriver,
+            link: '/spare-management/master',
+            activeBase: '/spare-management',
+          },
         ],
       },
     ],
@@ -165,10 +178,44 @@ const NavigationSections: Array<SectionProps> = [
   {
     sectionName: 'Other Menus',
     items: [
-      { name: 'Approval Monitor', icon: FaClipboardList, link: '/update-delete-requests/dashboard' },
-    ]
+      {
+        name: 'Purchase',
+        icon: FaShoppingBag,
+        subItems: [
+          {
+            name: 'Material Request',
+            icon: FaClipboardCheck,
+            link: '/purchase/material-request/master',
+            activeBase: '/purchase/material-request',
+            state: { type: 'oe' },
+          },
+        ],
+      },
+      {
+        name: 'Sales',
+        icon: FaChartLine,
+        subItems: [
+          {
+            name: 'SEL',
+            icon: FaRankingStar,
+            link: '/sales-management/sales-log/master',
+            activeBase: '/sales-management/sales-log',
+          },
+          {
+            name: 'Material Request',
+            icon: FaClipboardCheck,
+            link: '/purchase/material-request/master',
+            activeBase: '/purchase/material-request',
+            state: { type: 'sel' },
+          },
+        ],
+      },
+      { name: 'Approval Monitor', icon: FaClipboardList, link: '/update-delete-requests/dashboard', activeBase: '/update-delete-requests' },
+    ],
   },
 ];
+
+// ─── Permission Helpers ───────────────────────────────────────────────────────
 
 const isLinkPermitted = (link: string, permissions: string[], isSuperAdmin: boolean): boolean => {
   if (isSuperAdmin) return true;
@@ -201,6 +248,59 @@ const getFilteredSections = (permissions: string[], isSuperAdmin: boolean): Sect
     return acc;
   }, []);
 };
+
+// ─── Active Link Helper ───────────────────────────────────────────────────────
+
+/**
+ * Determines if a nav item is active.
+ *
+ * When a nav item has a `state` (e.g. { type: 'oe' } vs { type: 'sel' }),
+ * two items can share the same pathname but belong to different contexts.
+ * In that case we match against location.state so only the correct one
+ * highlights — and we do NOT fall back to activeBase/pathname matching,
+ * because that would cause both to highlight simultaneously.
+ *
+ * When no `state` is defined on the item, we use the normal
+ * activeBase → exact → prefix rules.
+ */
+const isLinkActive = (
+  link: string,
+  pathname: string,
+  locationState: any,
+  activeBase?: string,
+  itemState?: any
+): boolean => {
+  const normalize = (p: string) => p.replace(/\/+$/, '').toLowerCase();
+  const current = normalize(pathname);
+  const target = normalize(link);
+
+  // ── State-aware match ──────────────────────────────────────────────────────
+  // If the nav item declares a state, only activate when BOTH the path and
+  // every state key match. This prevents two items with the same link but
+  // different state from both being highlighted.
+  if (itemState && Object.keys(itemState).length > 0) {
+    const pathMatches = activeBase
+      ? current === normalize(activeBase) || current.startsWith(normalize(activeBase) + '/')
+      : current === target || current.startsWith(target + '/');
+
+    if (!pathMatches) return false;
+
+    // All state keys declared on the nav item must match location.state
+    return Object.entries(itemState).every(
+      ([k, v]) => locationState?.[k] === v
+    );
+  }
+
+  // ── Normal match (no state declared) ──────────────────────────────────────
+  if (activeBase) {
+    const base = normalize(activeBase);
+    return current === base || current.startsWith(base + '/');
+  }
+
+  return current === target || current.startsWith(target + '/');
+};
+
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
 
 const SidebarContent = ({ onClose, permissions, isSuperAdmin, ...rest }: SidebarProps) => {
   const filteredSections = getFilteredSections(permissions, isSuperAdmin);
@@ -236,7 +336,7 @@ const SidebarContent = ({ onClose, permissions, isSuperAdmin, ...rest }: Sidebar
           )}
           <VStack align="stretch">
             {section.items.map((link) => (
-              <NavItem key={link.name} icon={link.icon} name={link.name} link={link.link} subItems={link.subItems} />
+              <NavItem key={link.name} {...link} />
             ))}
           </VStack>
         </Box>
@@ -245,22 +345,41 @@ const SidebarContent = ({ onClose, permissions, isSuperAdmin, ...rest }: Sidebar
   );
 };
 
-const NavItem = ({ icon, name, link, subItems, ...rest }: LinkItemProps & FlexProps) => {
-  const { pathname } = useLocation();
-  const hasActiveChild = subItems?.some((item) => item.link && pathname.startsWith(item.link)) || false;
-  const isActive = (link === '/' ? pathname === '/' : link && pathname.startsWith(link)) || hasActiveChild;
-  const [isOpen, setIsOpen] = useState(hasActiveChild);
+// ─── NavItem ──────────────────────────────────────────────────────────────────
+
+const NavItem = ({ icon, name, link, activeBase, state, subItems, ...rest }: LinkItemProps & FlexProps) => {
+  const { pathname, state: locationState } = useLocation();
+
   const hasSubItems = !!subItems?.length;
+
+  // A child is active only if its path AND state both match
+  const hasActiveChild =
+    subItems?.some((item) =>
+      item.link
+        ? isLinkActive(item.link, pathname, locationState, item.activeBase, item.state)
+        : false
+    ) ?? false;
+
+  const isActive =
+    (link ? isLinkActive(link, pathname, locationState, activeBase, state) : false) ||
+    hasActiveChild;
+
+  const [isOpen, setIsOpen] = useState(hasActiveChild);
 
   useEffect(() => {
     if (hasActiveChild) setIsOpen(true);
-  }, [pathname]);
+  }, [pathname, locationState]);
 
   if (hasSubItems || !link) {
     return (
       <Box {...rest}>
         <Flex
-          align="center" p="2" mx="4" borderRadius="lg" role="group" cursor="pointer"
+          align="center"
+          p="2"
+          mx="4"
+          borderRadius="lg"
+          role="group"
+          cursor="pointer"
           color={isActive ? 'white' : 'gray.400'}
           bg={isActive ? 'whiteAlpha.200' : 'transparent'}
           _hover={{ bg: 'whiteAlpha.200', color: 'white' }}
@@ -269,34 +388,47 @@ const NavItem = ({ icon, name, link, subItems, ...rest }: LinkItemProps & FlexPr
           {icon && <Icon mr="4" fontSize="16" _groupHover={{ color: 'white' }} as={icon} />}
           <Text fontSize="xs">{name}</Text>
           {hasSubItems && (
-            <Icon as={FiChevronDown} ml="auto" transform={isOpen ? 'rotate(180deg)' : 'rotate(0)'} />
+            <Icon
+              as={FiChevronDown}
+              ml="auto"
+              transform={isOpen ? 'rotate(180deg)' : 'rotate(0)'}
+            />
           )}
         </Flex>
         {hasSubItems && (
           <Collapse in={isOpen} animateOpacity>
             <VStack align="stretch" pl="6" mt="2" spacing="0" width="full">
-              {subItems!.map((subItem) => <NavItem key={subItem.name} {...subItem} />)}
+              {subItems!.map((subItem) => (
+                <NavItem key={subItem.name} {...subItem} />
+              ))}
             </VStack>
           </Collapse>
         )}
       </Box>
     );
-  } else {
-    return (
-      <ChakraLink as={RouterLink} to={link}>
-        <Flex
-          align="center" p="2" mx="4" borderRadius="lg" role="group" cursor="pointer"
-          color={isActive ? 'white' : 'gray.400'}
-          bg={isActive ? 'whiteAlpha.200' : 'transparent'}
-          _hover={{ bg: 'whiteAlpha.200', color: 'white' }}
-        >
-          {icon && <Icon mr="4" fontSize="16" _groupHover={{ color: 'white' }} as={icon} />}
-          <Text fontSize="xs">{name}</Text>
-        </Flex>
-      </ChakraLink>
-    );
   }
+
+  return (
+    <ChakraLink as={RouterLink} to={link} state={state} style={{ textDecoration: 'none' }}>
+      <Flex
+        align="center"
+        p="2"
+        mx="4"
+        borderRadius="lg"
+        role="group"
+        cursor="pointer"
+        color={isActive ? 'white' : 'gray.400'}
+        bg={isActive ? 'whiteAlpha.200' : 'transparent'}
+        _hover={{ bg: 'whiteAlpha.200', color: 'white' }}
+      >
+        {icon && <Icon mr="4" fontSize="16" _groupHover={{ color: 'white' }} as={icon} />}
+        <Text fontSize="xs">{name}</Text>
+      </Flex>
+    </ChakraLink>
+  );
 };
+
+// ─── MobileNav ────────────────────────────────────────────────────────────────
 
 const MobileNav = ({ userInfo, onOpen, ...rest }: MobileProps) => {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -305,12 +437,23 @@ const MobileNav = ({ userInfo, onOpen, ...rest }: MobileProps) => {
 
   return (
     <Flex
-      ml={{ base: 0, md: 60 }} px={{ base: 4, md: 4 }} height="16" alignItems="center"
-      bg={'white'} borderBottomWidth="1px" borderBottomColor={'gray.200'}
+      ml={{ base: 0, md: 60 }}
+      px={{ base: 4, md: 4 }}
+      height="16"
+      alignItems="center"
+      bg={'white'}
+      borderBottomWidth="1px"
+      borderBottomColor={'gray.200'}
       justifyContent={{ base: 'space-between', md: 'flex-end' }}
       {...rest}
     >
-      <IconButton display={{ base: 'flex', md: 'none' }} onClick={onOpen} variant="outline" aria-label="open menu" icon={<FiMenu />} />
+      <IconButton
+        display={{ base: 'flex', md: 'none' }}
+        onClick={onOpen}
+        variant="outline"
+        aria-label="open menu"
+        icon={<FiMenu />}
+      />
       <Image display={{ base: 'flex', md: 'none' }} src="/logo.png" alt="logo" height={'20'} width={'auto'} />
 
       <HStack spacing={{ base: '0', md: '6' }}>
@@ -319,16 +462,51 @@ const MobileNav = ({ userInfo, onOpen, ...rest }: MobileProps) => {
           <Menu>
             <MenuButton py={2} transition="all 0.3s" _focus={{ boxShadow: 'none' }}>
               <HStack>
-                <Avatar size={'sm'} src={'https://images.unsplash.com/photo-1619946794135-5bc917a27793?ixlib=rb-0.3.5&q=80&fm=jpg&crop=faces&fit=crop&h=200&w=200&s=b616b2c5b373a80ffc9636ba24f7a4a9'} />
-                <VStack display={{ base: 'none', md: 'flex' }} alignItems="flex-start" spacing="1px" ml="2" width="5vw">
-                  <Text fontWeight={'bold'} fontSize="sm" color={'gray.800'} sx={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', width: '5vw' }}>
-                    {Object.keys(userInfo).length > 0 ? userInfo?.first_name + ' ' + userInfo?.last_name : 'Loading...'}
-                  </Text>
-                  <Text fontSize="xs" color={'gray.800'} opacity={0.6} sx={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', width: '5vw' }}>
+                <Avatar
+                  size={'sm'}
+                  src={
+                    'https://images.unsplash.com/photo-1619946794135-5bc917a27793?ixlib=rb-0.3.5&q=80&fm=jpg&crop=faces&fit=crop&h=200&w=200&s=b616b2c5b373a80ffc9636ba24f7a4a9'
+                  }
+                />
+                <VStack
+                  display={{ base: 'none', md: 'flex' }}
+                  alignItems="flex-start"
+                  spacing="1px"
+                  ml="2"
+                  width="5vw"
+                >
+                  <Text
+                    fontWeight={'bold'}
+                    fontSize="sm"
+                    color={'gray.800'}
+                    sx={{
+                      overflow: 'hidden',
+                      whiteSpace: 'nowrap',
+                      textOverflow: 'ellipsis',
+                      width: '5vw',
+                    }}
+                  >
                     {Object.keys(userInfo).length > 0
-                      ? userInfo?.is_super_admin == true
+                      ? userInfo?.first_name + ' ' + userInfo?.last_name
+                      : 'Loading...'}
+                  </Text>
+                  <Text
+                    fontSize="xs"
+                    color={'gray.800'}
+                    opacity={0.6}
+                    sx={{
+                      overflow: 'hidden',
+                      whiteSpace: 'nowrap',
+                      textOverflow: 'ellipsis',
+                      width: '5vw',
+                    }}
+                  >
+                    {Object.keys(userInfo).length > 0
+                      ? userInfo?.is_super_admin === true
                         ? 'Super Admin'
-                        : userInfo?.department_role?.department?.name + ' - ' + userInfo?.department_role?.role?.name
+                        : userInfo?.department_role?.department?.name +
+                        ' - ' +
+                        userInfo?.department_role?.role?.name
                       : 'Loading...'}
                   </Text>
                 </VStack>
@@ -338,20 +516,50 @@ const MobileNav = ({ userInfo, onOpen, ...rest }: MobileProps) => {
               </HStack>
             </MenuButton>
             <MenuList bg={'white'} borderColor={'gray.200'}>
-              <MenuItem bg={'white'} color={'gray.800'} _hover={{ bg: 'gray.100' }} onClick={() => setIsProfileModalOpen(true)}>Edit Profile</MenuItem>
-              <MenuItem bg={'white'} color={'gray.800'} _hover={{ bg: 'gray.100' }} onClick={() => setIsPasswordModalOpen(true)}>Password Update</MenuItem>
+              <MenuItem
+                bg={'white'}
+                color={'gray.800'}
+                _hover={{ bg: 'gray.100' }}
+                onClick={() => setIsProfileModalOpen(true)}
+              >
+                Edit Profile
+              </MenuItem>
+              <MenuItem
+                bg={'white'}
+                color={'gray.800'}
+                _hover={{ bg: 'gray.100' }}
+                onClick={() => setIsPasswordModalOpen(true)}
+              >
+                Password Update
+              </MenuItem>
               <MenuDivider />
-              <MenuItem bg={'white'} color={'gray.800'} _hover={{ bg: 'gray.100' }} onClick={() => logout()}>Sign out</MenuItem>
+              <MenuItem
+                bg={'white'}
+                color={'gray.800'}
+                _hover={{ bg: 'gray.100' }}
+                onClick={() => logout()}
+              >
+                Sign out
+              </MenuItem>
             </MenuList>
           </Menu>
         </Flex>
       </HStack>
 
-      <PasswordUpdateModal isOpen={isPasswordModalOpen} onClose={() => setIsPasswordModalOpen(false)} />
-      <ProfileUpdateModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} userInfo={userInfo} />
+      <PasswordUpdateModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+      />
+      <ProfileUpdateModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        userInfo={userInfo}
+      />
     </Flex>
   );
 };
+
+// ─── Layout ───────────────────────────────────────────────────────────────────
 
 const Layout: FC<React.PropsWithChildren> = ({ children }) => {
   const { userInfo, setUserInfo, setIsProfileLoading } = useUserContext();
@@ -378,7 +586,6 @@ const Layout: FC<React.PropsWithChildren> = ({ children }) => {
 
   const { data: profileData, isLoading: isProfileLoading } = useProfileInfo();
 
-  // Sync loading state into UserContext so PermissionGuard can read it
   useEffect(() => {
     setIsProfileLoading(isProfileLoading);
   }, [isProfileLoading]);
@@ -390,12 +597,23 @@ const Layout: FC<React.PropsWithChildren> = ({ children }) => {
   }, [profileData]);
 
   const permissions: string[] = userInfo?.permissions || [];
-  const isSuperAdmin: boolean = userInfo?.is_super_admin == true;
+  const isSuperAdmin: boolean = userInfo?.is_super_admin === true;
 
   return (
     <Box minH="100vh" bg={'gray.100'}>
-      <SidebarContent onClose={onClose} permissions={permissions} isSuperAdmin={isSuperAdmin} display={{ base: 'none', md: 'block' }} />
-      <Drawer isOpen={isOpen} placement="left" onClose={onClose} returnFocusOnClose={false} onOverlayClick={onClose}>
+      <SidebarContent
+        onClose={onClose}
+        permissions={permissions}
+        isSuperAdmin={isSuperAdmin}
+        display={{ base: 'none', md: 'block' }}
+      />
+      <Drawer
+        isOpen={isOpen}
+        placement="left"
+        onClose={onClose}
+        returnFocusOnClose={false}
+        onOverlayClick={onClose}
+      >
         <DrawerContent>
           <SidebarContent onClose={onClose} permissions={permissions} isSuperAdmin={isSuperAdmin} />
         </DrawerContent>

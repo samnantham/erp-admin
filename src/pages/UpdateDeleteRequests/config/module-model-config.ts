@@ -10,10 +10,13 @@ export const MODULE_MODEL_OPTIONS: Record<string, { label: string; value: string
     spare: [
         { label: "Spares",          value: "part_numbers" }
     ],
+    sales: [
+        { label: "Sales",          value: "sales_logs" }
+    ],
     purchase: [
-        { label: "Material Request",   value: "mr" },
-        { label: "PRFQ", value: "prfq" },
-        { label: "Purchase Order",   value: "po" },
-        { label: "Sales Enquiry Log",  value: "sel" },
+        { label: "Material Request",   value: "material_requests" },
+        // { label: "PRFQ", value: "prfq" },
+        // { label: "Purchase Order",   value: "po" },
+        // { label: "Sales Enquiry Log",  value: "sel" },
     ],
 };

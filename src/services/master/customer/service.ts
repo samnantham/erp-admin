@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import { useQuery, UseQueryOptions } from "react-query";
 import { useCreateUpdateService } from "@/services/global-service";
 import { getRequest, putRequest, postRequest } from "@/api/client";
@@ -254,3 +256,30 @@ export const useRelationBulkUpload = (url: string) =>
     url,
     zRelationBulkUploadResponse()
   );
+
+/* ================= Relation — Get All (Generic) ================= */
+
+const zRelationIndexPayload = z.object({
+  data: z.array(z.any()),
+  status: z.boolean(),
+});
+
+export const useCustomerRelationIndex = (
+  customerId?: string,
+  relation?: string,
+  options?: UseQueryOptions<any>
+) =>
+  useQuery({
+    queryKey: ["customerRelation", customerId, relation],
+    queryFn: () =>
+      getRequest(
+        endPoints.index.customer_relation
+          .replace(":customer_id", String(customerId))
+          .replace(":relation", String(relation)),
+        zRelationIndexPayload
+      ),
+    enabled: !!customerId && !!relation,
+    retry: 2,
+    refetchOnWindowFocus: false,
+    ...options,
+  });

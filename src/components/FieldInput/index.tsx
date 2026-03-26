@@ -52,6 +52,7 @@ export const FieldInput = <FormattedValue = Value,>(
   const [isFocused, setIsFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isMaxLengthReached, setIsMaxLengthReached] = useState(false);
+  const [isMaxValueReached, setIsMaxValueReached] = useState(false);
 
   const {
     inputProps,
@@ -80,7 +81,7 @@ export const FieldInput = <FormattedValue = Value,>(
     errorMessage: field.errorMessage,
     id: field.id,
     isRequired: field.isRequired,
-    showError: (props.showError ?? field.shouldDisplayError)  && !field.isValid,
+    showError: (props.showError ?? field.shouldDisplayError) && !field.isValid,
     labelSize,
   };
 
@@ -222,14 +223,24 @@ export const FieldInput = <FormattedValue = Value,>(
       }
     }
 
+    if (maxValue !== undefined) {
+      const numericValue = parseFloat(processedValue);
+      if (!isNaN(numericValue) && numericValue > maxValue) {
+        setIsMaxValueReached(true);
+        return;
+      } else {
+        setIsMaxValueReached(false);
+      }
+    }
+
     if (type === 'integer' && allowedSpecialChars.length === 0) {
       const numericValue = parseInt(processedValue, 10);
-      if (
-        field?.otherProps?.maxValue !== undefined &&
-        numericValue > field.otherProps.maxValue
-      ) {
-        return;
-      }
+      // if (
+      //   field?.otherProps?.maxValue !== undefined &&
+      //   numericValue > field.otherProps.maxValue
+      // ) {
+      //   return;
+      // }
       processedValue = numericValue;
     }
 
@@ -238,6 +249,9 @@ export const FieldInput = <FormattedValue = Value,>(
 
   const shouldShowLengthError =
     isMaxLengthReached && (isFocused || field.isTouched || field.isSubmitted);
+
+  const shouldShowMaxValueError =
+    isMaxValueReached && (isFocused || field.isTouched || field.isSubmitted);
 
   return (
     <FormGroup {...formGroupProps}>
@@ -298,11 +312,10 @@ export const FieldInput = <FormattedValue = Value,>(
           <Text as="span" display="flex" alignItems="center">
             {showErrorinTT ? (
               <Tooltip
-                label={`Character limit is ${maxLength}${
-                  type === 'decimal' && !field.value?.toString().includes('.')
-                    ? '. You can only add decimal value.'
-                    : ''
-                }`}
+                label={`Character limit is ${maxLength}${type === 'decimal' && !field.value?.toString().includes('.')
+                  ? '. You can only add decimal value.'
+                  : ''
+                  }`}
                 hasArrow
                 placement="right"
                 color="white"
@@ -320,6 +333,29 @@ export const FieldInput = <FormattedValue = Value,>(
                   ? '. You can only add decimal value.'
                   : ''}
               </Text>
+            )}
+          </Text>
+        </Flex>
+      )}
+
+      {shouldShowMaxValueError && isFocused && (
+        <Flex align="center" fontSize="sm" color="red.500" mt={2}>
+          <Text as="span" display="flex" alignItems="center">
+            {showErrorinTT ? (
+              <Tooltip
+                label={`Value cannot exceed ${maxValue}`}
+                hasArrow
+                placement="right"
+                color="white"
+                backgroundColor="red"
+              >
+                <Text as="span" display="flex" alignItems="center">
+                  <HiOutlineInformationCircle style={{ marginRight: '4px' }} />
+                  Error
+                </Text>
+              </Tooltip>
+            ) : (
+              <Text as="span">Max value is {maxValue}</Text>
             )}
           </Text>
         </Flex>

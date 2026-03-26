@@ -34,8 +34,7 @@ import { useSubmasterItemIndex } from "@/services/submaster/service";
 import { CustomerDetails } from '@/pages/Master/Customer/Info/CustomerDetails';
 import { useDelete } from '@/api/useDelete';
 import { endPoints } from '@/api/endpoints';
-import { usePdfPreview } from '@/hooks/usePdfPreview';
-import { PDFPreviewModal } from '@/components/PDFPreview';
+import { usePDFPreview } from "@/context/PDFPreviewContext";
 import { useRouterContext } from '@/services/auth/RouteContext';
 
 type ConfirmMode = null | "delete" | "status-update";
@@ -61,11 +60,10 @@ export const CustomerMaster = () => {
     const [activeItem, setActiveItem] = useState<any>(null);
     const [confirmMode, setConfirmMode] = useState<ConfirmMode>(null);
 
-    const { pdfUrl, pdfTitle, isOpen, openPreview, closePreview } = usePdfPreview();
-
-    const handleOpenPreview = (custInfo: any) => {
-        const url = endPoints.preview.customer.replace(':id', custInfo.id);
-        openPreview(url, `Contact Preview - #${custInfo.business_name}`);
+    const { openPreview } = usePDFPreview();
+    const handleOpenPreview = (itemInfo: any) => {
+        const url = `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview.customer.replace(":id", itemInfo.id)}`;
+        openPreview(url, `SEL Preview - #${itemInfo.code}`, true);
     };
 
     const handleDownloadSampleFunction = (value: DownloadSampleKeys) => {
@@ -200,16 +198,16 @@ export const CustomerMaster = () => {
         if (!dropdownsFetched) return [];
 
         const baseColumnConfig: DynamicColumn<any>[] = [
-            { key: "business_name", header: "Busi.Name", meta: { sortable: true, isNumeric: false, sortParam: 'business_name' } },
-            { key: "code", header: "Code", meta: { sortable: true, isNumeric: false, sortParam: 'code' } },
+            { key: "business_name", header: () =>  <>Business<br/>Name</>, meta: { sortable: true, isNumeric: false, sortParam: 'business_name' } },
+            { key: "code", header: () =>  <>Contact<br/>Code</>, meta: { sortable: true, isNumeric: false, sortParam: 'code' } },
             { key: "email", header: "Email" },
-            { key: "nature_of_business", header: "Busi.Nat", meta: { sortable: true, isNumeric: false, sortParam: 'nature_of_business' } },
-            { key: "contact_type.name", header: "Cont.Type", meta: { sortable: true, isNumeric: false, sortParam: 'contact_type_id' } },
-            { key: "business_type.name", header: "Busi.Type", meta: { sortable: true, isNumeric: false, sortParam: 'business_type_id' } },
+            { key: "nature_of_business", header: () =>  <>Business<br/>Nature</>, meta: { sortable: true, isNumeric: false, sortParam: 'nature_of_business' } },
+            { key: "contact_type.name", header: () =>  <>Contact<br/>Type</>, meta: { sortable: true, isNumeric: false, sortParam: 'contact_type_id' } },
+            { key: "business_type.name", header: () =>  <>Business<br/>Type</>, meta: { sortable: true, isNumeric: false, sortParam: 'business_type_id' } },
             { key: "currency.name", header: "Currency", meta: { sortable: true, isNumeric: false, sortParam: 'currency_id' } },
             {
                 key: "customer_status.name",
-                header: "Status",
+                header: () =>  <>Customer<br/>Status</>,
                 meta: { sortable: true, isNumeric: false, sortParam: "customer_status_id" },
                 render: (row: any) => (
                     <Menu placement="bottom-start">
@@ -240,8 +238,8 @@ export const CustomerMaster = () => {
                     </Menu>
                 ),
             },
-            { key: "payment_term.name", header: "Pay.Term", meta: { sortable: true, isNumeric: false, sortParam: 'payment_term_id' } },
-            { key: "payment_mode.name", header: "Pay.Mode", meta: { sortable: true, isNumeric: false, sortParam: 'payment_mode_id' } },
+            { key: "payment_term.name", header: () =>  <>Payment<br/>Term</>, meta: { sortable: true, isNumeric: false, sortParam: 'payment_term_id' } },
+            { key: "payment_mode.name", header: () =>  <>Payment<br/>Mode</>, meta: { sortable: true, isNumeric: false, sortParam: 'payment_mode_id' } },
             {
                 key: "completion_percentage",
                 header: "Completion (%)",
@@ -437,7 +435,7 @@ export const CustomerMaster = () => {
                                 currentPage={paginationData?.current_page}
                                 totalCount={paginationData?.total}
                                 pageSize={itemsPerPage}
-                                stickyColumns={3}
+                                stickyColumns={4}
                                 stickyLastColumn={true}
                                 onPageChange={(page) => setQueryParams((prev: any) => ({ ...prev, page }))}
                                 onPageSizeChange={(limit) => {
@@ -487,14 +485,6 @@ export const CustomerMaster = () => {
                     isInputRequired
                     isLoading={isDeleting || isUpdating}
                     placeholder={confirmMode === "delete" ? "Enter Reason to delete" : "Enter Reason"}
-                />
-
-                <PDFPreviewModal
-                    isOpen={isOpen}
-                    onClose={closePreview}
-                    pdfUrlOrEndpoint={pdfUrl}
-                    title={pdfTitle}
-                    isEndpoint={true}
                 />
             </Stack>
         </SlideIn>

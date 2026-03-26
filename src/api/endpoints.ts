@@ -16,8 +16,11 @@ export const endPoints = {
     user:           '/user',
     submaster:      '/submaster/:model',
     customer:       '/contact-management/customer',
+    customer_relation: '/contact-management/customer/:customer_id/:relation',
     update_delete_request: "/update-delete-requests/:model/:action",
-    spare:          "/spare-management/part-number"
+    spare:          "/spare-management/part-number",
+    sales_log: "/sales-management/sales-log/",
+    material_request: "/purchase/material-request/"
   },
   list: {
     role:           '/user-access/role',
@@ -26,7 +29,8 @@ export const endPoints = {
     route:          '/user-access/route',
     user:           '/user',
     submaster:      '/submaster/:model',
-    customer:       '/contact-management/customer'
+    customer:       '/contact-management/customer',
+    sales_log:      '/sales-management/sales-log/list'
   },
   info: {
     role:           '/user-access/role/:id',
@@ -37,7 +41,9 @@ export const endPoints = {
     user:           '/user/:id',
     submaster:      '/submaster/:model/:id',
     customer:       '/contact-management/customer/:id',
-    spare:          "/spare-management/part-number/:id"
+    spare:          "/spare-management/part-number/:id",
+    sales_log: "/sales-management/sales-log/:id",
+    material_request: "/purchase/material-request/:id"
   },
   create: {
     role:           '/user-access/role',
@@ -53,7 +59,9 @@ export const endPoints = {
     bank:               '/contact-management/customer/:customer_id/banks',
     principle_of_owner: '/contact-management/customer/:customer_id/principle-owners',
     trader_reference:   '/contact-management/customer/:customer_id/trader-references',
-    spare:          "/spare-management/part-number"
+    spare:          "/spare-management/part-number",
+    sales_log: "/sales-management/sales-log/",
+    material_request: "/purchase/material-request/"
   },
   update: {
     role:           '/user-access/role/:id',
@@ -69,7 +77,10 @@ export const endPoints = {
     bank:               '/contact-management/customer/:customer_id/banks/:id',
     principle_of_owner: '/contact-management/customer/:customer_id/principle-owners/:id',
     trader_reference:   '/contact-management/customer/:customer_id/trader-references/:id',
-    spare:          "/spare-management/part-number/:id"
+    spare:          "/spare-management/part-number/:id",
+    sales_log: "/sales-management/sales-log/:id",
+    material_request: "/purchase/material-request/:id"
+
   },
   delete: {
     role:           '/user-access/role/:id',
@@ -91,7 +102,9 @@ export const endPoints = {
     user:     '/user/drop-downs',
     customer: '/contact-management/customer/drop-downs',
     spare:    "/spare-management/part-number/drop-downs",
-    department_role:    "/user-access/department-role/drop-downs"
+    department_role:    "/user-access/department-role/drop-downs",
+    sales_log:  "/sales-management/sales-log/drop-downs",
+    material_request: "/purchase/material-request/drop-downs"
   },
   others: {
     upload:                    "/media/upload",
@@ -120,6 +133,12 @@ export const endPoints = {
   preview: {
     customer: "preview-pdf/customer/:id",
     spare:    "preview-pdf/part-number/:id",
+    sales_log:    "preview-pdf/sales-log/:id",
+    material_request:    "preview-pdf/material-request/:id",
+  },
+    preview_post: {
+    sales_log:    "preview-pdf/sales-log",
+    material_request:    "preview-pdf/material-request",
   },
   search: {
     spare: "/spare-management/part-number/search",

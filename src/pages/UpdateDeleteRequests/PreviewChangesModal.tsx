@@ -7,16 +7,21 @@ import { ArrayColumn, DisplayProp, DisplayPropBase } from "@/pages/UpdateDeleteR
 import DocumentDownloadButton from "@/components/DocumentDownloadButton";
 import { useState } from "react";
 import { format } from 'date-fns';
+import { usePDFPreviewController } from '@/api/hooks/usePDFPreviewController';
+import { usePDFPreview } from "@/context/PDFPreviewContext";
+
+
 // ================= Types =================
 
 interface PreviewChangesModalProps {
-    isOpen:       boolean;
-    onClose:      () => void;
-    previewRow:   any;
+    isOpen: boolean;
+    onClose: () => void;
+    previewRow: any;
     displayProps: DisplayProp[];
     isProcessing: boolean;
-    onApprove:    () => void;
-    onReject:     () => void;
+    onApprove: () => void;
+    onReject: () => void;
+    config?: any;
 }
 
 // ================= Cell Renderer =================
@@ -24,7 +29,7 @@ interface PreviewChangesModalProps {
 const RenderCell = ({
     value, renderAs, isChanged,
 }: {
-    value:     any;
+    value: any;
     renderAs?: DisplayPropBase["renderAs"];
     isChanged: boolean;
 }) => {
@@ -71,10 +76,10 @@ const RenderArrayCell = ({ col, value }: { col: ArrayColumn; value: any }) => {
 const RenderArrayField = ({
     label, field, oldRows, newRows, renderTable,
 }: {
-    label:       string;
-    field:       Extract<DisplayProp, { kind: "array" }>;
-    oldRows:     any[];
-    newRows:     any[];
+    label: string;
+    field: Extract<DisplayProp, { kind: "array" }>;
+    oldRows: any[];
+    newRows: any[];
     renderTable: (rows: any[], columns: ArrayColumn[]) => React.ReactNode;
 }) => {
     // ── useState inside the component ──
@@ -141,18 +146,46 @@ const RenderArrayField = ({
 
 export const PreviewChangesModal = ({
     isOpen, onClose, previewRow,
-    displayProps, isProcessing, onApprove, onReject,
+    displayProps, isProcessing, onApprove, onReject, config
 }: PreviewChangesModalProps) => {
+
+    if (!isOpen) return null;
+
+    const { openPreview } = usePDFPreview();
+
     const oldRecord = previewRow?.old_data ?? {};
     const newRecord = previewRow?.new_data ?? {};
 
-    const scalarProps = displayProps.filter((p) => !p.kind || p.kind === "scalar");
-    const arrayProps  = displayProps.filter((p) => p.kind === "array") as Extract<DisplayProp, { kind: "array" }>[];
+    const previewConfig = config?.preview;
 
-    const isChanged    = (key: string) =>
+    console.log(previewConfig)
+
+    const handleOldPreview = () => {
+        if (!previewConfig?.getOldPreviewUrl) return;
+
+        const url = previewConfig.getOldPreviewUrl(previewRow);
+        openPreview(url, "Preview", true);
+    };
+
+    const previewPDF = usePDFPreviewController({
+        url: previewConfig?.getNewPreviewRequest?.(previewRow)?.url || "",
+        title: "Preview (Updated)",
+    });
+
+    const handleNewPreview = () => {
+        if (!previewConfig?.getNewPreviewRequest) return;
+        const req = previewConfig.getNewPreviewRequest(previewRow);
+        if (!req?.body) return;
+        previewPDF.open(req.body, "Preview (Updated)");
+    };
+
+    const scalarProps = displayProps.filter((p) => !p.kind || p.kind === "scalar");
+    const arrayProps = displayProps.filter((p) => p.kind === "array") as Extract<DisplayProp, { kind: "array" }>[];
+
+    const isChanged = (key: string) =>
         String(oldRecord[key] ?? "") !== String(newRecord[key] ?? "");
     const changedCount = scalarProps.filter((p) => isChanged(p.key)).length;
-    const isPending    = previewRow?.status === "pending";
+    const isPending = previewRow?.status === "pending";
 
     const renderTable = (rows: any[], cols: ArrayColumn[]) => {
         if (rows.length === 0) {
@@ -168,8 +201,8 @@ export const PreviewChangesModal = ({
                     <Thead bg="gray.50">
                         <Tr>
                             <Th>#</Th>
-                            {cols.map((col) => (
-                                <Th key={col.key}>{col.label}</Th>
+                            {cols.map((col, index) => (
+                                <Th key={`${col.key}-${index}`}>{col.label}</Th>
                             ))}
                         </Tr>
                     </Thead>
@@ -177,8 +210,8 @@ export const PreviewChangesModal = ({
                         {rows.map((row, i) => (
                             <Tr key={i}>
                                 <Td color="gray.400" fontSize="xs">{i + 1}</Td>
-                                {cols.map((col) => (
-                                    <Td key={col.key}>
+                                {cols.map((col, n) => (
+                                    <Td key={n}>
                                         <RenderArrayCell col={col} value={row[col.key]} />
                                     </Td>
                                 ))}
@@ -222,16 +255,16 @@ export const PreviewChangesModal = ({
                                 <Thead bg="gray.100" position="sticky" top={0} zIndex={1}>
                                     <Tr>
                                         <Th w="30%">Field</Th>
-                                        <Th w="30%">Old Value</Th>
+                                        <Th w="30%">Current Value</Th>
                                         <Th w="30%">New Value</Th>
                                         <Th w="10%">Status</Th>
                                     </Tr>
                                 </Thead>
                                 <Tbody>
-                                    {scalarProps.map(({ label, key, renderAs }) => {
+                                    {scalarProps.map(({ label, key, renderAs }, index) => {
                                         const changed = isChanged(key);
                                         return (
-                                            <Tr key={key} bg={changed ? "orange.50" : "white"}>
+                                            <Tr key={`${key}-${index}`} bg={changed ? "orange.50" : "white"}>
                                                 <Td fontWeight="medium" color="gray.600">{label}</Td>
                                                 <Td color={changed ? "red.600" : "gray.700"}>
                                                     <RenderCell value={oldRecord[key]} renderAs={renderAs} isChanged={changed} />
@@ -247,6 +280,32 @@ export const PreviewChangesModal = ({
                                             </Tr>
                                         );
                                     })}
+                                    {previewConfig?.enabled && (
+                                        <Tr bg="gray.50">
+                                            <Td fontWeight="bold">Preview</Td>
+
+                                            {/* OLD PREVIEW */}
+                                            <Td>
+                                                {previewConfig.getOldPreviewUrl && (
+                                                    <Button size="xs" variant="outline" onClick={handleOldPreview}>
+                                                        Preview Current
+                                                    </Button>
+                                                )}
+                                            </Td>
+
+                                            {/* NEW PREVIEW */}
+                                            <Td>
+                                                {previewConfig.getNewPreviewRequest && (
+                                                    <Button size="xs" colorScheme="blue" onClick={handleNewPreview}>
+                                                        Preview New
+                                                    </Button>
+                                                )}
+                                            </Td>
+
+                                            {/* EMPTY STATUS */}
+                                            <Td />
+                                        </Tr>
+                                    )}
                                 </Tbody>
                             </Table>
                         </Box>

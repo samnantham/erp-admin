@@ -8,6 +8,7 @@ import {
 
 import { LoaderFull } from './components/LoaderFull';
 import { routes } from './routes';
+import { PDFPreviewProvider } from "@/context/PDFPreviewContext";
 
 function App() {
   const routerRef = useRef<RouterProviderProps['router']>();
@@ -25,7 +26,9 @@ function App() {
 
   return (
     <>
-      <RouterProvider router={routerRef.current} />
+      <PDFPreviewProvider>
+        <RouterProvider router={routerRef.current} />
+      </PDFPreviewProvider>
     </>
   );
 }

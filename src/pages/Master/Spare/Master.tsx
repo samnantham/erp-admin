@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { BiEdit, BiInfoCircle, BiTrash, BiSolidFilePdf } from 'react-icons/bi';
 import {
     Box,
@@ -9,7 +9,8 @@ import {
     Icon,
     Flex,
     Tooltip,
-    Badge
+    Badge,
+    useDisclosure
 } from '@chakra-ui/react';
 import { Formiz, useForm } from '@formiz/core';
 import { HiRefresh, HiOutlineSearch } from 'react-icons/hi';
@@ -31,18 +32,21 @@ import { TbReplaceFilled } from "react-icons/tb";
 import { usePdfPreview } from '@/hooks/usePdfPreview';
 import { PDFPreviewModal } from '@/components/PDFPreview';
 import { useRouterContext } from '@/services/auth/RouteContext';
+import { FilePreview } from '@/components/FilePreview';
 
 type ConfirmMode = null | 'delete';
-
+const DEBOUNCE_TIME = 1600;
 export const SpareMaster = () => {
     const navigate = useNavigate();
     const { otherPermissions } = useRouterContext();
-
-    const canCreate          = otherPermissions.create === 1;
-    const canUpdate          = otherPermissions.update === 1;
-    const canDelete          = otherPermissions.update === 1; // delete uses same update permission
-    const canView            = otherPermissions.view === 1;
-    const canBulkUpload      = otherPermissions.bulk_upload === 1;
+    const { isOpen: isPreviewOpen, onOpen: onPreviewOpen, onClose: onPreviewClose } = useDisclosure();
+    const [fileType, setFileType] = useState<'image' | 'pdf' | 'ppt'>('image');
+    const [fileUrl, setFileUrl] = useState<string>('');
+    const canCreate = otherPermissions.create === 1;
+    const canUpdate = otherPermissions.update === 1;
+    const canDelete = otherPermissions.update === 1; // delete uses same update permission
+    const canView = otherPermissions.view === 1;
+    const canBulkUpload = otherPermissions.bulk_upload === 1;
     const canAssignAlternates = otherPermissions.assign_alternates === 1;
 
     const { data: dropdownData, isLoading: dropdownLoading, isSuccess: dropdownsFetched } = usePartNumberDropdowns();
@@ -59,11 +63,38 @@ export const SpareMaster = () => {
     const [formKey, setFormKey] = useState(0);
 
     const { pdfUrl, pdfTitle, isOpen, openPreview, closePreview } = usePdfPreview();
-
-    const handleOpenPreview = (spareInfo: any) => {
-        const url = endPoints.preview.spare.replace(':id', spareInfo.id);
-        openPreview(url, `Spare Preview - #${spareInfo.name}`);
+    const [searchValue, setSearchValue] = useState('');
+    const handleOpenPreview = (itemInfo: any) => {
+        const url = endPoints.preview.spare.replace(':id', itemInfo.id);
+        openPreview(url, `Spare Preview - #${itemInfo.name}`);
     };
+
+    const clickPreviewItem = (alt_ref_doc: string) => {
+        if (alt_ref_doc) {
+            const fileExtension = alt_ref_doc.split('.').pop()?.toLowerCase();
+            if (fileExtension) {
+                if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension)) {
+                    setFileType('image');
+                    setFileUrl(`${import.meta.env.VITE_PUBLIC_DOC_URL}${alt_ref_doc}`);
+                } else if (fileExtension === 'pdf') {
+                    setFileType('pdf');
+                    setFileUrl(`${import.meta.env.VITE_PUBLIC_DOC_URL}${alt_ref_doc}`);
+                } else if (
+                    ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(fileExtension)
+                ) {
+                    setFileType('ppt');
+                    setFileUrl(`${import.meta.env.VITE_PUBLIC_DOC_URL}${alt_ref_doc}`);
+                }
+            }
+            onPreviewOpen();
+        }
+    };
+
+    const closePreviewModal = () => {
+        setFileUrl('');
+        onPreviewClose();
+    };
+
 
     const initialQueryParams = {
         page: 1,
@@ -115,6 +146,20 @@ export const SpareMaster = () => {
         );
     };
 
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setQueryParams((prev: any) => ({
+                ...prev,
+                search: searchValue,
+                page: 1,
+                limit: itemsPerPage,
+            }));
+        }, DEBOUNCE_TIME);
+
+        return () => clearTimeout(handler);
+    }, [searchValue]);
+
+
     const ask = (mode: ConfirmMode, row: any) => {
         setActiveItem(row);
         setConfirmMode(mode);
@@ -142,46 +187,79 @@ export const SpareMaster = () => {
         const baseColumnConfig: DynamicColumn<any>[] = [
             {
                 key: 'name',
-                header: 'Part Number',
+                header: () =>  <>PART<br/>NUMBER</>,
                 meta: { sortable: true, sortParam: 'name' },
-                render: (row: any) => (
-                    <HStack
-                        spacing={2}
-                        px={2}
-                        py={1}
-                        borderRadius="md"
-                        sx={
-                            row.is_alternate
-                                ? {
-                                    animation: "bgBlink 1s infinite",
-                                    "@keyframes bgBlink": {
-                                        "0%, 100%": { backgroundColor: "#ffb5b5" },
-                                        "50%": { backgroundColor: "transparent" },
-                                    },
-                                }
-                                : {}
-                        }
-                    >
-                        <span>{row.name}</span>
-                        {row.is_alternate && (
-                            <Tooltip label={`Alternate for ${row.alternate_of_info?.name ?? ''}`} hasArrow placement="top" bg="green.500" color="white">
-                                <Badge colorScheme="yellow" fontSize="9px" variant="solid" borderRadius="sm">
-                                    ALT
-                                </Badge>
-                            </Tooltip>
-                        )}
-                    </HStack>
-                ),
+                render: (row: any) => {
+                    const hasRefDoc = !!row.alternate_of_info?.alt_ref_doc;
+
+                    return (
+                        <HStack
+                            spacing={2}
+                            px={2}
+                            py={1}
+                            borderRadius="md"
+                            sx={
+                                row.is_alternate
+                                    ? {
+                                        animation: "bgBlink 1s infinite",
+                                        "@keyframes bgBlink": {
+                                            "0%, 100%": { backgroundColor: "#ffb5b5" },
+                                            "50%": { backgroundColor: "transparent" },
+                                        },
+                                    }
+                                    : {}
+                            }
+                        >
+                            <span>{row.name}</span>
+
+                            {row.is_alternate && (
+                                <Tooltip
+                                    label={
+                                        <>
+                                            Alternate for {row.alternate_of_info?.name}
+                                            {hasRefDoc && (
+                                                <>
+                                                    <br />
+                                                    Click to view reference document
+                                                </>
+                                            )}
+                                        </>
+                                    }
+                                    hasArrow
+                                    placement="top"
+                                    bg="green.500"
+                                    color="white"
+                                >
+                                    <Badge
+                                        colorScheme="yellow"
+                                        fontSize="9px"
+                                        variant="solid"
+                                        borderRadius="sm"
+                                        cursor={hasRefDoc ? "pointer" : "default"}
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // 🔥 prevents row click issues
+                                            if (hasRefDoc) {
+                                                clickPreviewItem(row.alternate_of_info.alt_ref_doc);
+                                            }
+                                        }}
+                                    >
+                                        ALT
+                                    </Badge>
+                                </Tooltip>
+                            )}
+                        </HStack>
+                    );
+                }
             },
-            { key: 'description', header: 'Description', meta: { sortable: true, sortParam: 'description' } },
-            { key: 'manufacturer_name', header: 'Manufacturer', meta: { sortable: true, sortParam: 'manufacturer_name' } },
-            { key: 'cage_code', header: 'Cage Code' },
+            { key: 'description', header: 'Description', meta: { sortable: true, sortParam: 'description', width: 180 } },
+            { key: 'manufacturer_name', header: 'MFG', meta: { sortable: true, sortParam: 'manufacturer_name' } },
+            { key: 'cage_code', header: () =>  <>Cage<br/>Code</>, },
             { key: 'ata', header: 'ATA' },
             { key: 'spare_type.name', header: 'Type', meta: { sortable: true, sortParam: 'spare_type_id' } },
             { key: 'spare_model.name', header: 'Model', meta: { sortable: true, sortParam: 'spare_model_id' } },
-            { key: 'hsc_code.name', header: 'HSC Code', meta: { sortable: true, sortParam: 'hsc_code_id' } },
+            { key: 'hsc_code.name', header: () =>  <>HSC<br/>Code</>, meta: { sortable: true, sortParam: 'hsc_code_id' } },
             { key: 'unit_of_measure.name', header: 'UOM', meta: { sortable: true, sortParam: 'unit_of_measure_id' } },
-            { key: 'is_shelf_life', header: 'Shelf Life', render: (row: any) => (row.is_shelf_life ? 'Yes' : 'No') },
+            { key: 'is_shelf_life', header: () =>  <>Shelf<br/>Life</>, render: (row: any) => (row.is_shelf_life ? 'Yes' : 'No') },
             { key: 'is_llp', header: 'LLP', render: (row: any) => (row.is_llp ? 'Yes' : 'No') },
             { key: 'is_serialized', header: 'Serialized', render: (row: any) => (row.is_serialized ? 'Yes' : 'No') },
             { key: 'is_dg', header: 'DG', render: (row: any) => (row.is_dg ? 'Yes' : 'No') },
@@ -259,9 +337,10 @@ export const SpareMaster = () => {
                                 <FieldInput
                                     name="keyword"
                                     placeholder="Search"
-                                    onValueChange={(value) => updateFilter('search', value ?? '')}
+                                    type={'all-capital'}
                                     rightElement={<Icon as={HiOutlineSearch} color="gray.300" />}
                                     size="sm"
+                                    onValueChange={(value) => setSearchValue(String(value ?? ''))}
                                 />
                                 <FieldSelect
                                     key={`spare_type_${formKey}`}
@@ -345,6 +424,7 @@ export const SpareMaster = () => {
                                     onClick={() => {
                                         form.reset();
                                         setFormKey((k) => k + 1);
+                                        setSearchValue('');
                                         setQueryParams(initialQueryParams);
                                     }}
                                 >
@@ -395,16 +475,16 @@ export const SpareMaster = () => {
                                         </Flex>
                                     )}
                                     {canBulkUpload && (
-                                    <Flex alignItems="center">
-                                        <Button
-                                            leftIcon={<LuDownload />}
-                                            colorScheme="blue"
-                                            size="sm"
-                                            onClick={() => handleDownload(import.meta.env.VITE_SPARES_SAMPLE_CSV)}
-                                        >
-                                            Download Sample
-                                        </Button>
-                                    </Flex>
+                                        <Flex alignItems="center">
+                                            <Button
+                                                leftIcon={<LuDownload />}
+                                                colorScheme="blue"
+                                                size="sm"
+                                                onClick={() => handleDownload(import.meta.env.VITE_SPARES_SAMPLE_CSV)}
+                                            >
+                                                Download Sample
+                                            </Button>
+                                        </Flex>
                                     )}
                                 </HStack>
                             }
@@ -429,6 +509,13 @@ export const SpareMaster = () => {
                     pdfUrlOrEndpoint={pdfUrl}
                     title={pdfTitle}
                     isEndpoint={true}
+                />
+
+                <FilePreview
+                    open={isPreviewOpen}
+                    onClose={closePreviewModal}
+                    fileType={fileType}
+                    fileUrl={fileUrl}
                 />
             </Stack>
         </SlideIn>

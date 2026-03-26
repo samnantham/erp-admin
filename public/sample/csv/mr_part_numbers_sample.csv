@@ -1,5 +1,5 @@
-Part Number,Condition,Quantity,Remarks,Price
-K118P3411,OH,8,Test remark,11
-K134P17,OH,10,Try it,12
-K134P09,NS,11,Yes,13
-K143P21,NS,3,Only Remark,14
+part_number_id,condition_id,unit_of_measure_id,qty,remark
+K143P13,NEW,EA,8,Test remark
+K118P07,NEW,EA,10,Try it
+K134P09,NEW,EA,11,Yes
+K143P21,NEW,EA,3,Only Remark

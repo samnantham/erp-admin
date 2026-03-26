@@ -19,12 +19,12 @@ import { HistoryModal } from "@/pages/UpdateDeleteRequests/HistoryModal";
 
 import { formatModelTitle } from "@/helpers/commonHelper";
 import { useToastError } from "@/components/Toast";
-
+import { format } from 'date-fns';
 import { useApprovalLogIndex, useApprovalLogHistory, useProcessRequest } from "@/services/update-delete-requests/service";
 import { MODULE_CONFIG } from "@/pages/UpdateDeleteRequests/config/module-config";
 import { MODULE_MODEL_OPTIONS } from "@/pages/UpdateDeleteRequests/config/module-model-config";
 import { ModuleConfig } from "@/pages/UpdateDeleteRequests/modules/types";
-
+import { usePDFPreview } from "@/context/PDFPreviewContext";
 // ================= Types =================
 
 type ActionType = "update" | "delete";
@@ -32,7 +32,7 @@ type ConfirmMode = "single-approve" | "single-reject" | null;
 
 // ================= Constants =================
 
-const ACTION_TABS: { label: string; value: ActionType }[] = [
+const ALL_ACTION_TABS: { label: string; value: ActionType }[] = [
     { label: "Update Requests", value: "update" },
     { label: "Delete Requests", value: "delete" },
 ];
@@ -109,6 +109,7 @@ const getColumns = (config?: ModuleConfig): ColumnDef<any>[] => [
         header: "Requested At",
         accessorKey: "created_at",
         meta: { sortable: true },
+        cell: ({ row }) => format(new Date(row.original.created_at), 'dd-MMM-yyyy HH:mm'),
     },
 ];
 
@@ -119,20 +120,13 @@ export const UpdateDeleteRequestMaster = () => {
         module: string;
         action: string;
     }>();
+
+    const { openPreview } = usePDFPreview();
     const navigate = useNavigate();
     const toastError = useToastError();
 
     // --------------- Derive model options from module param ---------------
     const modelOptions = MODULE_MODEL_OPTIONS[moduleParam ?? ""] ?? [];
-
-    // --------------- Active tab ---------------
-    const defaultTabIndex = ACTION_TABS.findIndex(
-        (t) => t.value === (actionParam ?? "update")
-    );
-    const [activeTabIndex, setActiveTabIndex] = useState(
-        defaultTabIndex >= 0 ? defaultTabIndex : 0
-    );
-    const activeAction = ACTION_TABS[activeTabIndex].value;
 
     // --------------- Single queryParams — source of truth ---------------
     const [queryParams, setQueryParams] = useState<any>({
@@ -145,7 +139,22 @@ export const UpdateDeleteRequestMaster = () => {
     // Derived
     const config = MODULE_CONFIG[queryParams.model ?? ""];
 
-    console.log(config, queryParams.model)
+    const ACTION_TABS = ALL_ACTION_TABS.filter(tab => {
+        if (tab.value === "delete" && config?.allowDelete === false) {
+            return false;
+        }
+        return true;
+    });
+
+    // --------------- Active tab ---------------
+    const defaultTabIndex = ACTION_TABS.findIndex(
+        (t) => t.value === (actionParam ?? "update")
+    );
+    const [activeTabIndex, setActiveTabIndex] = useState(
+        defaultTabIndex >= 0 ? defaultTabIndex : 0
+    );
+    const activeAction = ACTION_TABS[activeTabIndex].value;
+
     const title = `${formatModelTitle(queryParams.model)} ${activeAction} Requests`;
     const statusColors = STATUS_COLOR[queryParams.status as keyof typeof STATUS_COLOR] ?? {
         border: "gray.300", color: "gray.600", bg: "white", hover: "gray.100",
@@ -220,6 +229,9 @@ export const UpdateDeleteRequestMaster = () => {
         switch (viewAction.type) {
             case "navigate":
                 navigate(viewAction.url);
+                break;
+            case "pdf":   // ✅ ADD THIS BLOCK
+                openPreview(viewAction.url, viewAction.title, true);
                 break;
             case "customer_bank":
                 setCustomerId(viewAction.payload.parentId);
@@ -300,7 +312,10 @@ export const UpdateDeleteRequestMaster = () => {
                                     fontSize="sm"
                                     onClick={() => handleViewAction(row.original)}
                                 >
-                                    View
+                                    {(() => {
+                                        const action = config?.getViewAction?.(row.original);
+                                        return action?.type === "pdf" ? "Preview" : "View";
+                                    })()}
                                 </MenuItem>
                             )}
                             <MenuItem
@@ -505,6 +520,7 @@ export const UpdateDeleteRequestMaster = () => {
                 displayProps={config?.displayProps ?? []}
                 onApprove={(row) => openConfirm("single-approve", row)}
                 onReject={(row) => openConfirm("single-reject", row)}
+                config={config}
             />
 
             {/* ── View Modals ── */}

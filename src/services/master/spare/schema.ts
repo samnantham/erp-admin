@@ -87,6 +87,7 @@ export const zPartNumberIndexPayload = z.object({
       id: z.string().uuid(),
       name: z.string().nullable().optional(),
       description: z.string().nullable().optional(),
+      alt_ref_doc: z.string().nullable().optional(),
     }).nullable().optional(),
   })),
   pagination: zPagination,

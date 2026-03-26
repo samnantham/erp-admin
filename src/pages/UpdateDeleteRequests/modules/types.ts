@@ -3,6 +3,17 @@ import { ReactNode } from 'react';
 /* =========================
    Display props
 ========================= */
+
+type PreviewConfig = {
+  enabled?: boolean;
+  getOldPreviewUrl?: (row: any) => string;
+  getNewPreviewRequest?: (row: any) => {
+    url: string;
+    method?: "POST";
+    body: any;
+  };
+};
+
 export type DisplayPropBase = {
   label: string;
   key: string;
@@ -67,4 +78,6 @@ export interface ModuleConfig<T = any> {
   label: string;
   displayProps: DisplayProp[];
   getViewAction?: (row: T) => ViewAction<T> | null;
+  preview?: PreviewConfig;
+  allowDelete?: boolean;
 }

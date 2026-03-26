@@ -26,13 +26,14 @@ interface HistoryModalProps {
     displayProps: DisplayProp[];
     onApprove:    (row: any) => void;
     onReject:     (row: any) => void;
+    config: any;
 }
 
 // ================= Component =================
 
 export const HistoryModal = ({
     isOpen, onClose, isLoading, data,
-    isProcessing, displayProps, onApprove, onReject,
+    isProcessing, displayProps, onApprove, onReject, config
 }: HistoryModalProps) => {
     const previewDisc                 = useDisclosure();
     const [previewRow, setPreviewRow] = useState<any>(null);
@@ -189,6 +190,7 @@ export const HistoryModal = ({
                     onClose();
                     onReject(previewRow);
                 }}
+                config={config}
             />
         </>
     );
