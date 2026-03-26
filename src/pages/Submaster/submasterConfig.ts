@@ -13,7 +13,8 @@ export const submasterConfig: Record<string, any> = {
                 name: "name",
                 placeholder: "Enter Name",
                 required: "Name required",
-                type: "alpha-with-space"
+                type: "alpha-numeric-with-space",
+                maxLength: 15
             },
         ],
         columns: ["name"],
@@ -30,6 +31,7 @@ export const submasterConfig: Record<string, any> = {
                 name: "name",
                 placeholder: "Enter Name",
                 required: "Name required",
+                maxLength: 15
             },
         ],
         columns: ["name"],
@@ -48,7 +50,8 @@ export const submasterConfig: Record<string, any> = {
                 name: "name",
                 placeholder: "Enter Name",
                 required: "Name required",
-                type: "alpha-numeric-with-space"
+                type: "alpha-numeric-with-space",
+                maxLength: 15
             },
         ],
         columns: ["name"],
@@ -67,7 +70,8 @@ export const submasterConfig: Record<string, any> = {
                 name: "name",
                 placeholder: "Enter Contact Type",
                 required: "Contact Type required",
-                type: "alpha-with-space"
+                type: "alpha-numeric-with-space",
+                maxLength: 15
             },
             {
                 component: FieldInput,
@@ -92,7 +96,7 @@ export const submasterConfig: Record<string, any> = {
                 name: "name",
                 placeholder: "Enter Currency Name",
                 required: "Currency Name required",
-                type: "alpha-with-space",
+                type: "alpha-numeric-with-space",
                 maxLength: 15
             },
             {
@@ -129,7 +133,8 @@ export const submasterConfig: Record<string, any> = {
                 name: "name",
                 placeholder: "Enter Payment Term",
                 required: "Payment Term required",
-                type: "alpha-with-space"
+                type: "alpha-numeric-with-space",
+                maxLength: 15
             },
             {
                 component: FieldInput,
@@ -156,7 +161,7 @@ export const submasterConfig: Record<string, any> = {
                 name: "name",
                 placeholder: "Enter Priority Name",
                 required: "Priority Name required",
-                type: "alpha-with-space",
+                type: "alpha-numeric-with-space",
                 maxLength: 10
             },
             {
@@ -184,7 +189,8 @@ export const submasterConfig: Record<string, any> = {
                 name: "name",
                 placeholder: "Enter Name",
                 required: "Name required",
-                type: "alpha-with-space"
+                type: "alpha-numeric-with-space",
+                maxLength: 15
             },
             {
                 component: FieldInput,
@@ -211,7 +217,8 @@ export const submasterConfig: Record<string, any> = {
                 name: "name",
                 placeholder: "Enter Name",
                 required: "Name required",
-                type: "alpha-with-space"
+                type: "alpha-numeric-with-space",
+                maxLength: 15
             },
             {
                 component: FieldCheckbox,
@@ -235,14 +242,15 @@ export const submasterConfig: Record<string, any> = {
                 name: "name",
                 placeholder: "Enter Name",
                 required: "Name required",
-                type: "alpha-with-space"
+                type: "alpha-numeric-with-space",
+                maxLength: 15
             },
             {
                 component: FieldInput,
                 name: "description",
                 placeholder: "Enter Description",
                 required: "Description required",
-                type: "alpha-with-space"
+                type: "alpha-numeric-with-space"
             },
             {
                 component: FieldInput,

@@ -36,7 +36,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { PairDocUpload } from '@/components/PairDocUpload';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import ConfirmationPopup from '@/components/ConfirmationPopup';
-import SpareCreateModal from '@/components/Modals/SpareMaster';
+import { PartNumberModal } from '@/components/Modals/SpareMaster';
 import { ResponsiveIconButton } from '@/components/ResponsiveIconButton';
 import { SlideIn } from '@/components/SlideIn';
 import { useToastError, useToastSuccess } from '@/components/Toast';
@@ -1094,10 +1094,10 @@ export const AssignAlternateParts = () => {
           bodyText="Remove this part from the group? All pairs involving this part will also be removed."
         />
 
-        <SpareCreateModal
+        <PartNumberModal
           isOpen={isNewSpareModalOpen}
           onClose={handleCloseSpareModal}
-          spareName={newSpareName}
+          createdInputValue={newSpareName}
         />
       </Stack>
     </SlideIn>

@@ -114,9 +114,9 @@ const textSort: SortingFn<any> = (a, b, id) =>
 const sortFnFor = (type?: string): SortingFn<any> => {
   switch (type) {
     case "timestamp": return timestampSort;
-    case "date":      return dateSort;
-    case "number":    return sortingFns.alphanumeric;
-    default:          return textSort;
+    case "date": return dateSort;
+    case "number": return sortingFns.alphanumeric;
+    default: return textSort;
   }
 };
 
@@ -244,11 +244,11 @@ export function DataTable<Data extends object>({
     columns: finalColumns,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: enableClientSideSearch ? getFilteredRowModel() : undefined,
-    getSortedRowModel:   enableClientSideSearch ? getSortedRowModel()   : undefined,
-    manualSorting:   !enableClientSideSearch,
+    getSortedRowModel: enableClientSideSearch ? getSortedRowModel() : undefined,
+    manualSorting: !enableClientSideSearch,
     manualFiltering: !enableClientSideSearch,
-    globalFilterFn:  enableClientSideSearch ? globalFuzzyFilter : undefined,
-    onSortingChange:      enableClientSideSearch ? setSorting      : undefined,
+    globalFilterFn: enableClientSideSearch ? globalFuzzyFilter : undefined,
+    onSortingChange: enableClientSideSearch ? setSorting : undefined,
     onGlobalFilterChange: enableClientSideSearch ? setGlobalFilter : undefined,
     enableRowSelection: enableRowSelection
       ? (row) => (isRowSelectable ? isRowSelectable(row.original) : true)
@@ -294,26 +294,26 @@ export function DataTable<Data extends object>({
     : (enableClientSideSearch ? filteredCount : data.length);
 
   const startRecord = overallCount === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-  const endRecord   = Math.min(currentPage * pageSize, overallCount);
+  const endRecord = Math.min(currentPage * pageSize, overallCount);
 
-  const rows      = table.getRowModel().rows;
-  const rowCount  = rows.length;
+  const rows = table.getRowModel().rows;
+  const rowCount = rows.length;
 
   // ── Split columns: left pane (sticky) vs right pane (scrollable) ───────
-  const allHeaders   = table.getHeaderGroups()[0]?.headers ?? [];
-  const leftHeaders  = allHeaders.slice(0, stickyColumns);
+  const allHeaders = table.getHeaderGroups()[0]?.headers ?? [];
+  const leftHeaders = allHeaders.slice(0, stickyColumns);
   const rightHeaders = allHeaders.slice(stickyColumns);
 
   // ── Colour constants ───────────────────────────────────────────────────
-  const HEADER_BG   = "#0C2556";
+  const HEADER_BG = "#0C2556";
   const EVEN_ROW_BG = "#ffffff";
-  const ODD_ROW_BG  = "#F7FAFC";
+  const ODD_ROW_BG = "#F7FAFC";
 
   // ── Refs for row/header height sync ───────────────────────────────────
-  const rightTbodyRef  = useRef<HTMLTableSectionElement>(null);
-  const leftTbodyRef   = useRef<HTMLTableSectionElement>(null);
-  const rightTheadRef  = useRef<HTMLTableSectionElement>(null);
-  const leftTheadRef   = useRef<HTMLTableSectionElement>(null);
+  const rightTbodyRef = useRef<HTMLTableSectionElement>(null);
+  const leftTbodyRef = useRef<HTMLTableSectionElement>(null);
+  const rightTheadRef = useRef<HTMLTableSectionElement>(null);
+  const leftTheadRef = useRef<HTMLTableSectionElement>(null);
 
   // Sync row heights (right → left)
   useSyncRowHeights(rightTbodyRef, leftTbodyRef, rowCount);
@@ -348,10 +348,10 @@ export function DataTable<Data extends object>({
 
   // ── Sort icon renderer ─────────────────────────────────────────────────
   const SortIcon = ({ header }: { header: Header<Data, unknown> }) => {
-    const meta      = header.column.columnDef.meta as ColumnMeta | undefined;
+    const meta = header.column.columnDef.meta as ColumnMeta | undefined;
     const sortParam = meta?.sortParam ?? header.column.id;
-    const isSorted  = enableClientSideSearch ? !!header.column.getIsSorted() : sortBy === sortParam;
-    const sortDir   = enableClientSideSearch
+    const isSorted = enableClientSideSearch ? !!header.column.getIsSorted() : sortBy === sortParam;
+    const sortDir = enableClientSideSearch
       ? header.column.getIsSorted()
       : sortBy === sortParam ? sortDirection : false;
 
@@ -413,6 +413,8 @@ export function DataTable<Data extends object>({
       {/* ── Main table wrapper: side-by-side flex ── */}
       <Box
         {...containerProps}
+        position="relative"
+        minH={rowCount === 0 ? "200px": undefined}
         border="1px"
         borderColor="gray.500"
         borderTopWidth="0"
@@ -421,6 +423,27 @@ export function DataTable<Data extends object>({
         display="flex"
         alignItems="stretch"
       >
+
+        {rowCount === 0 && (
+          <Center
+            position="absolute"
+            top={0}
+            left={0}
+            w="100%"
+            h="100%" // 🔥 full container height
+            pointerEvents="none"
+            zIndex={2}
+          >
+            <Box
+              fontSize="md"
+              fontWeight="bold"
+              color="gray.700"
+              textAlign="center"
+            >
+              {searchValue ? "No matching results found" : "No items to display"}
+            </Box>
+          </Center>
+        )}
         {/* ══ LEFT PANE — fixed sticky columns, no scroll ══ */}
         {hasLeftPane && (
           <Box
@@ -430,6 +453,7 @@ export function DataTable<Data extends object>({
             sx={{
               ...tableSx
             }}
+            background={"#fff"}
           >
             <Table
               {...tableProps}
@@ -441,7 +465,7 @@ export function DataTable<Data extends object>({
               <Thead ref={leftTheadRef}>
                 <Tr>
                   {leftHeaders.map((header) => {
-                    const meta  = header.column.columnDef.meta as ColumnMeta | undefined;
+                    const meta = header.column.columnDef.meta as ColumnMeta | undefined;
                     const width = (meta as any)?.width;
                     return (
                       <Th
@@ -468,33 +492,29 @@ export function DataTable<Data extends object>({
               <Tbody ref={leftTbodyRef} sx={{
                 border: "none"
               }}>
-                {rowCount === 0 ? (
-                  <Tr><Td bg={EVEN_ROW_BG} py={8} /></Tr>
-                ) : (
-                  rows.map((row) => {
-                    const rowProps = getRowProps?.(row) ?? {};
-                    return (
-                      <Tr key={row.id} {...rowProps}>
-                        {row.getVisibleCells().slice(0, stickyColumns).map((cell) => {
-                          const width = (cell.column.columnDef.meta as any)?.width;
-                          return (
-                            <Td
-                              key={cell.id}
-                              isNumeric={(cell.column.columnDef.meta as ColumnMeta)?.isNumeric}
-                              whiteSpace="normal"
-                              wordBreak="break-word"
-                              overflowWrap="break-word"
-                              lineHeight="1.6"
-                              style={baseTdStyle(row.index, width)}
-                            >
-                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                            </Td>
-                          );
-                        })}
-                      </Tr>
-                    );
-                  })
-                )}
+                {rows.map((row) => {
+                  const rowProps = getRowProps?.(row) ?? {};
+                  return (
+                    <Tr key={row.id} {...rowProps}>
+                      {row.getVisibleCells().slice(0, stickyColumns).map((cell) => {
+                        const width = (cell.column.columnDef.meta as any)?.width;
+                        return (
+                          <Td
+                            key={cell.id}
+                            isNumeric={(cell.column.columnDef.meta as ColumnMeta)?.isNumeric}
+                            whiteSpace="normal"
+                            wordBreak="break-word"
+                            overflowWrap="break-word"
+                            lineHeight="1.6"
+                            style={baseTdStyle(row.index, width)}
+                          >
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </Td>
+                        );
+                      })}
+                    </Tr>
+                  );
+                })}
               </Tbody>
             </Table>
           </Box>
@@ -507,6 +527,7 @@ export function DataTable<Data extends object>({
           minW={0}
           overflowX="auto"
           overflowY="hidden"
+          background={"#fff"}
           sx={{
             ...tableSx,
             scrollbarWidth: "thin",
@@ -527,9 +548,9 @@ export function DataTable<Data extends object>({
             <Thead ref={rightTheadRef}>
               <Tr>
                 {rightHeaders.map((header, i) => {
-                  const meta         = header.column.columnDef.meta as ColumnMeta | undefined;
+                  const meta = header.column.columnDef.meta as ColumnMeta | undefined;
                   const isLastSticky = stickyLastColumn && i === rightHeaders.length - 1;
-                  const width        = (meta as any)?.width;
+                  const width = (meta as any)?.width;
                   return (
                     <Th
                       key={header.id}
@@ -558,21 +579,15 @@ export function DataTable<Data extends object>({
             </Thead>
 
             <Tbody ref={rightTbodyRef}>
-              {rowCount === 0 ? (
-                <Tr>
-                  <Td colSpan={rightHeaders.length} textAlign="left" py={8} bg={EVEN_ROW_BG} fontSize={'md'} fontWeight={'bold'}>
-                    {searchValue ? "No matching results found" : "No items to display"}
-                  </Td>
-                </Tr>
-              ) : (
+              {(
                 rows.map((row) => {
-                  const rowProps   = getRowProps?.(row) ?? {};
+                  const rowProps = getRowProps?.(row) ?? {};
                   const rightCells = row.getVisibleCells().slice(stickyColumns);
                   return (
                     <Tr key={row.id} {...rowProps}>
                       {rightCells.map((cell, i) => {
                         const isLastSticky = stickyLastColumn && i === rightCells.length - 1;
-                        const width        = (cell.column.columnDef.meta as any)?.width;
+                        const width = (cell.column.columnDef.meta as any)?.width;
                         return (
                           <Td
                             key={cell.id}

@@ -1,6 +1,8 @@
-import { ReactNode } from 'react';
+import { useState, useMemo, useRef, useCallback, ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { FieldProps, useField } from '@formiz/core';
 import { GroupBase, MultiValue, SingleValue } from 'react-select';
+import { Text } from '@chakra-ui/react';
 import { FormGroup, FormGroupProps } from '@/components/FormGroup';
 import { Select, SelectProps } from '@/components/Select';
 
@@ -12,6 +14,13 @@ type UsualSelectProps =
   | 'autoFocus'
   | 'menuPortalTarget'
   | 'size';
+
+type CreateModalComponent = React.ComponentType<{
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess?: (createdValue?: unknown) => void;
+  createdInputValue?: string;
+}>;
 
 export type FieldSelectProps<
   Option extends { label: ReactNode; value: unknown; isDisabled?: boolean },
@@ -27,8 +36,23 @@ export type FieldSelectProps<
     isCaseSensitive?: boolean;
     onlyAlphabets?: boolean;
 
-    /** ✅ NEW: Readonly mode (not disabled) */
+    /** Readonly mode (not disabled) */
     isReadOnly?: boolean;
+
+    /**
+     * Optional "Add New" feature.
+     * When provided, appends a "+ Add New" option to the dropdown.
+     * Clicking it opens the provided CreateModal.
+     * After creation, onSuccess is called with the new value.
+     */
+    addNew?: {
+      /** Custom label for the add option. Defaults to '+ Add New' */
+      label?: string;
+      /** Modal component to render. Must accept isOpen, onClose, onSuccess */
+      CreateModal: CreateModalComponent;
+      /** Called after modal signals successful creation, with the new created value */
+      onSuccess?: (createdValue?: unknown) => void;
+    };
 
     selectProps?: Omit<
       SelectProps<Option, IsMulti, Group>,
@@ -39,6 +63,8 @@ export type FieldSelectProps<
       | UsualSelectProps
     >;
   };
+
+const ADD_NEW_VALUE = '__add_new__' as const;
 
 const getLabelSize = (size: string | number) => {
   const sizeMap: { [key: string]: string } = {
@@ -58,6 +84,24 @@ export const FieldSelect = <
 ) => {
   const field = useField(props);
 
+  // Stable modal state — plain useState + useRef instead of useDisclosure.
+  // The ref gives us a synchronous guard so onBlur can check open state
+  // without waiting for a re-render cycle (which is what caused flickering).
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const isModalOpenRef = useRef(false);
+
+  const [createdInput, setCreatedInput] = useState('');
+
+  const openModal = useCallback(() => {
+    isModalOpenRef.current = true;
+    setIsModalOpen(true);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    isModalOpenRef.current = false;
+    setIsModalOpen(false);
+  }, []);
+
   const {
     selectProps,
     children,
@@ -72,7 +116,8 @@ export const FieldSelect = <
     maxLength,
     isCaseSensitive,
     onlyAlphabets,
-    isReadOnly, // ✅ NEW
+    isReadOnly,
+    addNew,
     ...rest
   } = field.otherProps;
 
@@ -110,6 +155,52 @@ export const FieldSelect = <
       ]
     : options?.find((option) => option.value === fieldValue) ?? undefined;
 
+  // Append "+ Add New" option only when addNew prop is provided.
+  // Memoized so the options array reference is stable across re-renders
+  // that are unrelated to options or addNew changing.
+  const finalOptions: Option[] = useMemo(
+    () =>
+      addNew
+        ? [
+            ...options,
+            {
+              value: ADD_NEW_VALUE,
+              label: (
+                <Text color="brand.500" textDecoration="underline">
+                  {addNew.label ?? '+ Add New'}
+                </Text>
+              ),
+              isDisabled: false,
+            } as unknown as Option,
+          ]
+        : options,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [options, addNew?.label]
+  );
+
+  // Memoize the portal so the modal component never unmounts/remounts
+  // due to re-renders caused by onBlur, Formiz state updates, tab switches,
+  // or window focus events — all of which previously caused flickering.
+  const modalPortal = useMemo(() => {
+    if (!addNew) return null;
+    return createPortal(
+      <addNew.CreateModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        onSuccess={(createdValue) => {
+          closeModal();
+          addNew.onSuccess?.(createdValue);
+        }}
+        createdInputValue={createdInput}
+      />,
+      document.body
+    );
+    // Only re-create the portal tree when these values actually change.
+    // Intentionally excluded: addNew.CreateModal (should be stable reference),
+    // closeModal (useCallback — stable), addNew.onSuccess (caller's concern).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isModalOpen, createdInput]);
+
   return (
     <FormGroup {...formGroupProps}>
       <Select<Option, IsMulti, Group>
@@ -120,7 +211,7 @@ export const FieldSelect = <
         isSearchable={!isReadOnly && isSearchable}
         isDisabled={isReadOnly}
         isMulti={isMulti}
-        options={options}
+        options={finalOptions}
         id={field.otherProps.id ? field.otherProps.id : field.id}
         value={finalValue}
         maxLength={maxLength}
@@ -130,17 +221,37 @@ export const FieldSelect = <
         menuPortalTarget={menuPortalTarget}
         size={size}
 
-        /** 🔒 READONLY MODE */
+        /** READONLY MODE */
         menuIsOpen={isReadOnly ? false : undefined}
 
         onFocus={() => !isReadOnly && field.setIsTouched(false)}
-        onBlur={() => field.setIsTouched(true)}
+
+        // Guard: skip setIsTouched when the modal is open.
+        // When the user clicks "+ Add New", the Select loses focus and fires
+        // onBlur — without this guard, Formiz re-renders the field which
+        // caused the modal to flicker on open. The ref check is synchronous
+        // so it works even before the state update from openModal propagates.
+        onBlur={() => {
+          if (isModalOpenRef.current) return;
+          field.setIsTouched(true);
+        }}
 
         onChange={(fieldValue) => {
-          if (isReadOnly) return; // ⛔ stop changes
+          if (isReadOnly) return;
+
+          // Intercept the sentinel before any form-state logic
+          if (
+            !isMultiValue(fieldValue) &&
+            (fieldValue as Option | null)?.value === ADD_NEW_VALUE
+          ) {
+            openModal();
+            return; // sentinel never reaches form state
+          }
 
           if (isMultiValue<Option>(fieldValue)) {
-            const values = fieldValue.map((f) => f.value) as Option['value'][];
+            const values = fieldValue
+              .filter((f) => f.value !== ADD_NEW_VALUE)
+              .map((f) => f.value) as Option['value'][];
             field.setValue(values.length > 0 ? (values as any) : null);
           } else {
             field.setValue(fieldValue ? (fieldValue.value as any) : null);
@@ -148,13 +259,22 @@ export const FieldSelect = <
         }}
 
         onCreateOption={
-          isReadOnly ? undefined : props.selectProps?.onCreateOption
+          isReadOnly
+            ? undefined
+            : (inputValue: string) => {
+                if (addNew) {
+                  setCreatedInput(inputValue);
+                  openModal();
+                  return;
+                }
+                props.selectProps?.onCreateOption?.(inputValue);
+              }
         }
+
         onInputChange={
           isReadOnly ? undefined : props.selectProps?.onInputChange
         }
 
-        /** 🎨 UX styling for readonly */
         styles={{
           ...selectProps?.styles,
           control: (base) => ({
@@ -165,6 +285,9 @@ export const FieldSelect = <
         }}
       />
       {children}
+
+      {/* Stable portal — memoized above, only updates on isModalOpen / createdInput changes */}
+      {modalPortal}
     </FormGroup>
   );
 };

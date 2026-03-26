@@ -36,7 +36,7 @@ export function TraderReferenceModal({
 }: TraderReferenceModalProps) {
 
   const saveItem = useSaveTraderReference({
-    onSuccess: ({ id }) => onClose(true, id),
+    onSuccess: ({ data }) => onClose(true, data),
   });
 
   const form = useForm({

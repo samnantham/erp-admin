@@ -8,7 +8,7 @@ import {
 } from "@chakra-ui/react";
 import { Formiz, useForm, useFormFields } from "@formiz/core";
 import { HiArrowNarrowLeft, HiOutlinePlus } from "react-icons/hi";
-import { LuUpload, LuDownload } from "react-icons/lu";
+import { LuDownload } from "react-icons/lu";
 import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 
 import { FieldDayPicker } from "@/components/FieldDayPicker";
@@ -20,8 +20,7 @@ import { SlideIn } from "@/components/SlideIn";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import { isFormFieldsChanged } from "@/helpers/FormChangeDetector";
 import { useToastError } from "@/components/Toast";
-import ConfirmationPopup from "@/components/ConfirmationPopup";
-import { parseCSV, getOptionValue, handleDownload, formatDate } from "@/helpers/commonHelper";
+import { getOptionValue, handleDownload, formatDate } from "@/helpers/commonHelper";
 import { useSalesLogList, useSalesLogDetails } from '@/services/sales-log/service';
 import {
     useSaveMaterialRequest,
@@ -33,6 +32,7 @@ import { useSubmasterItemIndex } from "@/services/submaster/service";
 import { usePDFPreviewController } from "@/api/hooks/usePDFPreviewController";
 import { endPoints } from "@/api/endpoints";
 import { useUserContext } from "@/services/auth/UserContext";
+import { CSVUploadButton } from "@/components/ReUsable/CSVUploadButton";
 import dayjs from 'dayjs';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -103,12 +103,9 @@ export const MaterialRequestForm = () => {
     const [disabledDatePicker, setDisabledDatePicker] = useState<boolean>(true);
     const [existingSELIds, setExistingSELIds] = useState<any[]>([]);
 
-    // ── Rows & upload state ────────────────────────────────────────────────────
+    // ── Rows state ─────────────────────────────────────────────────────────────
     const [rows, setRows] = useState<MRRow[]>([EMPTY_ROW()]);
     const [initialRows, setInitialRows] = useState<NormalisedRow[]>([]);
-    const [fileKey, setFileKey] = useState(0);
-    const [uploadedFile, setUploadedFile] = useState<any>(null);
-    const [openConfirmation, setOpenConfirmation] = useState(false);
 
     // ── Part number search state ───────────────────────────────────────────────
     const [partNumberQuery, setPartNumberQuery] = useState("");
@@ -239,33 +236,6 @@ export const MaterialRequestForm = () => {
         }
     };
 
-    // ── File upload ────────────────────────────────────────────────────────────
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) { setUploadedFile(file); setOpenConfirmation(true); }
-        setFileKey(k => k + 1);
-    };
-
-    const handleConfirm = async () => {
-        const parsedRows: any = await parseCSV(uploadedFile);
-        console.log(parsedRows)
-        if (parsedRows.length > 100) {
-            toastError({ title: "Uploaded CSV has more than 100 rows. Max allowed is 100." });
-            setOpenConfirmation(false);
-            return;
-        }
-        const mapped = parsedRows.map((row: any) => ({
-            ...EMPTY_ROW(),
-            part_number_id: getOptionValue(row.part_number_id, spareOptions) ?? "",
-            condition_id: getOptionValue(row.condition_id, conditionOptions) ?? "",
-            qty: row.qty ?? "",
-            unit_of_measure_id: getOptionValue(row.unit_of_measure_id, uomOptions) ?? "",
-            remark: row.remark ?? "",
-        }));
-        setRows(prev => [...prev.filter(r => r.part_number_id), ...mapped]);
-        setOpenConfirmation(false);
-    };
-
     // ── Remarks ────────────────────────────────────────────────────────────────
     const handleRemarksChange = (value: string) => form.setValues({ remarks: value });
 
@@ -292,7 +262,6 @@ export const MaterialRequestForm = () => {
             remark: item.remark ?? "",
             sales_log_item_id: item.sales_log_item_id ?? "",
             is_duplicate: false,
-            // maxValue patched in by salesLogData effect for SEL type
         }));
         setRows(prefilled);
         setInitialRows(prefilled.map(normaliseRow));
@@ -304,8 +273,6 @@ export const MaterialRequestForm = () => {
         if (!salesLogData?.data) return;
 
         const selData = salesLogData.data;
-
-        // ✅ filter items
         const validItems = selData.items?.filter(
             (item: any) => item.is_purchase_request_fulfilled === false
         ) ?? [];
@@ -318,7 +285,6 @@ export const MaterialRequestForm = () => {
         if (!validItems.length) return;
 
         if (!isEdit) {
-            // CREATE — only non-fulfilled items
             const prefilled: MRRow[] = validItems.map((item: any) => ({
                 rowKey: crypto.randomUUID(),
                 sales_log_item_id: item.id,
@@ -330,17 +296,13 @@ export const MaterialRequestForm = () => {
                 is_duplicate: false,
                 maxValue: item.qty,
             }));
-
             setRows(prefilled);
             setInitialRows(prefilled.map(normaliseRow));
             applyRowsToForm(prefilled);
-
         } else {
-            // EDIT — only map from non-fulfilled items
             const selQtyMap = new Map<string, number>(
                 validItems.map((item: any) => [String(item.id), item.qty])
             );
-
             setRows(prev => prev.map(row => ({
                 ...row,
                 maxValue: row.sales_log_item_id
@@ -348,7 +310,6 @@ export const MaterialRequestForm = () => {
                     : undefined,
             })));
         }
-
     }, [salesLogData]);
 
     // ── Change detection ───────────────────────────────────────────────────────
@@ -396,7 +357,6 @@ export const MaterialRequestForm = () => {
                     </ResponsiveIconButton>
                 </HStack>
 
-                {/* Single combined loading flag */}
                 <LoadingOverlay isLoading={isLoading}>
                     <Stack spacing={2} p={4} bg="white" borderRadius="md" boxShadow="md">
                         <Text fontSize="md" fontWeight="700">Material Request</Text>
@@ -459,16 +419,58 @@ export const MaterialRequestForm = () => {
                                     <HStack justify="space-between" mt={3}>
                                         <Text fontSize="md" fontWeight="700">Items</Text>
                                         <HStack ml="auto">
-                                            <Button leftIcon={<LuDownload />} colorScheme="blue" size="sm"
-                                                onClick={() => handleDownload(import.meta.env.VITE_MR_SAMPLE_PARTNUMBERS_CSV)}>
+                                            <Button
+                                                leftIcon={<LuDownload />}
+                                                colorScheme="blue"
+                                                size="sm"
+                                                onClick={() => handleDownload(import.meta.env.VITE_MR_SAMPLE_PARTNUMBERS_CSV)}
+                                            >
                                                 Download Sample
                                             </Button>
-                                            <input type="file" accept=".csv" id="items-csv-upload"
-                                                key={fileKey} style={{ display: "none" }} onChange={handleFileChange} />
-                                            <Button as="label" htmlFor="items-csv-upload"
-                                                leftIcon={<LuUpload />} colorScheme="green" size="sm" cursor="pointer">
-                                                Upload Items
-                                            </Button>
+
+                                            {/* ── Reusable CSV Upload ── */}
+                                            <CSVUploadButton<MRRow>
+                                                createEmptyRow={EMPTY_ROW}
+                                                fieldMappings={[
+                                                    {
+                                                        csvKey: "part_number_id",
+                                                        rowKey: "part_number_id",
+                                                        transform: (v) => getOptionValue(v, spareOptions) ?? "",
+                                                    },
+                                                    {
+                                                        csvKey: "condition_id",
+                                                        rowKey: "condition_id",
+                                                        transform: (v) => getOptionValue(v, conditionOptions) ?? "",
+                                                    },
+                                                    {
+                                                        csvKey: "qty",
+                                                        rowKey: "qty",
+                                                    },
+                                                    {
+                                                        csvKey: "unit_of_measure_id",
+                                                        rowKey: "unit_of_measure_id",
+                                                        transform: (v) => getOptionValue(v, uomOptions) ?? "",
+                                                    },
+                                                    {
+                                                        csvKey: "remark",
+                                                        rowKey: "remark",
+                                                    },
+                                                ]}
+                                                duplicateCheck={{
+                                                    keys: ["part_number_id"],
+                                                    label: "Part Number",
+                                                    existingRows: rows,
+                                                }}
+                                                onUpload={(mapped) =>
+                                                    setRows(prev => [...prev.filter(r => r.part_number_id), ...mapped])
+                                                }
+                                                confirmHeaderText="Upload Items CSV"
+                                                confirmBodyText="Are you sure you want to upload this file? Existing rows with part numbers will be kept."
+                                                buttonLabel="Upload Items"
+                                                colorScheme="green"
+                                                size="sm"
+                                                maxRows={100}
+                                            />
                                         </HStack>
                                     </HStack>
                                 )}
@@ -649,14 +651,6 @@ export const MaterialRequestForm = () => {
                     </Stack>
                 </LoadingOverlay>
             </Stack>
-
-            <ConfirmationPopup
-                isOpen={openConfirmation}
-                onClose={() => setOpenConfirmation(false)}
-                onConfirm={handleConfirm}
-                headerText="Upload Items CSV"
-                bodyText="Are you sure you want to upload this file? Existing rows with part numbers will be kept."
-            />
         </SlideIn>
     );
 };

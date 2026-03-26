@@ -33,7 +33,7 @@ export function PrincipleOfOwnerModal({
 }: PrincipleOfOwnerModalProps) {
 
   const saveItem = useSavePrincipleOwner({
-    onSuccess: ({ id }) => onClose(true, id),
+    onSuccess: ({ data }) => onClose(true, data),
   });
 
   const form = useForm({

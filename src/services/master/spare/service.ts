@@ -20,6 +20,9 @@ import {
   zSpareDetailsPayload,
   zAssignAltSparePartsRespPayload
 } from '@/services/master/spare/schema';
+import { AxiosError } from "axios";
+import { ApiResp } from "@/services/global-schema";
+import { UseMutationOptions } from "react-query";
 
 /* ================= Part Number Index ================= */
 export const usePartNumberIndex = (queryParams?: QueryParams) =>
@@ -74,12 +77,24 @@ export interface PartNumberVariables {
 }
 
 /* ================= Create / Update Part Number ================= */
-export const useSavePartNumber = () =>
-  useCreateUpdateService<PartNumberSaveResponsePayload, PartNumberVariables>({
-    createUrl: endPoints.create.spare,
-    updateUrl: endPoints.update.spare,
-    schema: zPartNumberSaveResponsePayload,
-  });
+export const useSavePartNumber = (
+  options?: UseMutationOptions<
+    PartNumberSaveResponsePayload,
+    AxiosError<ApiResp>,
+    PartNumberVariables
+  >
+) =>
+  useCreateUpdateService<
+    PartNumberSaveResponsePayload,
+    PartNumberVariables
+  >(
+    {
+      createUrl: endPoints.create.spare,
+      updateUrl: endPoints.update.spare,
+      schema: zPartNumberSaveResponsePayload,
+    },
+    options
+  );
 
 /* ================= Part Number Dropdowns ================= */
 export const usePartNumberDropdowns = () =>

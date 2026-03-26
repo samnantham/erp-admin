@@ -113,13 +113,16 @@ export const zDetailsPayload = z.object({
 export const zCreatePayload = z.object({
   status: z.boolean(),
   message: z.string(),
+  data: zBasicObject.extend({
+    id: z.string().uuid()
+  }).optional()
 });
 
 export interface QueryParams {
   status?: string;
   is_fixed?: boolean;
   query?: string;
-  is_purchase_request_fulfilled? : boolean;
+  is_purchase_request_fulfilled?: boolean;
   exist_ids?: string;
 }
 

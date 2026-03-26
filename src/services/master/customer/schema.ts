@@ -23,11 +23,11 @@ export const zCustomerContactManager = zStandardObject.extend({
   attention: z.string(),
   address_line1: z.string(),
   address_line2: z.string().nullable().optional(),
-  city: z.string(),
-  state: z.string(),
-  zip_code: z.string(),
+  city: z.string().nullable().optional(),
+  state: z.string().nullable().optional(),
+  zip_code: z.string().nullable().optional(),
   country: z.string(),
-  phone: z.string(),
+  phone: z.string().nullable().optional(),
   fax: z.string().nullable().optional(),
   email: z.string().email().nullable().optional(),
   remarks: z.string().nullable().optional(),
@@ -200,14 +200,10 @@ const zUniqueCheckResponse = z.object({
   errors: z.record(z.string()).optional(),
 });
 
-// Customer unique check — rows contain { business_name, email }
 export const zBulkCustomerUniqueCheckPayload = () => zUniqueCheckResponse;
-
 export type BulkCustomerUniqueCheckPayload = z.infer<typeof zUniqueCheckResponse>;
 
-// Relation unique check — rows contain relation-specific fields (e.g. { customer_id, ac_iban_no, ... })
 export const zRelationUniqueCheckPayload = () => zUniqueCheckResponse;
-
 export type RelationUniqueCheckPayload = z.infer<typeof zUniqueCheckResponse>;
 
 /* ---------- Bulk Upload ---------- */
@@ -219,12 +215,42 @@ const zBulkUploadResponse = z.object({
   duplicates: z.array(z.any()).optional(),
 });
 
-// Customer bulk upload
 export const zBulkCustomerUploadResponse = () => zBulkUploadResponse;
-
 export type CustomerBulkUploadResponse = z.infer<typeof zBulkUploadResponse>;
 
-// Relation bulk upload (same shape)
 export const zRelationBulkUploadResponse = () => zBulkUploadResponse;
-
 export type RelationBulkUploadResponse = z.infer<typeof zBulkUploadResponse>;
+
+/* =========================================================
+   Relation Create Response Schemas
+   — typed per relation so onSuccess(response) gives
+     response.data as the actual relation record, not Customer
+========================================================= */
+
+const zRelationCreateResponse = <T extends z.ZodTypeAny>(dataSchema: T) =>
+  z.object({
+    data: dataSchema.optional(),
+    message: z.string(),
+    status: z.boolean(),
+  });
+
+export const zBankCreateResponse = () =>
+  zRelationCreateResponse(zCustomerBank);
+
+export const zContactManagerCreateResponse = () =>
+  zRelationCreateResponse(zCustomerContactManager);
+
+export const zShippingAddressCreateResponse = () =>
+  zRelationCreateResponse(zCustomerShippingAddress);
+
+export const zPrincipleOwnerCreateResponse = () =>
+  zRelationCreateResponse(zCustomerPrincipleOwner);
+
+export const zTraderReferenceCreateResponse = () =>
+  zRelationCreateResponse(zCustomerTraderReference);
+
+export type BankCreateResponse = z.infer<ReturnType<typeof zBankCreateResponse>>;
+export type ContactManagerCreateResponse = z.infer<ReturnType<typeof zContactManagerCreateResponse>>;
+export type ShippingAddressCreateResponse = z.infer<ReturnType<typeof zShippingAddressCreateResponse>>;
+export type PrincipleOwnerCreateResponse = z.infer<ReturnType<typeof zPrincipleOwnerCreateResponse>>;
+export type TraderReferenceCreateResponse = z.infer<ReturnType<typeof zTraderReferenceCreateResponse>>;

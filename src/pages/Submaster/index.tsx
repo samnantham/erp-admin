@@ -18,7 +18,7 @@ import { getDeletedColumn } from "@/components/ReUsable/table-columns/deletedCol
 
 import { formatModelTitle } from "@/helpers/commonHelper";
 
-import ModalForm from "@/pages/Submaster/ModalForm";
+import { SubMasterModalForm } from "@/pages/Submaster/ModalForm";
 
 import { DataColumn } from "@/services/submaster/schema";
 import { useDelete } from "@/api/useDelete";
@@ -241,13 +241,13 @@ export const SubmasterPage = () => {
             }}
           />
 
-          <ModalForm
+          <SubMasterModalForm
             key={selected?.id ?? "create"}
             isOpen={isOpen}
             onClose={closeModal}
             existInfo={selected}
             isEdit={isEdit}
-            model={model}
+            model={model ?? ""}
           />
 
           <ConfirmationPopup

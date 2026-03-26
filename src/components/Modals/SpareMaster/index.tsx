@@ -22,10 +22,11 @@ import LoadingOverlay from '@/components/LoadingOverlay';
 import { useSubmasterItemIndex } from "@/services/submaster/service";
 import { useSavePartNumber, usePartNumberDropdowns } from "@/services/master/spare/service";
 
-type AddSpareModalProps = {
+type PartNumberModalProps = {
   isOpen: boolean;
   onClose: (status: boolean, id: any) => void;
-  spareName?: string;
+  createdInputValue?: string;
+  onSuccess?: (createdValue?: unknown) => void;
 };
 
 const BOOL_OPTIONS = [
@@ -42,11 +43,12 @@ const FORM_KEYS = [
 ];
 
 
-function AddSpareModal({
+export function PartNumberModal({
   isOpen,
   onClose,
-  spareName = '',
-}: AddSpareModalProps) {
+  createdInputValue,
+  onSuccess
+}: PartNumberModalProps) {
   const { data: uNList } = useSubmasterItemIndex("uns", {});
   const unItems: TODO[] = uNList?.data ?? [];
 
@@ -71,7 +73,14 @@ function AddSpareModal({
   };
 
   const [resetKey, setResetKey] = useState(0);
-  const saveEndpoint = useSavePartNumber();
+  const saveEndpoint = useSavePartNumber({
+    onSuccess: ({ data }) => {
+      if (onSuccess) {
+        onSuccess(data);
+      }
+      onClose?.(true, data?.id);
+    },
+  });
 
   const form = useForm({
     onValidSubmit: (values) => {
@@ -85,10 +94,7 @@ function AddSpareModal({
       payload.total_shelf_life = values.is_shelf_life === "true" ? Number(values.total_shelf_life) : null;
       payload.un_id = values.is_dg === "true" ? values.un_id : null;
 
-      saveEndpoint.mutate(
-        payload,
-        { onSuccess: ({ data }) => onClose(true, data?.id) }
-      );
+      saveEndpoint.mutate(payload);
     },
   });
 
@@ -106,6 +112,7 @@ function AddSpareModal({
     <Modal isOpen={isOpen} onClose={handleClose} closeOnOverlayClick={false} closeOnEsc={false}>
       <ModalOverlay />
       <ModalContent maxWidth="65vw">
+        <div onSubmit={(e) => e.stopPropagation()}>
         <Formiz autoForm connect={form}>
           <ModalHeader>Add New Spare</ModalHeader>
           <ModalCloseButton />
@@ -114,7 +121,7 @@ function AddSpareModal({
               <Stack spacing={4}>
                 {/* Part Number + Description */}
                 <Stack spacing={8} direction={{ base: "column", md: "row" }} mb={3}>
-                  <FieldInput label="Part Number" key={`name_${resetKey}`} name="name" placeholder="Enter part number" required="Part Number is required" type="all-capital" maxLength={50} defaultValue={spareName ? spareName : ''} />
+                  <FieldInput label="Part Number" key={`name_${resetKey}`} name="name" placeholder="Enter part number" required="Part Number is required" type="all-capital" maxLength={50} defaultValue={createdInputValue ? createdInputValue : ''} />
                   <FieldInput label="Description" key={`description_${resetKey}`} name="description" placeholder="Enter description" required="Description is required" type="all-capital" maxLength={50} />
                 </Stack>
 
@@ -182,16 +189,17 @@ function AddSpareModal({
               colorScheme="brand"
               isLoading={isSaving}
               disabled={
-                !form.isValid || isSaving || !dropdownLoading
+                !form.isValid || isSaving || dropdownLoading
               }
             >
               Add New Spare
             </Button>
           </ModalFooter>
         </Formiz>
+        </div>
       </ModalContent>
     </Modal>
   );
 }
 
-export default AddSpareModal;
+export default PartNumberModal;

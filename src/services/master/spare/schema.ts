@@ -100,11 +100,12 @@ export const zPartNumberDetailsPayload = z.object({
 });
 export type PartNumberDetailsPayload = z.infer<typeof zPartNumberDetailsPayload>;
 
-export const zPartNumberSaveResponsePayload = z.object({
-  data: zPartNumber.optional(),
-  message: z.string(),
-  status: z.boolean(),
-});
+export const zPartNumberSaveResponsePayload = 
+z.object({
+    data: zPartNumber.optional(),
+    message: z.string(),
+    status: z.boolean(),
+  });
 export type PartNumberSaveResponsePayload = z.infer<typeof zPartNumberSaveResponsePayload>;
 
 /* =========================================================

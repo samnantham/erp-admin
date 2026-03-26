@@ -7,11 +7,11 @@ import { Formiz, useForm, useFormFields } from '@formiz/core';
 import { isEmail } from '@formiz/validations';
 
 import { FieldEmailInput } from "@/components/FieldEmailInput";
-import { FieldPhone }      from '@/components/FieldPhone';
-import { FieldInput }      from '@/components/FieldInput';
-import { FieldSelect }     from '@/components/FieldSelect';
-import { FieldTextarea }   from '@/components/FieldTextarea';
-import { countryOptions }  from '@/constants';
+import { FieldPhone } from '@/components/FieldPhone';
+import { FieldInput } from '@/components/FieldInput';
+import { FieldSelect } from '@/components/FieldSelect';
+import { FieldTextarea } from '@/components/FieldTextarea';
+import { countryOptions } from '@/constants';
 import { isFormFieldsChanged } from '@/helpers/FormChangeDetector';
 import { useSaveShippingAddress } from "@/services/master/customer/service";
 
@@ -23,6 +23,8 @@ type CustomerShippingAddressModalProps = {
   isView?: boolean;
   existValues?: any;
   customerInfo?: any;
+  createdInputValue?: string;
+  onSuccess?: (createdValue?: unknown) => void;
 };
 
 const KEYS = [
@@ -32,11 +34,16 @@ const KEYS = [
 
 export function CustomerShippingAddressModal({
   isOpen, onClose, customerId,
-  isEdit, isView, existValues, customerInfo,
+  isEdit, isView, existValues, customerInfo, createdInputValue, onSuccess
 }: CustomerShippingAddressModalProps) {
 
   const saveItem = useSaveShippingAddress({
-    onSuccess: ({ id }) => onClose(true, id),
+    onSuccess: ({ data }) => {
+      if (onSuccess) {
+        onSuccess(data);
+      }
+      onClose?.(true, data?.id);
+    },
   });
 
   const form = useForm({
@@ -52,9 +59,9 @@ export function CustomerShippingAddressModal({
     },
   });
 
-  const fields        = useFormFields({ connect: form });
-  const formRef       = useRef(form);
-  formRef.current     = form;
+  const fields = useFormFields({ connect: form });
+  const formRef = useRef(form);
+  formRef.current = form;
 
   const [initialValues, setInitialValues] = useState<any>(null);
   const isChanged = isFormFieldsChanged({ fields, initialValues, keys: KEYS });
@@ -66,13 +73,14 @@ export function CustomerShippingAddressModal({
     setTimeout(() => formRef.current.setValues(init), 0);
   }, [existValues, isOpen]);
 
-  const p  = (text: string) => (!isView ? text : '');
-  const ev = (key: string)  => existValues?.[key] ?? '';
+  const p = (text: string) => (!isView ? text : '');
+  const ev = (key: string) => existValues?.[key] ?? '';
 
   return (
     <Modal isOpen={isOpen} onClose={() => onClose(false, 0)} size="md" closeOnOverlayClick={false} closeOnEsc={false}>
       <ModalOverlay />
       <ModalContent maxWidth="60vw">
+        <div onSubmit={(e) => e.stopPropagation()}>
         <Formiz autoForm connect={form}>
           <ModalHeader>
             Customer Shipping Address Modal{customerInfo ? ` (${customerInfo.business_name} - ${customerInfo.code})` : ''}
@@ -83,26 +91,29 @@ export function CustomerShippingAddressModal({
             <Stack spacing={4}>
 
               <Stack spacing={8} direction={{ base: 'column', md: 'row' }}>
-                <FieldInput      label="Attention"      name="attention"      required="Attention is required"      placeholder={p('Enter Attention')}      type="alpha-with-space"  maxLength={40}  isDisabled={isView} defaultValue={ev('attention')} />
-                <FieldInput      label="Consignee Name" name="consignee_name" required="Consignee Name is required" placeholder={p('Enter Consignee Name')} type="alpha-with-space"  maxLength={40}  isDisabled={isView} defaultValue={ev('consignee_name')} />
-                <FieldEmailInput label="Email"          name="email"                                                placeholder={p('Enter Email')} validations={[{ handler: isEmail(), message: 'Invalid email' }]} maxLength={100} isDisabled={isView} defaultValue={existValues?.email?.toLowerCase() ?? ''} required={existValues?.email ? 'Email is required' : ''} />
+                <FieldInput label="Attention" name="attention" required="Attention is required" placeholder={p('Enter Attention')} type="alpha-with-space" maxLength={40} isDisabled={isView} defaultValue={
+                  existValues?.attention ??
+                  (!isEdit && createdInputValue ? createdInputValue : "")
+                } />
+                <FieldInput label="Consignee Name" name="consignee_name" required="Consignee Name is required" placeholder={p('Enter Consignee Name')} type="alpha-with-space" maxLength={40} isDisabled={isView} defaultValue={ev('consignee_name')} />
+                <FieldEmailInput label="Email" name="email" placeholder={p('Enter Email')} validations={[{ handler: isEmail(), message: 'Invalid email' }]} required="Country is required"  maxLength={100} isDisabled={isView} defaultValue={existValues?.email?.toLowerCase() ?? ''} />
               </Stack>
 
               <Stack spacing={8} direction={{ base: 'column', md: 'row' }}>
                 <FieldInput label="Address Line 1" name="address_line1" required="Address Line 1 is required" placeholder={p('Enter Address Line 1')} maxLength={50} isDisabled={isView} defaultValue={ev('address_line1')} />
-                <FieldInput label="Address Line 2" name="address_line2"                                        placeholder={p('Enter Address Line 2')} maxLength={50} isDisabled={isView} defaultValue={ev('address_line2')} />
+                <FieldInput label="Address Line 2" name="address_line2" placeholder={p('Enter Address Line 2')} maxLength={50} isDisabled={isView} defaultValue={ev('address_line2')} />
               </Stack>
 
               <Stack spacing={8} direction={{ base: 'column', md: 'row' }}>
                 <FieldPhone label="Phone Number" name="phone" placeholder={p('Enter Phone Number')} defaultValue={ev('phone')} defaultCountry="AE" isDisabled={isView} />
-                <FieldInput label="Fax No"       name="fax"   placeholder={p('Enter Fax No')}       type="phone-number"            maxLength={15} isDisabled={isView} defaultValue={ev('fax')} />
-                <FieldInput label="City"         name="city"  placeholder={p('Enter city')}         type="alpha-numeric-with-space" maxLength={40} isDisabled={isView} defaultValue={ev('city')} />
+                <FieldInput label="Fax No" name="fax" placeholder={p('Enter Fax No')} type="phone-number" maxLength={15} isDisabled={isView} defaultValue={ev('fax')} />
+                <FieldInput label="City" name="city" placeholder={p('Enter city')} type="alpha-numeric-with-space" maxLength={40} isDisabled={isView} defaultValue={ev('city')} />
               </Stack>
 
               <Stack spacing={8} direction={{ base: 'column', md: 'row' }}>
-                <FieldInput  label="State"   name="state"    placeholder={p('Enter State')}   type="alpha-with-space" maxLength={40} isDisabled={isView} defaultValue={ev('state')} />
-                <FieldInput  label="Zipcode" name="zip_code" placeholder={p('Enter Zipcode')} type="integer"          maxLength={8}  isDisabled={isView} defaultValue={ev('zip_code')} />
-                <FieldSelect label="Country" name="country"  placeholder={p('Enter Country')} required="Country is required" options={countryOptions} isDisabled={isView} defaultValue={ev('country')} className={isView ? 'disabled-input' : ''} />
+                <FieldInput label="State" name="state" placeholder={p('Enter State')} type="alpha-with-space" maxLength={40} isDisabled={isView} defaultValue={ev('state')} />
+                <FieldInput label="Zipcode" name="zip_code" placeholder={p('Enter Zipcode')} type="integer" maxLength={8} isDisabled={isView} defaultValue={ev('zip_code')} />
+                <FieldSelect label="Country" name="country" placeholder={p('Enter Country')} required="Country is required" options={countryOptions} isDisabled={isView} defaultValue={ev('country')} className={isView ? 'disabled-input' : ''} />
               </Stack>
 
               <Stack spacing={8} direction={{ base: 'column', md: 'row' }}>
@@ -127,6 +138,7 @@ export function CustomerShippingAddressModal({
             </Stack>
           </ModalFooter>
         </Formiz>
+        </div>
       </ModalContent>
     </Modal>
   );

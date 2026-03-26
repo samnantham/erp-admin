@@ -39,7 +39,7 @@ export function BankModal({
 }: BankModalProps) {
 
   const saveItem = useSaveBank({
-    onSuccess: ({ id }) => onClose(true, id),
+    onSuccess: ({ data }) => onClose(true, data),
   });
 
   const form = useForm({

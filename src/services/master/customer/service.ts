@@ -30,6 +30,17 @@ import {
   zRelationBulkUploadResponse,
   zBulkCustomerUniqueCheckPayload,
   zRelationUniqueCheckPayload,
+  // ✅ Relation typed response schemas
+  BankCreateResponse,
+  ContactManagerCreateResponse,
+  ShippingAddressCreateResponse,
+  PrincipleOwnerCreateResponse,
+  TraderReferenceCreateResponse,
+  zBankCreateResponse,
+  zContactManagerCreateResponse,
+  zShippingAddressCreateResponse,
+  zPrincipleOwnerCreateResponse,
+  zTraderReferenceCreateResponse,
 } from "@/services/master/customer/schema";
 
 /* ================= Customer Index ================= */
@@ -114,70 +125,75 @@ export const useUpdateCustomerStatus = () =>
 
 /* ================= Create / Update Contact Manager ================= */
 
+// Typed: onSuccess(response) → response.data is CustomerContactManager
 export const useSaveContactManager = (
-  options?: UseMutationOptions<any, AxiosError<ApiResp>, any>
+  options?: UseMutationOptions<ContactManagerCreateResponse, AxiosError<ApiResp>, any>
 ) =>
-  useCreateUpdateService(
+  useCreateUpdateService<ContactManagerCreateResponse, any>(
     {
       createUrl: endPoints.create.contact_manager,
       updateUrl: endPoints.update.contact_manager,
-      schema: zCreateResponsePayload,
+      schema: zContactManagerCreateResponse(),
     },
     options
   );
 
 /* ================= Create / Update Shipping Address ================= */
 
+// Typed: onSuccess(response) → response.data is CustomerShippingAddress
 export const useSaveShippingAddress = (
-  options?: UseMutationOptions<any, AxiosError<ApiResp>, any>
+  options?: UseMutationOptions<ShippingAddressCreateResponse, AxiosError<ApiResp>, any>
 ) =>
-  useCreateUpdateService(
+  useCreateUpdateService<ShippingAddressCreateResponse, any>(
     {
       createUrl: endPoints.create.shipping_address,
       updateUrl: endPoints.update.shipping_address,
-      schema: zCreateResponsePayload,
+      schema: zShippingAddressCreateResponse(),
     },
     options
   );
 
 /* ================= Create / Update Bank ================= */
 
+// Typed: onSuccess(response) → response.data is CustomerBank
 export const useSaveBank = (
-  options?: UseMutationOptions<any, AxiosError<ApiResp>, any>
+  options?: UseMutationOptions<BankCreateResponse, AxiosError<ApiResp>, any>
 ) =>
-  useCreateUpdateService(
+  useCreateUpdateService<BankCreateResponse, any>(
     {
       createUrl: endPoints.create.bank,
       updateUrl: endPoints.update.bank,
-      schema: zCreateResponsePayload,
+      schema: zBankCreateResponse(),
     },
     options
   );
 
 /* ================= Create / Update Principle Of Owner ================= */
 
+// Typed: onSuccess(response) → response.data is CustomerPrincipleOwner
 export const useSavePrincipleOwner = (
-  options?: UseMutationOptions<any, AxiosError<ApiResp>, any>
+  options?: UseMutationOptions<PrincipleOwnerCreateResponse, AxiosError<ApiResp>, any>
 ) =>
-  useCreateUpdateService(
+  useCreateUpdateService<PrincipleOwnerCreateResponse, any>(
     {
       createUrl: endPoints.create.principle_of_owner,
       updateUrl: endPoints.update.principle_of_owner,
-      schema: zCreateResponsePayload,
+      schema: zPrincipleOwnerCreateResponse(),
     },
     options
   );
 
 /* ================= Create / Update Trader Reference ================= */
 
+// Typed: onSuccess(response) → response.data is CustomerTraderReference
 export const useSaveTraderReference = (
-  options?: UseMutationOptions<any, AxiosError<ApiResp>, any>
+  options?: UseMutationOptions<TraderReferenceCreateResponse, AxiosError<ApiResp>, any>
 ) =>
-  useCreateUpdateService(
+  useCreateUpdateService<TraderReferenceCreateResponse, any>(
     {
       createUrl: endPoints.create.trader_reference,
       updateUrl: endPoints.update.trader_reference,
-      schema: zCreateResponsePayload,
+      schema: zTraderReferenceCreateResponse(),
     },
     options
   );
@@ -227,13 +243,6 @@ export const useBulkUploadCustomers = () =>
   );
 
 /* ================= Relation — Unique Check (Generic) ================= */
-
-// rows contain relation-specific unique fields e.g:
-//   bank:               { customer_id, ac_iban_no, beneficiary_name, name }
-//   contact_manager:    { customer_id, attention }
-//   shipping_address:   { customer_id, consignee_name }
-//   trader_reference:   { customer_id, vendor_name }
-//   principle_of_owner: { customer_id, owner }
 
 export interface RelationUniqueCheckPayloadRequest {
   rows: Record<string, string>[];

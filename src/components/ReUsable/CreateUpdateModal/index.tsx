@@ -9,36 +9,27 @@ import {
   ModalHeader,
   ModalOverlay,
 } from '@chakra-ui/react';
-
 import { Formiz, useForm, useFormFields } from '@formiz/core';
 import { useQueryClient, UseMutationResult } from 'react-query';
-
 import { isFormFieldsChanged } from '@/helpers/FormChangeDetector';
 
 type CreateUpdateModalProps<TFormValues extends object> = {
   isOpen: boolean;
   onClose: () => void;
-
   title: string;
   isEdit?: boolean;
-
   existInfo?: Partial<TFormValues> & { id?: string | number };
-
   createMutation: UseMutationResult<any, any, TFormValues>;
-
   updateMutation: UseMutationResult<
     any,
     any,
     TFormValues & { id: string | number }
   >;
-
   invalidateKeys?: string[];
-
-  /** ✅ fields used for change detection */
   fields: (keyof TFormValues)[];
-
   children: React.ReactNode;
   transformValues?: (values: TFormValues) => any;
+  onSuccess?: (createdValue?: unknown) => void; // ✅ added — optional, won't affect existing usage
 };
 
 export function CreateUpdateModal<TFormValues extends object>({
@@ -52,41 +43,46 @@ export function CreateUpdateModal<TFormValues extends object>({
   invalidateKeys = [],
   fields: formFields,
   children,
-  transformValues
+  transformValues,
+  onSuccess, // ✅ destructured
 }: CreateUpdateModalProps<TFormValues>) {
   const queryClient = useQueryClient();
   const initialRef = React.useRef(null);
 
   const form = useForm<TFormValues>({
-  onValidSubmit(values) {
-  const payload = transformValues ? transformValues(values) : values;
+    onValidSubmit(values) {
+      const payload = transformValues ? transformValues(values) : values;
 
-  if (isEdit) {
-    updateMutation.mutate(
-      {
-        id: existInfo?.id as string | number,
-        ...payload,
-      },
-      {
-        onSuccess: () => {
-          invalidateKeys.forEach((key) =>
-            queryClient.invalidateQueries([key])
-          );
-          onClose();
-        },
-      }
-    );
-  } else {
-    createMutation.mutate(payload, {
-      onSuccess: () => {
-        invalidateKeys.forEach((key) =>
-          queryClient.invalidateQueries([key])
+      if (isEdit) {
+        // ── UPDATE ── onSuccess not needed here (edit doesn't trigger addNew flow)
+        updateMutation.mutate(
+          {
+            id: existInfo?.id as string | number,
+            ...payload,
+          },
+          {
+            onSuccess: () => {
+              invalidateKeys.forEach((key) =>
+                queryClient.invalidateQueries([key])
+              );
+              onClose();
+            },
+          }
         );
-        onClose();
-      },
-    });
-  }
-}
+      } else {
+        // ── CREATE ── fire onSuccess with the new id after creation
+        createMutation.mutate(payload, {
+          onSuccess: (data) => {
+            console.log(data)
+            invalidateKeys.forEach((key) =>
+              queryClient.invalidateQueries([key])
+            );
+            onSuccess?.(data?.id ?? data?.data); // ✅ notify parent with created value
+            onClose();
+          },
+        });
+      }
+    },
   });
 
   const [initialValues, setInitialValues] = useState<
@@ -94,7 +90,6 @@ export function CreateUpdateModal<TFormValues extends object>({
   >(null);
 
   const fields = useFormFields({ connect: form });
-
   const isFormValuesChanged = isFormFieldsChanged({
     fields,
     initialValues,
@@ -104,13 +99,11 @@ export function CreateUpdateModal<TFormValues extends object>({
   useEffect(() => {
     if (isEdit && existInfo) {
       const filteredValues = {} as Partial<TFormValues>;
-
       formFields.forEach((key) => {
         if (key in existInfo) {
           filteredValues[key] = existInfo[key] as TFormValues[typeof key];
         }
       });
-
       setInitialValues(filteredValues);
     }
   }, [isEdit, existInfo, formFields]);
@@ -124,17 +117,14 @@ export function CreateUpdateModal<TFormValues extends object>({
       closeOnEsc={false}
     >
       <ModalOverlay />
-
       <ModalContent>
+        <div onSubmit={(e) => e.stopPropagation()}>
         <Formiz key={existInfo?.id ?? 'create'} autoForm connect={form}>
           <ModalHeader>
             {isEdit ? 'Update' : 'Create'} {title}
           </ModalHeader>
-
           <ModalCloseButton />
-
           <ModalBody pb={6}>{children}</ModalBody>
-
           <ModalFooter>
             <Button
               type="submit"
@@ -151,10 +141,10 @@ export function CreateUpdateModal<TFormValues extends object>({
             >
               {isEdit ? 'Update' : 'Create'}
             </Button>
-
             <Button onClick={onClose}>Cancel</Button>
           </ModalFooter>
         </Formiz>
+        </div>
       </ModalContent>
     </Modal>
   );
