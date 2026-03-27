@@ -24,6 +24,7 @@ import { useToastError } from "@/components/Toast";
 import { getOptionValue, handleDownload, formatContactAddress, formatShippingAddress } from "@/helpers/commonHelper";
 import { CSVUploadButton } from "@/components/ReUsable/CSVUploadButton";
 
+import { CustomerModal } from "@/components/Modals/CustomerMaster";
 import { SubMasterModalForm } from '@/pages/Submaster/ModalForm';
 import { ContactManagerModal } from "@/components/Modals/CustomerMaster/ContactManager";
 import { CustomerShippingAddressModal } from "@/components/Modals/CustomerMaster/ShippingAddress";
@@ -101,7 +102,7 @@ export const SalesLogForm = () => {
     const [spareLoading, setSpareLoading] = useState(false);
 
     // ── Data fetching ──────────────────────────────────────────────────────────
-    const { data: dropdownData, isLoading: l1, refetch: reloadDropDowwns } = useSalesLogDropdowns();
+    const { data: dropdownData, isLoading: l1, refetch: reloadDropDowns } = useSalesLogDropdowns();
     const { data: salesLogData, isLoading: l2 } = useSalesLogDetails(id, { enabled: isEdit });
     const { data: customerInfo, isLoading: l3 } = useCustomerDetails(selectedCustomerId, { enabled: !!selectedCustomerId });
     const { data: contactManagerList, isLoading: l4, refetch: reloadContactManagers } = useCustomerRelationIndex(selectedCustomerId, "contact-managers");
@@ -283,6 +284,18 @@ export const SalesLogForm = () => {
     const title = isEdit ? "Edit Sales Log" : "Add New Sales Log";
     const sectionStyle = { bg: "blue.100", p: 4, rounded: "md", border: "1px solid", borderColor: "blue.300" };
 
+    const handleCustomerChange = (v: any) => {
+        setSelectedCustomerId(v);
+        setSelectedContactManagerId(null);
+        setSelectedShippingAddressId(null);
+        setIsCustomerChanged(true);
+
+        form.setValues({
+            customer_contact_manager_id: "",
+            customer_shipping_address_id: "",
+        });
+    };
+
     const handleAddNewSuccess =
         (
             fieldName: any,
@@ -396,7 +409,7 @@ export const SalesLogForm = () => {
                                             ),
                                             onSuccess: handleAddNewSuccess(
                                                 'mode_of_receipt_id',
-                                                reloadDropDowwns
+                                                reloadDropDowns
                                             ),
                                         }}
                                         selectProps={{
@@ -424,7 +437,7 @@ export const SalesLogForm = () => {
                                             ),
                                             onSuccess: handleAddNewSuccess(
                                                 'priority_id',
-                                                reloadDropDowwns
+                                                reloadDropDowns
                                             ),
                                         }}
                                         selectProps={{
@@ -444,14 +457,34 @@ export const SalesLogForm = () => {
                                 <Stack spacing={8} direction={{ base: "column", md: "row" }} {...sectionStyle} align="flex-start">
                                     <FieldSelect
                                         label="Customer" name="customer_id" placeholder="Select..."
-                                        options={customerOptions} required="Customer is required"
-                                        selectProps={{ isLoading: l1 }} size="sm"
-                                        onValueChange={(v) => {
-                                            setSelectedCustomerId(v);
-                                            setSelectedContactManagerId(null);
-                                            setSelectedShippingAddressId(null);
-                                            setIsCustomerChanged(true);
-                                            form.setValues({ customer_contact_manager_id: "", customer_shipping_address_id: "" });
+                                        options={customerOptions} required="Customer is required" size="sm"
+                                        onValueChange={handleCustomerChange}
+                                        addNew={{
+                                            label: '+ Add New',
+                                            CreateModal: (p) => (
+                                                <CustomerModal
+                                                    {...p}
+                                                    onClose={() => {
+                                                        p.onClose?.();
+                                                    }}
+
+
+                                                    onSuccess={(data) => {
+                                                        handleAddNewSuccess(
+                                                            'customer_id',
+                                                            reloadDropDowns,
+                                                            {
+                                                                onValueChange: handleCustomerChange, // 🔥 HERE
+                                                            }
+                                                        )(data);
+                                                    }}
+                                                />
+                                            )
+                                        }}
+                                        selectProps={{
+                                            type: 'creatable',
+                                            noOptionsMessage: () => 'No contacts found',
+                                            isLoading: l1,
                                         }}
                                     />
                                     <FieldSelect
@@ -473,14 +506,14 @@ export const SalesLogForm = () => {
                                                         p.onClose?.();
                                                     }}
 
-                                                    onSuccess={(id) => {
+                                                    onSuccess={(data) => {
                                                         handleAddNewSuccess(
                                                             'customer_contact_manager_id',
                                                             reloadContactManagers,
                                                             {
                                                                 onValueChange: setSelectedContactManagerId, // 🔥 HERE
                                                             }
-                                                        )(id);
+                                                        )(data);
                                                     }}
                                                 />
                                             )
@@ -515,14 +548,14 @@ export const SalesLogForm = () => {
                                                         p.onClose?.();
                                                     }}
 
-                                                    onSuccess={(id) => {
+                                                    onSuccess={(data) => {
                                                         handleAddNewSuccess(
                                                             'customer_shipping_address_id',
                                                             reloadShippingAddresses,
                                                             {
                                                                 onValueChange: setSelectedShippingAddressId, // 🔥 HERE
                                                             }
-                                                        )(id);
+                                                        )(data);
                                                     }}
                                                 />
                                             )
@@ -556,7 +589,7 @@ export const SalesLogForm = () => {
                                             ),
                                             onSuccess: handleAddNewSuccess(
                                                 'fob_id',
-                                                reloadDropDowwns
+                                                reloadDropDowns
                                             ),
                                         }}
                                         selectProps={{
@@ -577,7 +610,7 @@ export const SalesLogForm = () => {
                                             ),
                                             onSuccess: handleAddNewSuccess(
                                                 'payment_mode_id',
-                                                reloadDropDowwns
+                                                reloadDropDowns
                                             ),
                                         }}
                                         selectProps={{
@@ -598,7 +631,7 @@ export const SalesLogForm = () => {
                                             ),
                                             onSuccess: handleAddNewSuccess(
                                                 'payment_term_id',
-                                                reloadDropDowwns
+                                                reloadDropDowns
                                             ),
                                         }}
                                         selectProps={{
@@ -738,7 +771,7 @@ export const SalesLogForm = () => {
                                                                     ),
                                                                     onSuccess: handleAddNewSuccess(
                                                                         `condition_${row.rowKey}`,
-                                                                        reloadDropDowwns
+                                                                        reloadDropDowns
                                                                     ),
                                                                 }}
                                                                 selectProps={{
@@ -784,7 +817,7 @@ export const SalesLogForm = () => {
                                                                     ),
                                                                     onSuccess: handleAddNewSuccess(
                                                                         `uom_${row.rowKey}`,
-                                                                        reloadDropDowwns
+                                                                        reloadDropDowns
                                                                     ),
                                                                 }}
                                                                 selectProps={{

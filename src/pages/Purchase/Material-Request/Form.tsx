@@ -33,6 +33,8 @@ import { usePDFPreviewController } from "@/api/hooks/usePDFPreviewController";
 import { endPoints } from "@/api/endpoints";
 import { useUserContext } from "@/services/auth/UserContext";
 import { CSVUploadButton } from "@/components/ReUsable/CSVUploadButton";
+import { SubMasterModalForm } from '@/pages/Submaster/ModalForm';
+import { PartNumberModal } from '@/components/Modals/SpareMaster';
 import dayjs from 'dayjs';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -98,7 +100,8 @@ export const MaterialRequestForm = () => {
     const isEdit = !!id;
     const { userInfo } = useUserContext();
     const location = useLocation();
-
+    const [queryParams, setQueryParams] = useState<any>({});
+    const [existingPartIDs, setExistingPartIDs] = useState<string[]>([]);
     const [mrType, setMRType] = useState<string>((location.state as any)?.type ?? "oe");
     const [disabledDatePicker, setDisabledDatePicker] = useState<boolean>(true);
     const [existingSELIds, setExistingSELIds] = useState<any[]>([]);
@@ -113,7 +116,7 @@ export const MaterialRequestForm = () => {
     const [spareLoading, setSpareLoading] = useState(false);
 
     // ── Data fetching ──────────────────────────────────────────────────────────
-    const { data: dropdownData, isLoading: l1 } = useMaterialRequestDropdowns();
+    const { data: dropdownData, isLoading: l1, refetch: reloadDropDowns } = useMaterialRequestDropdowns();
     const { data: infoData, isLoading: l2 } = useMaterialRequestDetails(id, { enabled: isEdit });
     const { data: salesLogList, isLoading: l3 } = useSalesLogList({
         enabled: mrType === "sel",
@@ -122,7 +125,7 @@ export const MaterialRequestForm = () => {
     const { data: priorityList } = useSubmasterItemIndex("priorities", {});
     const { data: conditionData } = useSubmasterItemIndex("conditions", {});
     const { data: uomData } = useSubmasterItemIndex("unit-of-measures", {});
-    const { data: spareSearchData } = useSearchPartNumber({ query: partNumberQuery });
+    const { data: spareSearchData, refetch: reloadSpares } = useSearchPartNumber(queryParams);
 
     // ── Derived options ────────────────────────────────────────────────────────
     const priorityOptions = dropdownData?.priorities ?? [];
@@ -135,6 +138,29 @@ export const MaterialRequestForm = () => {
     // ── Form ───────────────────────────────────────────────────────────────────
     const saveEndpoint = useSaveMaterialRequest();
     const [initialValues, setInitialValues] = useState<any>(null);
+
+    const handleAddNewSuccess =
+        (
+            fieldName: any,
+            refetch: () => void,
+            options?: {
+                onValueChange?: (val: any, fullData?: any) => void;
+            }
+        ) =>
+            (data: any) => {
+                const record = data?.data ?? data; // 🔥 FIX
+                console.log(record, fieldName)
+                const id = record?.id;
+
+                setTimeout(() => {
+                    refetch();
+
+                    setTimeout(() => {
+                        form.setValues({ [fieldName]: id });
+                        options?.onValueChange?.(id, record);
+                    }, 50);
+                }, 100);
+            };
 
     const form = useForm({
         onValidSubmit: (values) => {
@@ -335,6 +361,40 @@ export const MaterialRequestForm = () => {
 
     // ─── Render ────────────────────────────────────────────────────────────────
 
+    useEffect(() => {
+        setQueryParams((prev: any) => ({
+            ...prev,
+            query: partNumberQuery
+        }));
+    }, [partNumberQuery]);
+
+    useEffect(() => {
+        const exists = [
+            ...new Set([...(id ? [id] : []), ...(existingPartIDs ?? [])]),
+        ];
+
+        setQueryParams((prev: any) => {
+            // Clone previous state
+            const updated = { ...prev };
+
+            if (exists.length > 0) {
+                updated.exist_ids = exists.join(',');
+            } else {
+                delete updated.exist_ids; // ✅ remove key completely
+            }
+
+            return updated;
+        });
+    }, [existingPartIDs]);
+
+    useEffect(() => {
+        const ids = rows
+            .map((row) => row.part_number_id)
+            .filter((id) => !!id); // remove empty/null
+
+        setExistingPartIDs([...new Set(ids)]);
+    }, [rows]);
+
     return (
         <SlideIn>
             <Stack pl={2} spacing={4}>
@@ -397,11 +457,29 @@ export const MaterialRequestForm = () => {
                                         placeholder="Select..."
                                         options={priorityOptions}
                                         required="Priority is required"
-                                        selectProps={{ isLoading: l1 }}
                                         size="sm"
                                         onValueChange={setDuedate}
                                         isDisabled={mrType !== 'oe'}
                                         className={mrType !== 'oe' ? 'disabled-input' : ''}
+                                        addNew={{
+                                            label: '+ Add New',
+                                            CreateModal: (p) => (
+                                                <SubMasterModalForm
+                                                    {...p}
+                                                    model="priorities"
+                                                    isEdit={false}
+                                                />
+                                            ),
+                                            onSuccess: handleAddNewSuccess(
+                                                'priority_id',
+                                                reloadDropDowns
+                                            ),
+                                        }}
+                                        selectProps={{
+                                            type: 'creatable',
+                                            noOptionsMessage: () => 'No options found',
+                                            isLoading: l1,
+                                        }}
                                     />
                                     <FieldDayPicker
                                         label="Due Date"
@@ -510,18 +588,43 @@ export const MaterialRequestForm = () => {
                                                                 isClearable
                                                                 defaultValue={row.part_number_id || ""}
                                                                 onValueChange={(v) => handleInputChange("part_number_id", v, index)}
+
+                                                                style={{ minWidth: 180 }}
+                                                                isDisabled={isSelWithLog}
+                                                                className={isSelWithLog ? 'disabled-input' : ''}
+                                                                addNew={{
+                                                                    label: '+ Add New',
+                                                                    CreateModal: (p) => (
+                                                                        <PartNumberModal
+                                                                            {...p}
+                                                                            onClose={() => {
+                                                                                p.onClose?.();
+                                                                            }}
+
+                                                                            onSuccess={(data: TODO) => {
+                                                                                setExistingPartIDs(prev => [...prev, data?.id]);
+                                                                                setTimeout(() => {
+                                                                                    handleAddNewSuccess(
+                                                                                        `part_number_${row.rowKey}`,
+                                                                                        reloadSpares
+                                                                                    )(data);
+
+                                                                                }, 50);
+
+                                                                            }}
+                                                                        />
+                                                                    )
+                                                                }}
                                                                 selectProps={{
-                                                                    isLoading: changedRowIndex === index && spareLoading,
+                                                                    type: 'creatable',
                                                                     noOptionsMessage: () => "No parts found",
                                                                     onInputChange: (val: string) => {
                                                                         setSpareLoading(true);
                                                                         setChangedRowIndex(index);
                                                                         setTimeout(() => { setPartNumberQuery(val); setSpareLoading(false); }, 600);
                                                                     },
+                                                                    isLoading: changedRowIndex === index && spareLoading || l4
                                                                 }}
-                                                                style={{ minWidth: 180 }}
-                                                                isDisabled={isSelWithLog}
-                                                                className={isSelWithLog ? 'disabled-input' : ''}
                                                             />
                                                         </Td>
 
@@ -537,6 +640,25 @@ export const MaterialRequestForm = () => {
                                                                 onValueChange={(v) => handleInputChange("condition_id", v, index)}
                                                                 style={{ minWidth: 130 }}
                                                                 isDisabled={isFieldDisabled}
+                                                                addNew={{
+                                                                    label: '+ Add New',
+                                                                    CreateModal: (p) => (
+                                                                        <SubMasterModalForm
+                                                                            {...p}
+                                                                            model="conditions"
+                                                                            isEdit={false}
+                                                                        />
+                                                                    ),
+                                                                    onSuccess: handleAddNewSuccess(
+                                                                        `condition_${row.rowKey}`,
+                                                                        reloadDropDowns
+                                                                    ),
+                                                                }}
+                                                                selectProps={{
+                                                                    type: 'creatable',
+                                                                    noOptionsMessage: () => 'No options found',
+                                                                    isLoading: l1,
+                                                                }}
                                                                 className={isFieldDisabled ? 'disabled-input' : ''}
                                                             />
                                                         </Td>
@@ -570,6 +692,25 @@ export const MaterialRequestForm = () => {
                                                                 style={{ minWidth: 120 }}
                                                                 isDisabled={isFieldDisabled}
                                                                 className={isFieldDisabled ? 'disabled-input' : ''}
+                                                                addNew={{
+                                                                    label: '+ Add New',
+                                                                    CreateModal: (p) => (
+                                                                        <SubMasterModalForm
+                                                                            {...p}
+                                                                            model="unit_of_measures"
+                                                                            isEdit={false}
+                                                                        />
+                                                                    ),
+                                                                    onSuccess: handleAddNewSuccess(
+                                                                        `uom_${row.rowKey}`,
+                                                                        reloadDropDowns
+                                                                    ),
+                                                                }}
+                                                                selectProps={{
+                                                                    type: 'creatable',
+                                                                    noOptionsMessage: () => 'No options found',
+                                                                    isLoading: l1,
+                                                                }}
                                                             />
                                                         </Td>
 

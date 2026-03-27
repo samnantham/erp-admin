@@ -23,14 +23,14 @@ import {
   RelationBulkUploadResponse,
   BulkCustomerUniqueCheckPayload,
   RelationUniqueCheckPayload,
-  zCreateResponsePayload,
+  zCustomerCreateResponse,
   zCustomerIndexPayload,
   zCustomerDetailsPayload,
   zBulkCustomerUploadResponse,
   zRelationBulkUploadResponse,
   zBulkCustomerUniqueCheckPayload,
   zRelationUniqueCheckPayload,
-  // ✅ Relation typed response schemas
+  zCreateResponsePayload,
   BankCreateResponse,
   ContactManagerCreateResponse,
   ShippingAddressCreateResponse,
@@ -100,12 +100,17 @@ export interface CustomerVariables {
 
 /* ================= Create / Update Customer ================= */
 
-export const useSaveCustomer = () =>
-  useCreateUpdateService<CreateResponsePayload, CustomerVariables>({
-    createUrl: endPoints.create.customer,
-    updateUrl: endPoints.update.customer,
-    schema: zCreateResponsePayload,
-  });
+export const useSaveCustomer = (
+  options?: UseMutationOptions<CreateResponsePayload, AxiosError<ApiResp>, CustomerVariables>
+) =>
+  useCreateUpdateService<CreateResponsePayload, CustomerVariables>(
+    {
+      createUrl: endPoints.create.customer,
+      updateUrl: endPoints.update.customer,
+      schema: zCustomerCreateResponse(),
+    },
+    options
+  );
 
 interface CustomerStatusVariables {
   id: string | number;

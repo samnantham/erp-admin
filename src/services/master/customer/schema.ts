@@ -227,6 +227,15 @@ export type RelationBulkUploadResponse = z.infer<typeof zBulkUploadResponse>;
      response.data as the actual relation record, not Customer
 ========================================================= */
 
+
+export const zCustomerCreateResponse = () =>
+  z.object({
+    data: zCustomer.optional(),
+    message: z.string(),
+    status: z.boolean(),
+  });
+
+
 const zRelationCreateResponse = <T extends z.ZodTypeAny>(dataSchema: T) =>
   z.object({
     data: dataSchema.optional(),
@@ -248,6 +257,10 @@ export const zPrincipleOwnerCreateResponse = () =>
 
 export const zTraderReferenceCreateResponse = () =>
   zRelationCreateResponse(zCustomerTraderReference);
+
+export type CustomerCreateResponse = z.infer<
+  ReturnType<typeof zCustomerCreateResponse>
+>;
 
 export type BankCreateResponse = z.infer<ReturnType<typeof zBankCreateResponse>>;
 export type ContactManagerCreateResponse = z.infer<ReturnType<typeof zContactManagerCreateResponse>>;
