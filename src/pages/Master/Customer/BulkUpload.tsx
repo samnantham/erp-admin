@@ -723,7 +723,7 @@ export const CustomerBulkUpload = () => {
 
             {/* ── Action buttons ── */}
             <Stack direction={{ base: 'column', md: 'row' }} justify="center" alignItems="center" mt={4}>
-              <Button type="button" colorScheme="red" onClick={() => navigate('/contact-management/customer-master')} isDisabled={dropdownLoading}>
+              <Button type="button" colorScheme="red" onClick={() => navigate('/contact-management/master')} isDisabled={dropdownLoading}>
                 Go to Master
               </Button>
               <Button type="submit" colorScheme="brand" isDisabled={uploadedRows.length === 0 || dropdownLoading || bulkUploadCustomers.isLoading} isLoading={bulkUploadCustomers.isLoading}>

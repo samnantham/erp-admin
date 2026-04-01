@@ -339,7 +339,7 @@ export const CustomerRelationsBulkUpload = () => {
   const toastError = useToastError();
 
   // ── Read relation type from URL param ─────────────────────────────────────
-  // Route should be: /contact-management/customer-master/:relationType/bulk-upload
+  // Route should be: /contact-management/master/:relationType/bulk-upload
   const { relationType: relationParam } = useParams<{ relationType: string }>();
   const relationType: RelationType = VALID_RELATION_TYPES.includes(relationParam as RelationType)
     ? (relationParam as RelationType)
@@ -699,7 +699,7 @@ export const CustomerRelationsBulkUpload = () => {
             <Stack direction={{ base: 'column', md: 'row' }} justify="center" alignItems="center" mt={4}>
               <Button
                 type="button" colorScheme="red"
-                onClick={() => navigate('/contact-management/customer-master')}
+                onClick={() => navigate('/contact-management/master')}
                 isDisabled={dropdownLoading}
               >
                 Go to Master

@@ -197,6 +197,7 @@ const SALES_LOG_DISPLAY_PROPS: DisplayProp[] = [
 
 const MATERIAL_REQUEST_DISPLAY_PROPS: DisplayProp[] = [
   { label: 'ID', key: 'code', showInTable: true },
+  { label: 'Priority', key: 'priority_id', showInTable: true },
   { label: 'Due Date', key: 'due_date', showInTable: true, renderAs: 'date' },
   { label: 'Type', key: 'type_label', showInTable: true },
   {
@@ -216,6 +217,38 @@ const MATERIAL_REQUEST_DISPLAY_PROPS: DisplayProp[] = [
   },
 ];
 
+const PRFQ_DISPLAY_PROPS: DisplayProp[] = [
+  { label: 'ID', key: 'code', showInTable: true },
+  { label: 'Need By Date', key: 'need_by_date', showInTable: true, renderAs: 'date' },
+  { label: 'Priority', key: 'priority_id', showInTable: true },
+  {
+    kind: 'array',
+    label: 'PRFQ Items',
+    key: 'items',
+    showInTable: false,
+    rowKey: 'items',
+    emptyText: 'No Items added',
+    columns: [
+      { key: 'part_number_id', label: 'Part Number' },
+      { key: 'condition_id', label: 'COndition' },
+      { key: 'qty', label: 'Quantity' },
+      { key: 'unit_of_measure_id', label: 'UOM' },
+      { key: 'remark', label: 'Remark'},
+    ],
+  },{
+    kind: 'array',
+    label: 'Vendors',
+    key: 'vendors',
+    showInTable: false,
+    rowKey: 'vendors',
+    emptyText: 'No vendors added',
+    columns: [
+      { key: 'vendor_id', label: 'Vendor' },
+      { key: 'customer_contact_manager_id', label: 'Contact Manager' }
+    ],
+  },
+];
+
 
 /* =========================
    Config Map
@@ -229,7 +262,7 @@ export const MODULE_CONFIG: Record<string, ModuleConfig> = {
     label: 'Customers',
     displayProps: CUSTOMER_DISPLAY_PROPS,
     allowDelete: true,
-    getViewAction: (row) => navigateAction(`/contact-management/customer-master/info/${row.record_id}`),
+    getViewAction: (row) => navigateAction(`/contact-management/master/info/${row.record_id}`),
   },
   banks: {
     value: 'banks',
@@ -324,6 +357,29 @@ export const MODULE_CONFIG: Record<string, ModuleConfig> = {
 
     getNewPreviewRequest: (row) => ({
       url: `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview_post.material_request}`,
+      method: "POST",
+      body: row.raw_new_data,
+    }),
+  },
+  },
+
+    prfqs: {
+    value: 'prfqs',
+    label: 'PRFQ',
+    displayProps: PRFQ_DISPLAY_PROPS,
+    allowDelete: false,
+    getViewAction: (row) => ({
+      type: 'pdf',
+      title: `Purchase RFQ Preview - #${row.record?.code}`,
+      url: `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview.prfq.replace(":id", row.record_id)}`,
+    }),
+    preview: {
+    enabled: true,
+    getOldPreviewUrl: (row) =>
+      `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview.prfq.replace(":id", row.record_id)}`,
+
+    getNewPreviewRequest: (row) => ({
+      url: `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview_post.prfq}`,
       method: "POST",
       body: row.raw_new_data,
     }),

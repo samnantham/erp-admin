@@ -164,10 +164,7 @@ export const Select = <
         }),
 
         multiValue: (provided) => ({
-          ...provided,
-          _first: {
-            ml: -1,
-          },
+          ...provided
         }),
 
         ...props.chakraStyles,

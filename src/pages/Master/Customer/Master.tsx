@@ -255,14 +255,14 @@ export const CustomerMaster = () => {
                     ...(canView ? [{
                         label: "View",
                         icon: <BiInfoCircle />,
-                        onClick: (row: any) => navigate(`/contact-management/customer-master/info/${row.id}`),
+                        onClick: (row: any) => navigate(`/contact-management/master/info/${row.id}`),
                     }] : []),
                     // Edit — shown only if canUpdate
                     ...(canUpdate ? [{
                         label: "Edit",
                         icon: <BiEdit />,
                         isDisabled: (row: any) => row.is_fixed || !!row.has_pending_request,
-                        onClick: (row: any) => navigate(`/contact-management/customer-master/form/${row.id}`),
+                        onClick: (row: any) => navigate(`/contact-management/master/form/${row.id}`),
                         disabledTooltip: (row: any) => row.pending_request_message,
                     }] : []),
                     // Delete — shown only if canDelete
@@ -297,7 +297,7 @@ export const CustomerMaster = () => {
                             variant={'@primary'}
                             icon={<LuPlus />}
                             size={{ base: 'sm', md: 'md' }}
-                            onClick={() => navigate('/contact-management/customer-master/form')}
+                            onClick={() => navigate('/contact-management/master/form')}
                         >
                             Add New
                         </ResponsiveIconButton>

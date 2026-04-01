@@ -414,7 +414,7 @@ export function DataTable<Data extends object>({
       <Box
         {...containerProps}
         position="relative"
-        minH={rowCount === 0 ? "200px": undefined}
+        minH={rowCount === 0 ? "200px": "200px"}
         border="1px"
         borderColor="gray.500"
         borderTopWidth="0"

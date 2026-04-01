@@ -40,6 +40,8 @@ import { CustomerForm } from '@/pages/Master/Customer/Form';
 import { CustomerInfo } from '@/pages/Master/Customer/Info';
 import { CustomerBulkUpload } from '@/pages/Master/Customer/BulkUpload';
 import { CustomerRelationsBulkUpload } from '@/pages/Master/Customer/RelationBulkUpload';
+import { ContactGroupMaster } from '@/pages/Master/Customer/ContactGroup/Master';
+import { ContactGroupForm } from '@/pages/Master/Customer/ContactGroup/Form';
 // !<--!! Contact Management Routes Ends !!-->!
 
 // !<--!! Spare Management Routes Starts !!-->!
@@ -64,6 +66,15 @@ import { SalesLogForm } from '@/pages/Sales-Log/Form';
 import { MaterialRequestMaster } from '@/pages/Purchase/Material-Request/Master';
 import { MaterialRequestForm } from '@/pages/Purchase/Material-Request/Form';
 // !<--!! Update Delete Request Routes Ends !!-->!
+
+// !<--!! Purchase RFQ Routes Starts !!-->!
+import { PRFQMaster } from '@/pages/Purchase/RFQ/Master';
+import { PRFQForm } from '@/pages/Purchase/RFQ/Form';
+// !<--!! Purchase RFQ Routes Ends !!-->!
+
+// !<--!! Preview Routes Starts !!-->!
+import { PRFQPreview } from '@/pages/Preview/PRFQPreview';
+// !<--!! Preview Routes Starts !!-->!
 
 import PermissionGuard from '@/pages/Auth/PermissionGuard';
 
@@ -92,6 +103,11 @@ export const routes = [
             <Login />
           </PublicRouteGuard>
         ),
+      },
+
+      {
+        path: 'preview/purchase/rfq/:id',
+        element: <PRFQPreview />,
       },
 
       /**
@@ -150,13 +166,20 @@ export const routes = [
             path: 'contact-management',
             children: [
               {
-                path: 'customer-master',
+                path: 'master',
                 children: [
                   { path: '', element: <CustomerMaster /> },
                   { path: 'form/:id?', element: <CustomerForm /> },
                   { path: 'bulk-upload', element: <CustomerBulkUpload /> },
                   { path: ':relationType/bulk-upload', element: <CustomerRelationsBulkUpload /> },
                   { path: 'info/:id', element: <CustomerInfo /> },
+                ],
+              },
+              {
+                path: 'contact-group',
+                children: [
+                  { path: '', element: <ContactGroupMaster /> },
+                  { path: 'form/:id?/:mode?', element: <ContactGroupForm /> },
                 ],
               },
             ],
@@ -196,6 +219,13 @@ export const routes = [
                 children: [
                   { path: 'master', element: <MaterialRequestMaster /> },
                   { path: 'form/:id?', element: <MaterialRequestForm /> },
+                ],
+              },
+              {
+                path: 'rfq',
+                children: [
+                  { path: 'master', element: <PRFQMaster /> },
+                  { path: 'form/:id?', element: <PRFQForm /> },
                 ],
               },
             ],

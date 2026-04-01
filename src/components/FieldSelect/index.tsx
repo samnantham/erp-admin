@@ -23,7 +23,13 @@ type CreateModalComponent = React.ComponentType<{
 }>;
 
 export type FieldSelectProps<
-  Option extends { label: ReactNode; value: unknown; isDisabled?: boolean },
+  Option extends {
+    label: ReactNode;
+    value: unknown;
+    isDisabled?: boolean;
+    /** When true, this option cannot be removed in multi-select mode */
+    isFixed?: boolean;
+  },
   IsMulti extends boolean = false,
   Group extends GroupBase<Option> = GroupBase<Option>,
 > = FieldProps<
@@ -76,7 +82,12 @@ const getLabelSize = (size: string | number) => {
 };
 
 export const FieldSelect = <
-  Option extends { label: ReactNode; value: unknown; isDisabled?: boolean },
+  Option extends {
+    label: ReactNode;
+    value: unknown;
+    isDisabled?: boolean;
+    isFixed?: boolean;
+  },
   IsMulti extends boolean = false,
   Group extends GroupBase<Option> = GroupBase<Option>,
 >(
@@ -140,19 +151,29 @@ export const FieldSelect = <
 
   const getCreatedValues = () =>
     Array.isArray(fieldValue) &&
-    (selectProps?.type === 'creatable' ||
-      selectProps?.type === 'async-creatable')
+      (selectProps?.type === 'creatable' ||
+        selectProps?.type === 'async-creatable')
       ? fieldValue
-          .filter((v) => !options?.map((o) => o.value).includes(v))
-          .map((v) => ({ label: v, value: v, isDisabled: false }) as Option)
+        .filter((v) => !options?.map((o) => o.value).includes(v))
+        .map((v) => ({ label: v, value: v, isDisabled: false }) as Option)
       : [];
 
   const finalValue = Array.isArray(fieldValue)
-    ? [
-        ...(options?.filter((option) => fieldValue?.includes(option.value)) ??
-          []),
-        ...getCreatedValues(),
-      ]
+    ? (() => {
+      const selectedOptions =
+        options?.filter((option) =>
+          fieldValue?.includes(option.value)
+        ) ?? [];
+
+      const created = getCreatedValues();
+
+      const all = [...selectedOptions, ...created];
+
+      const fixed = all.filter((o) => o.isFixed);
+      const nonFixed = all.filter((o) => !o.isFixed);
+
+      return [...fixed, ...nonFixed]; // 🔥 FIXED FIRST
+    })()
     : options?.find((option) => option.value === fieldValue) ?? undefined;
 
   // Append "+ Add New" option only when addNew prop is provided.
@@ -162,17 +183,17 @@ export const FieldSelect = <
     () =>
       addNew
         ? [
-            ...options,
-            {
-              value: ADD_NEW_VALUE,
-              label: (
-                <Text color="brand.500" textDecoration="underline">
-                  {addNew.label ?? '+ Add New'}
-                </Text>
-              ),
-              isDisabled: false,
-            } as unknown as Option,
-          ]
+          ...options,
+          {
+            value: ADD_NEW_VALUE,
+            label: (
+              <Text color="brand.500" textDecoration="underline">
+                {addNew.label ?? '+ Add New'}
+              </Text>
+            ),
+            isDisabled: false,
+          } as unknown as Option,
+        ]
         : options,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [options, addNew?.label]
@@ -249,10 +270,23 @@ export const FieldSelect = <
           }
 
           if (isMultiValue<Option>(fieldValue)) {
-            const values = fieldValue
+            const currentValues = Array.isArray(field.value) ? field.value : [];
+
+            // Collect values from options marked as fixed that were previously selected.
+            // Even if react-select tries to remove them (e.g. via "clear all" or
+            // backspace), we restore them here so they stay in the form state.
+            const fixedValues = finalOptions
+              .filter((o) => o.isFixed && currentValues.some((v) => v === o.value))
+              .map((o) => o.value) as Option['value'][];
+
+            const newValues = fieldValue
               .filter((f) => f.value !== ADD_NEW_VALUE)
               .map((f) => f.value) as Option['value'][];
-            field.setValue(values.length > 0 ? (values as any) : null);
+
+            // Merge fixed values back in, deduplicated
+            const merged = [...new Set<Option['value']>([...fixedValues, ...newValues])];
+
+            field.setValue(merged.length > 0 ? (merged as any) : null);
           } else {
             field.setValue(fieldValue ? (fieldValue.value as any) : null);
           }
@@ -262,13 +296,13 @@ export const FieldSelect = <
           isReadOnly
             ? undefined
             : (inputValue: string) => {
-                if (addNew) {
-                  setCreatedInput(inputValue);
-                  openModal();
-                  return;
-                }
-                props.selectProps?.onCreateOption?.(inputValue);
+              if (addNew) {
+                setCreatedInput(inputValue);
+                openModal();
+                return;
               }
+              props.selectProps?.onCreateOption?.(inputValue);
+            }
         }
 
         onInputChange={
@@ -282,6 +316,22 @@ export const FieldSelect = <
             cursor: isReadOnly ? 'not-allowed' : 'pointer',
             opacity: isReadOnly ? 0.8 : 1,
           }),
+          // Hide the "×" remove button on fixed chips so users cannot
+          // click to remove them. The onChange guard above is a second
+          // safety net (e.g. keyboard backspace / clear-all).
+          multiValueRemove: (base, state) =>
+            (state.data as Option).isFixed
+              ? { ...base, display: 'none' }
+              : selectProps?.styles?.multiValueRemove
+                ? selectProps.styles.multiValueRemove(base, state)
+                : base,
+          // Slightly dim fixed chips to signal they are non-removable.
+          multiValue: (base, state) =>
+            (state.data as Option).isFixed
+              ? { ...base, opacity: 0.75 }
+              : selectProps?.styles?.multiValue
+                ? selectProps.styles.multiValue(base, state)
+                : base,
         }}
       />
       {children}

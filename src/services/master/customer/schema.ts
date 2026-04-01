@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { zStandardObject, zBasicObject, zPagination } from "@/services/global-schema";
+import { zStandardObject, zBasicObject, zPagination, zSelectOption } from "@/services/global-schema";
 
 /* =========================================================
    Sub Models
@@ -262,8 +262,99 @@ export type CustomerCreateResponse = z.infer<
   ReturnType<typeof zCustomerCreateResponse>
 >;
 
+
+
 export type BankCreateResponse = z.infer<ReturnType<typeof zBankCreateResponse>>;
 export type ContactManagerCreateResponse = z.infer<ReturnType<typeof zContactManagerCreateResponse>>;
 export type ShippingAddressCreateResponse = z.infer<ReturnType<typeof zShippingAddressCreateResponse>>;
 export type PrincipleOwnerCreateResponse = z.infer<ReturnType<typeof zPrincipleOwnerCreateResponse>>;
 export type TraderReferenceCreateResponse = z.infer<ReturnType<typeof zTraderReferenceCreateResponse>>;
+
+export const zCustomerListPayload = z.object({
+  data: z.array(zSelectOption),
+  status: z.boolean(),
+});
+
+/* =========================================================
+   Contact Group
+========================================================= */
+
+/* ---------- Contact Group Member ---------- */
+
+export const zContactGroupMember = zStandardObject.extend({
+  group_id: z.string().uuid(),
+  contact_id: z.string().uuid(),
+  contact: zCustomer.nullable().optional(),
+});
+
+export type ContactGroupMember = z.infer<typeof zContactGroupMember>;
+
+/* ---------- Contact Group ---------- */
+
+export const zContactGroup = zStandardObject.extend({
+  name: z.string(),
+  contact_type: zBasicObject.nullable().optional(),
+  contact_type_id: z.string().uuid().nullable().optional(),
+  members: z.array(zContactGroupMember).optional(),
+});
+
+export type ContactGroup = z.infer<typeof zContactGroup>;
+
+/* =========================================================
+   Contact Group API Payloads
+========================================================= */
+
+/* ---------- Index ---------- */
+
+export const zContactGroupIndexPayload = z.object({
+  data: z.array(zContactGroup),
+  pagination: zPagination,
+});
+
+export type ContactGroupIndexPayload = z.infer<typeof zContactGroupIndexPayload>;
+
+export const zContactGroupDataColumn = zContactGroup.extend({
+  actions: z.string().optional(),
+});
+
+export type ContactGroupDataColumn = z.infer<typeof zContactGroupDataColumn>;
+
+/* ---------- Details ---------- */
+
+export const zContactGroupDetailsPayload = z.object({
+  data: zContactGroup,
+  status: z.boolean(),
+});
+
+export type ContactGroupDetailsPayload = z.infer<typeof zContactGroupDetailsPayload>;
+
+/* ---------- Create / Update ---------- */
+
+export const zContactGroupCreateResponse = () =>
+  z.object({
+    data: zContactGroup.optional(),
+    message: z.string(),
+    status: z.boolean(),
+  });
+
+export type ContactGroupCreateResponse = z.infer<ReturnType<typeof zContactGroupCreateResponse>>;
+
+/* ---------- List ---------- */
+
+export const zContactGroupListPayload = z.object({
+  data: z.array(zSelectOption),
+  status: z.boolean(),
+});
+
+export type ContactGroupListPayload = z.infer<typeof zContactGroupListPayload>;
+
+/* =========================================================
+   Contact Group Members Payload
+========================================================= */
+
+export const zContactGroupMembersPayload = z.object({
+  data: z.array(zContactGroupMember),
+  status: z.boolean(),
+});
+
+export type ContactGroupMembersPayload = z.infer<typeof zContactGroupMembersPayload>;

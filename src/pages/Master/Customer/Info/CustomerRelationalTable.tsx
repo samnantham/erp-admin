@@ -160,7 +160,7 @@ export function CustomerRelationalTable({
                     leftIcon={<HiOutlineUpload />}
                     size="sm"
                     colorScheme="green"
-                    onClick={() => navigate(`/contact-management/customer-master/${navigateURLComponent}/bulk-upload`)}
+                    onClick={() => navigate(`/contact-management/master/${navigateURLComponent}/bulk-upload`)}
                   >
                     Bulk Upload
                   </Button>

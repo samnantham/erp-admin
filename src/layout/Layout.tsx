@@ -40,7 +40,8 @@ import {
   FaRulerCombined,
   FaNotesMedical,
   FaShoppingBag,
-  FaClipboardCheck
+  FaClipboardCheck,
+  FaFileContract
 } from 'react-icons/fa';
 import {
   FaBox,
@@ -64,6 +65,7 @@ import {
   FaReceipt,
   FaRankingStar,
   FaChartLine,
+  FaPeopleGroup 
 } from 'react-icons/fa6';
 import { PiListNumbersFill } from 'react-icons/pi';
 import { BiSitemap } from 'react-icons/bi';
@@ -158,7 +160,8 @@ const NavigationSections: Array<SectionProps> = [
         name: 'Contact Management',
         icon: FaUsers,
         subItems: [
-          { name: 'Contact Master', icon: FaUsersCog, link: '/contact-management/customer-master' },
+          { name: 'Contact Master', icon: FaUsersCog, link: '/contact-management/master' },
+          { name: 'Contact Group', icon: FaPeopleGroup , link: '/contact-management/contact-group' },
         ],
       },
       {
@@ -188,6 +191,12 @@ const NavigationSections: Array<SectionProps> = [
             link: '/purchase/material-request/master',
             activeBase: '/purchase/material-request',
             state: { type: 'oe' },
+          },
+          {
+            name: 'RFQ',
+            icon: FaFileContract,
+            link: '/purchase/rfq/master',
+            activeBase: '/purchase/rfq'
           },
         ],
       },

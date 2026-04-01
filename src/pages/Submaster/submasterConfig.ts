@@ -175,6 +175,7 @@ export const submasterConfig: Record<string, any> = {
         ],
         schema: zBasicObject.extend({
             days: z.number(),
+            is_custom: z.boolean(),
         }),
     },
 

@@ -88,6 +88,15 @@ export function buildColumns<T extends object>(
           if (!visibleActions?.length) return null;
 
           return (
+            <div
+      style={{
+    display: "flex",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    width: "100%",
+    height: "100%",
+  }}
+    >
             <Menu placement="bottom-end" strategy="fixed" isLazy>
               <MenuButton
                 as={Button}
@@ -143,6 +152,7 @@ export function buildColumns<T extends object>(
                 })}
               </MenuList>
             </Menu>
+            </div>
           );
         },
       });

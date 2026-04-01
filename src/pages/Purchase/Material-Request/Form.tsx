@@ -117,7 +117,7 @@ export const MaterialRequestForm = () => {
 
     // ── Data fetching ──────────────────────────────────────────────────────────
     const { data: dropdownData, isLoading: l1, refetch: reloadDropDowns } = useMaterialRequestDropdowns();
-    const { data: infoData, isLoading: l2 } = useMaterialRequestDetails(id, { enabled: isEdit });
+    const { data: itemInfo, isLoading: l2 } = useMaterialRequestDetails(id, { enabled: isEdit });
     const { data: salesLogList, isLoading: l3 } = useSalesLogList({
         enabled: mrType === "sel",
         queryParams: { is_purchase_request_fulfilled: false, exist_ids: existingSELIds?.join(",") },
@@ -267,8 +267,8 @@ export const MaterialRequestForm = () => {
 
     // ── Edit prefill ───────────────────────────────────────────────────────────
     useEffect(() => {
-        if (!infoData?.data) return;
-        const s = infoData.data;
+        if (!itemInfo?.data) return;
+        const s = itemInfo.data;
         setMRType(s.type);
         setExistingSELIds([s.sales_log_id]);
 
@@ -292,7 +292,7 @@ export const MaterialRequestForm = () => {
         setRows(prefilled);
         setInitialRows(prefilled.map(normaliseRow));
         applyRowsToForm(prefilled);
-    }, [infoData]);
+    }, [itemInfo]);
 
     // ── Sales log selection ────────────────────────────────────────────────────
     useEffect(() => {
@@ -404,7 +404,7 @@ export const MaterialRequestForm = () => {
                     <Stack spacing={0}>
                         <Breadcrumb fontWeight="medium" fontSize="sm" separator={<ChevronRightIcon boxSize={6} color="gray.500" />}>
                             <BreadcrumbItem color="brand.500">
-                                <BreadcrumbLink as={Link} to="/material-management/material-request">Material Request</BreadcrumbLink>
+                                <BreadcrumbLink as={Link} to="/purchase/material-request/master">Material Request</BreadcrumbLink>
                             </BreadcrumbItem>
                             <BreadcrumbItem isCurrentPage color="gray.500">
                                 <BreadcrumbLink>{title}</BreadcrumbLink>
@@ -761,7 +761,7 @@ export const MaterialRequestForm = () => {
                                             onValueChange={handleRemarksChange}
                                             maxLength={import.meta.env.VITE_ELABORATE_REMARKS_LENGTH}
                                             placeHolder="Enter Remarks Here"
-                                            defaultValue={isEdit && infoData?.data?.remarks ? infoData.data.remarks : ''}
+                                            defaultValue={isEdit && itemInfo?.data?.remarks ? itemInfo.data.remarks : ''}
                                         />
                                     </FormControl>
                                 </Stack>

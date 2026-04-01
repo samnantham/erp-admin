@@ -57,7 +57,7 @@ export const CustomerInfo = () => {
             separator={<ChevronRightIcon boxSize={6} color="#0C2556" />}
           >
             <BreadcrumbItem color={'brand.500'}>
-              <BreadcrumbLink as={Link} to="/contact-management/customer-master">
+              <BreadcrumbLink as={Link} to="/contact-management/master">
                 Contact Management
               </BreadcrumbLink>
             </BreadcrumbItem>
@@ -83,7 +83,7 @@ export const CustomerInfo = () => {
               icon={<EditIcon />}
               size={'sm'}
               fontWeight={'thin'}
-              onClick={() => navigate(`/contact-management/customer-master/form/${id}`)}
+              onClick={() => navigate(`/contact-management/master/form/${id}`)}
               isDisabled={!!details?.data?.has_pending_request}
             >
               Edit

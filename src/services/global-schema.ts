@@ -124,6 +124,7 @@ export interface QueryParams {
   query?: string;
   is_purchase_request_fulfilled?: boolean;
   exist_ids?: string;
+  contact_type_id?: string;
 }
 
 

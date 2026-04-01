@@ -1,12 +1,12 @@
 import { z } from "zod";
-import { zStandardObject, zBasicObject, zPagination } from "@/services/global-schema";
+import { zStandardObject, zBasicObject, zPagination, zSelectOption } from "@/services/global-schema";
 import { zSalesLog } from "@/services/sales-log/schema";
 
 /* =========================================================
 Sub Models
 ========================================================= */
 
-const zMaterialRequestItem = zStandardObject.extend({
+export const zMaterialRequestItem = zStandardObject.extend({
     material_request_id: z.string().uuid(),
 
     part_number_id: z.string().uuid(),
@@ -115,3 +115,8 @@ export const zMaterialRequestItemSaveResponsePayload = z.object({
     status: z.boolean(),
 });
 export type MaterialRequestItemSaveResponsePayload = z.infer<typeof zMaterialRequestItemSaveResponsePayload>;
+
+export const zMaterialRequestListPayload = z.object({
+  data: z.array(zSelectOption),
+  status: z.boolean(),
+});

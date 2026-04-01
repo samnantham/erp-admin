@@ -1,48 +1,41 @@
 import { HStack, Heading, Stack } from '@chakra-ui/react';
 import { LuPlus } from 'react-icons/lu';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ResponsiveIconButton } from '@/components/ResponsiveIconButton';
 import { SlideIn } from '@/components/SlideIn';
 import { useRouterContext } from '@/services/auth/RouteContext';
-import { MaterialRequestSearch } from '@/components/SearchBars/Purchase/MaterialRequest';
+import { PRFQSearch } from '@/components/SearchBars/Purchase/RFQ';
 
-export const MaterialRequestMaster = () => {
+export const PRFQMaster = () => {
     const navigate = useNavigate();
     const { otherPermissions } = useRouterContext();
-
     const canCreate = otherPermissions.create === 1;
-    const location = useLocation();
-    const state = location.state as { type?: string } | null;
 
     return (
         <SlideIn>
             <Stack pl={2} spacing={4}>
-
                 <HStack justify="space-between">
-                    <Heading as="h4" size="md">Material Request</Heading>
+                    <Heading as="h4" size="md">PRFQ</Heading>
                     {canCreate && (
                         <ResponsiveIconButton
                             variant="@primary"
                             icon={<LuPlus />}
                             size={{ base: 'sm', md: 'md' }}
-                            onClick={() => navigate('/purchase/material-request/form', {
-                                state: state?.type ? { type: state.type } : undefined,
-                            })}
+                            onClick={() => navigate('/purchase/rfq/form')}
                         >
                             Add New
                         </ResponsiveIconButton>
                     )}
                 </HStack>
-
-                <MaterialRequestSearch
+                <PRFQSearch
                     mode="page"
                     canUpdate={otherPermissions.update === 1}
+                    canDelete={otherPermissions.update === 1}
                     canView={otherPermissions.view === 1}
                 />
-
             </Stack>
         </SlideIn>
-    )
+    );
 };
 
-export default MaterialRequestMaster;
+export default PRFQMaster;

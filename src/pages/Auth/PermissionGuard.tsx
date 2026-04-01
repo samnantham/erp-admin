@@ -11,7 +11,7 @@ const isPermitted = (pathname: string, permissions: string[]): boolean => {
   if (permissions.includes(pathname)) return true;
 
   // Strip one trailing numeric ID or UUID and check the base path
-  // e.g. /contact-management/customer-master/info/123 → /contact-management/customer-master/info
+  // e.g. /contact-management/master/info/123 → /contact-management/master/info
   // e.g. /spare-management/assign-alternates/456 → /spare-management/assign-alternates
   const withoutTrailingId = pathname.replace(/\/[\w-]+$/, (seg) =>
     /^\/\d+$/.test(seg) || /^\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(seg)

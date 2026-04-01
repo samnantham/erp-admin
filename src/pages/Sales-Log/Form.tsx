@@ -103,7 +103,7 @@ export const SalesLogForm = () => {
 
     // ── Data fetching ──────────────────────────────────────────────────────────
     const { data: dropdownData, isLoading: l1, refetch: reloadDropDowns } = useSalesLogDropdowns();
-    const { data: salesLogData, isLoading: l2 } = useSalesLogDetails(id, { enabled: isEdit });
+    const { data: itemInfo, isLoading: l2 } = useSalesLogDetails(id, { enabled: isEdit });
     const { data: customerInfo, isLoading: l3 } = useCustomerDetails(selectedCustomerId, { enabled: !!selectedCustomerId });
     const { data: contactManagerList, isLoading: l4, refetch: reloadContactManagers } = useCustomerRelationIndex(selectedCustomerId, "contact-managers");
     const { data: shippingAddressList, isLoading: l5, refetch: reloadShippingAddresses } = useCustomerRelationIndex(selectedCustomerId, "shipping-addresses");
@@ -236,8 +236,8 @@ export const SalesLogForm = () => {
 
     // ── Edit prefill ───────────────────────────────────────────────────────────
     useEffect(() => {
-        if (!salesLogData?.data) return;
-        const s = salesLogData.data;
+        if (!itemInfo?.data) return;
+        const s = itemInfo.data;
         const values = Object.fromEntries(FORM_KEYS.map(k => [k, (s as any)[k]]));
         setSelectedCustomerId(s.customer_id);
         setSelectedContactManagerId(s.customer_contact_manager_id);
@@ -258,7 +258,7 @@ export const SalesLogForm = () => {
         }));
         setRows(prefilled);
         applyRowsToForm(prefilled);
-    }, [salesLogData]);
+    }, [itemInfo]);
 
     // ── Customer auto-fill (currency / payment) ────────────────────────────────
     useEffect(() => {
@@ -874,7 +874,7 @@ export const SalesLogForm = () => {
                                             onValueChange={handleRemarksChange}
                                             maxLength={import.meta.env.VITE_ELABORATE_REMARKS_LENGTH}
                                             placeHolder="Enter Remarks Here"
-                                            defaultValue={isEdit && salesLogData?.data?.remarks ? salesLogData.data.remarks : ""}
+                                            defaultValue={isEdit && itemInfo?.data?.remarks ? itemInfo.data.remarks : ""}
                                         />
                                     </FormControl>
                                 </Stack>

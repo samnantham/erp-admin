@@ -31,6 +31,7 @@ import {
   zBulkCustomerUniqueCheckPayload,
   zRelationUniqueCheckPayload,
   zCreateResponsePayload,
+  zCustomerListPayload,
   BankCreateResponse,
   ContactManagerCreateResponse,
   ShippingAddressCreateResponse,
@@ -41,6 +42,13 @@ import {
   zShippingAddressCreateResponse,
   zPrincipleOwnerCreateResponse,
   zTraderReferenceCreateResponse,
+  ContactGroupDetailsPayload,
+  ContactGroupCreateResponse,
+  zContactGroupIndexPayload,
+  zContactGroupDetailsPayload,
+  zContactGroupCreateResponse,
+  zContactGroupListPayload,
+  zContactGroupMembersPayload
 } from "@/services/master/customer/schema";
 
 /* ================= Customer Index ================= */
@@ -296,4 +304,147 @@ export const useCustomerRelationIndex = (
     retry: 2,
     refetchOnWindowFocus: false,
     ...options,
+  });
+
+type UseCustomerListProps = {
+  enabled?: boolean;
+  contact_type_id?: string;
+  queryParams?: QueryParams;
+};
+
+export const useCustomerList = ({
+  enabled = true,
+  queryParams,
+}: UseCustomerListProps = {}) =>
+  useQuery({
+    queryKey: ['customerList', queryParams], // ✅ include params in cache key
+    queryFn: () =>
+      getRequest(
+        endPoints.list.customer,
+        zCustomerListPayload,
+        queryParams // ✅ pass params to API
+      ),
+    retry: 2,
+    refetchOnWindowFocus: false,
+    enabled,
+  });
+
+export const getCustomerById = (id: string) =>
+  getRequest(
+    endPoints.info.customer.replace(":id", id),
+    zCustomerDetailsPayload
+  ).then(res => res?.data ?? res);
+
+export const getCustomerRelations = (id: string, relation: string) =>
+  getRequest(
+    endPoints.index.customer_relation
+      .replace(":customer_id", String(id))
+      .replace(":relation", String(relation)),
+    zRelationIndexPayload
+  ).then(res => res?.data ?? res);
+
+  /* ================= Contact Group Index ================= */
+
+export const useContactGroupIndex = (queryParams?: QueryParams) =>
+  useQuery({
+    queryKey: ["contactGroupIndex", queryParams],
+    queryFn: () =>
+      getRequest(endPoints.index.contact_group, zContactGroupIndexPayload, queryParams),
+    retry: 2,
+    refetchOnWindowFocus: false,
+  });
+
+/* ================= Contact Group Details ================= */
+
+export const useContactGroupDetails = (
+  id?: number | string,
+  options?: UseQueryOptions<ContactGroupDetailsPayload>
+) =>
+  useQuery<ContactGroupDetailsPayload>({
+    queryKey: ["contactGroupDetails", id],
+    queryFn: () =>
+      getRequest(
+        endPoints.info.contact_group.replace(":id", String(id)),
+        zContactGroupDetailsPayload
+      ),
+    enabled: !!id,
+    retry: 2,
+    refetchOnWindowFocus: false,
+    ...options,
+  });
+
+/* ================= Contact Group Variables ================= */
+
+export interface ContactGroupMemberVariable {
+  contact_id: string;
+}
+
+export interface ContactGroupVariables {
+  id?: number | string;
+  name: string;
+  contact_type_id?: string;
+  members?: ContactGroupMemberVariable[];
+}
+
+/* ================= Create / Update Contact Group ================= */
+
+export const useSaveContactGroup = (
+  options?: UseMutationOptions<ContactGroupCreateResponse, AxiosError<ApiResp>, ContactGroupVariables>
+) =>
+  useCreateUpdateService<ContactGroupCreateResponse, ContactGroupVariables>(
+    {
+      createUrl: endPoints.create.contact_group,
+      updateUrl: endPoints.update.contact_group,
+      schema: zContactGroupCreateResponse(),
+    },
+    options
+  );
+
+/* ================= Contact Group List ================= */
+
+export const useContactGroupList = ({
+  enabled = true,
+  queryParams,
+}: UseCustomerListProps = {}) =>
+  useQuery({
+    queryKey: ["contactGroupList", queryParams],
+    queryFn: () =>
+      getRequest(
+        endPoints.list.contact_group,
+        zContactGroupListPayload,
+        queryParams
+      ),
+    retry: 2,
+    refetchOnWindowFocus: false,
+    enabled,
+  });
+
+  /* ================= Contact Group Members ================= */
+
+type UseContactGroupMembersProps = {
+  groupId?: string;
+  contact_type_ids?: string[];
+  enabled?: boolean;
+};
+
+export const useContactGroupMembers = ({
+  groupId,
+  contact_type_ids,
+  enabled = true,
+}: UseContactGroupMembersProps) =>
+  useQuery({
+    queryKey: ["contactGroupMembers", groupId, contact_type_ids],
+    queryFn: () =>
+      getRequest(
+        endPoints.others.contact_group_members.replace(":id", String(groupId)),
+        zContactGroupMembersPayload,
+        {
+          ...(contact_type_ids?.length
+            ? { contact_type_id: contact_type_ids.join(",") }
+            : {}),
+        }
+      ),
+    enabled: !!groupId && enabled,
+    retry: 2,
+    refetchOnWindowFocus: false,
   });

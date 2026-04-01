@@ -59,11 +59,11 @@ const MODULE_URL_MAP: Record<string, {
         assign_alternates: '/spare-management/assign-alternates',
     },
     contact_management: {
-        list:        '/contact-management/customer-master',
-        view:        '/contact-management/customer-master/info',
-        create:      '/contact-management/customer-master/form',
-        update:      '/contact-management/customer-master/form',
-        bulk_upload: '/contact-management/customer-master/bulk-upload',
+        list:        '/contact-management/master',
+        view:        '/contact-management/master/info',
+        create:      '/contact-management/master/form',
+        update:      '/contact-management/master/form',
+        bulk_upload: '/contact-management/master/bulk-upload',
     },
     // Submaster has no separate form page — modal is used for create/update.
     // All actions gated by the single /submaster/:model permission.

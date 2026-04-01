@@ -276,26 +276,26 @@ export const contactManagementPageConfig: Record<
 > = {
   customer_master: {
     csv: import.meta.env.VITE_CUSTOMERS_SAMPLE_CSV,
-    uploadRoute: '/contact-management/customer-master/bulk-upload',
+    uploadRoute: '/contact-management/master/bulk-upload',
   },
   customer_banks: {
     csv: import.meta.env.VITE_CUSTOMERS_BANKS_CSV,
-    uploadRoute: '/contact-management/customer-master/bank/bulk-upload',
+    uploadRoute: '/contact-management/master/bank/bulk-upload',
   },
   customer_contact_managers: {
     csv: import.meta.env.VITE_CUSTOMERS_CONTACT_MANAGERS_CSV,
-    uploadRoute: '/contact-management/customer-master/contact_manager/bulk-upload',
+    uploadRoute: '/contact-management/master/contact_manager/bulk-upload',
   },
   customer_principle_owners: {
     csv: import.meta.env.VITE_CUSTOMERS_PRINCIPLE_OWNERS_CSV,
-    uploadRoute: '/contact-management/customer-master/principle_of_owner/bulk-upload',
+    uploadRoute: '/contact-management/master/principle_of_owner/bulk-upload',
   },
   customer_shipping_addresses: {
     csv: import.meta.env.VITE_CUSTOMERS_SHIPPING_ADDRESSES_CSV,
-    uploadRoute: '/contact-management/customer-master/shipping_address/bulk-upload',
+    uploadRoute: '/contact-management/master/shipping_address/bulk-upload',
   },
   customer_trader_references: {
     csv: import.meta.env.VITE_CUSTOMERS_TRADER_REFERENCES_CSV,
-    uploadRoute: '/contact-management/customer-master/trader_reference/bulk-upload',
+    uploadRoute: '/contact-management/master/trader_reference/bulk-upload',
   },
 };

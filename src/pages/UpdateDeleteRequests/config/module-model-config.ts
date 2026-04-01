@@ -15,7 +15,7 @@ export const MODULE_MODEL_OPTIONS: Record<string, { label: string; value: string
     ],
     purchase: [
         { label: "Material Request",   value: "material_requests" },
-        // { label: "PRFQ", value: "prfq" },
+        { label: "PRFQ", value: "prfqs" },
         // { label: "Purchase Order",   value: "po" },
         // { label: "Sales Enquiry Log",  value: "sel" },
     ],

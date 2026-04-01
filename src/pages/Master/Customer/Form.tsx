@@ -150,11 +150,11 @@ export const CustomerForm = () => {
 
       if (isEdit) {
         saveCustomer.mutate({ id, ...payload }, {
-          onSuccess: () => navigate("/contact-management/customer-master"),
+          onSuccess: () => navigate("/contact-management/master"),
         });
       } else {
         saveCustomer.mutate(payload, {
-          onSuccess: ({data}) => navigate(`/contact-management/customer-master/info/${data?.id}?preview=true`),
+          onSuccess: ({data}) => navigate(`/contact-management/master/info/${data?.id}?preview=true`),
         });
       }
     },
@@ -394,7 +394,7 @@ export const CustomerForm = () => {
               separator={<ChevronRightIcon boxSize={6} color="gray.500" />}
             >
               <BreadcrumbItem color={"brand.500"}>
-                <BreadcrumbLink as={Link} to="/contact-management/customer-master">
+                <BreadcrumbLink as={Link} to="/contact-management/master">
                   Customer Master
                 </BreadcrumbLink>
               </BreadcrumbItem>
