@@ -139,7 +139,7 @@ function BasicTableActions<T extends BaseRowShape>({
 }
 
 export const ActionsHeader = () => (
-  <Text textAlign="end">Actions</Text>
+  <Text>Actions</Text>
 );
 
 export default BasicTableActions;

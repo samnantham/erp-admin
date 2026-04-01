@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Center,
@@ -45,6 +45,7 @@ type ColumnMeta = {
   sortParam?: string;
   searchable?: boolean;
   sortType?: "string" | "number" | "timestamp" | "date";
+  width?: string;
 };
 
 export type DataTableProps<Data extends object> = {
@@ -92,6 +93,11 @@ export type DataTableProps<Data extends object> = {
   resetKey?: string | number;
 };
 
+// ── Row display-index context ──────────────────────────────────────────────
+// DataTable provides this for each rendered row so makeSnoCellRenderer can
+// read the correct sequential position (1-based) without relying on row.index.
+export const RowDisplayIndexContext = React.createContext<number>(0);
+
 // ── Sorting helpers ────────────────────────────────────────────────────────
 const blink = keyframes`
   0%,100% { opacity: 1; }
@@ -105,52 +111,22 @@ const dateSort: SortingFn<any> = (a, b, id) =>
   new Date(a.getValue(id)).getTime() - new Date(b.getValue(id)).getTime();
 
 const textSort: SortingFn<any> = (a, b, id) =>
-  String(a.getValue(id) ?? "").trim().localeCompare(
-    String(b.getValue(id) ?? "").trim(),
-    undefined,
-    { sensitivity: "base", numeric: true, ignorePunctuation: true }
-  );
+  String(a.getValue(id) ?? "")
+    .trim()
+    .localeCompare(String(b.getValue(id) ?? "").trim(), undefined, {
+      sensitivity: "base",
+      numeric: true,
+      ignorePunctuation: true,
+    });
 
 const sortFnFor = (type?: string): SortingFn<any> => {
   switch (type) {
     case "timestamp": return timestampSort;
-    case "date": return dateSort;
-    case "number": return sortingFns.alphanumeric;
-    default: return textSort;
+    case "date":      return dateSort;
+    case "number":    return sortingFns.alphanumeric;
+    default:          return textSort;
   }
 };
-
-// ── Row-height sync ────────────────────────────────────────────────────────
-// Keeps left-pane row heights in sync with right-pane (source of truth)
-function useSyncRowHeights(
-  sourceTbodyRef: React.RefObject<HTMLTableSectionElement>,
-  mirrorTbodyRef: React.RefObject<HTMLTableSectionElement>,
-  rowCount: number
-) {
-  const sync = () => {
-    const src = sourceTbodyRef.current;
-    const mir = mirrorTbodyRef.current;
-    if (!src || !mir) return;
-    const srcRows = Array.from(src.querySelectorAll<HTMLTableRowElement>("tr"));
-    const mirRows = Array.from(mir.querySelectorAll<HTMLTableRowElement>("tr"));
-    srcRows.forEach((srcRow, i) => {
-      const h = srcRow.getBoundingClientRect().height;
-      if (mirRows[i]) mirRows[i].style.height = `${h}px`;
-    });
-  };
-
-  // Run after every render
-  useLayoutEffect(() => { sync(); });
-
-  // Also watch for resize (content changes, font load, etc.)
-  useEffect(() => {
-    const src = sourceTbodyRef.current;
-    if (!src) return;
-    const ro = new ResizeObserver(sync);
-    ro.observe(src);
-    return () => ro.disconnect();
-  }, [rowCount]);
-}
 
 // ── Component ──────────────────────────────────────────────────────────────
 export function DataTable<Data extends object>({
@@ -195,13 +171,14 @@ export function DataTable<Data extends object>({
   );
 
   // ── Column processing ──────────────────────────────────────────────────
-  const processedColumns = useMemo<ColumnDef<Data>[]>(() =>
-    columns.map((col) => {
-      const meta = col.meta as ColumnMeta | undefined;
-      const sortType = meta?.sortType ?? (meta?.sortable ? "string" : undefined);
-      if (!sortType) return col;
-      return { ...col, sortingFn: sortFnFor(sortType), enableSorting: true, sortUndefined: 1 };
-    }),
+  const processedColumns = useMemo<ColumnDef<Data>[]>(
+    () =>
+      columns.map((col) => {
+        const meta = col.meta as ColumnMeta | undefined;
+        const sortType = meta?.sortType ?? (meta?.sortable ? "string" : undefined);
+        if (!sortType) return col;
+        return { ...col, sortingFn: sortFnFor(sortType), enableSorting: true, sortUndefined: 1 };
+      }),
     [columns]
   );
 
@@ -231,11 +208,15 @@ export function DataTable<Data extends object>({
   }, [enableRowSelection, processedColumns]);
 
   // ── Client-side search ─────────────────────────────────────────────────
-  const searchableCols = processedColumns.filter((c) => (c.meta as ColumnMeta)?.searchable);
+  const searchableCols = processedColumns.filter(
+    (c) => (c.meta as ColumnMeta)?.searchable
+  );
   const globalFuzzyFilter = (row: any, _id: string, value: string) =>
     searchableCols.some((c) => {
       const cid = c.id ?? (c as any).accessorKey;
-      return String(row.getValue(cid) ?? "").toLowerCase().includes(value.toLowerCase());
+      return String(row.getValue(cid) ?? "")
+        .toLowerCase()
+        .includes(value.toLowerCase());
     });
 
   // ── Table instance ─────────────────────────────────────────────────────
@@ -257,7 +238,9 @@ export function DataTable<Data extends object>({
     state: {
       sorting: enableClientSideSearch
         ? sorting
-        : sortBy ? [{ id: sortBy, desc: sortDirection === "desc" }] : [],
+        : sortBy
+        ? [{ id: sortBy, desc: sortDirection === "desc" }]
+        : [],
       globalFilter: enableClientSideSearch ? globalFilter : "",
       rowSelection: rowSelection ?? {},
       columnVisibility: { id: false },
@@ -290,8 +273,8 @@ export function DataTable<Data extends object>({
     : data.length;
 
   const overallCount = enablePagination
-    ? (enableClientSideSearch && !totalCount ? filteredCount : totalCount)
-    : (enableClientSideSearch ? filteredCount : data.length);
+    ? enableClientSideSearch && !totalCount ? filteredCount : totalCount
+    : enableClientSideSearch ? filteredCount : data.length;
 
   const startRecord = overallCount === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const endRecord = Math.min(currentPage * pageSize, overallCount);
@@ -299,90 +282,97 @@ export function DataTable<Data extends object>({
   const rows = table.getRowModel().rows;
   const rowCount = rows.length;
 
-  // ── Split columns: left pane (sticky) vs right pane (scrollable) ───────
-  const allHeaders = table.getHeaderGroups()[0]?.headers ?? [];
-  const leftHeaders = allHeaders.slice(0, stickyColumns);
-  const rightHeaders = allHeaders.slice(stickyColumns);
-
   // ── Colour constants ───────────────────────────────────────────────────
-  const HEADER_BG = "#0C2556";
+  const HEADER_BG   = "#0C2556";
   const EVEN_ROW_BG = "#ffffff";
-  const ODD_ROW_BG = "#F7FAFC";
+  const ODD_ROW_BG  = "#F7FAFC";
 
-  // ── Refs for row/header height sync ───────────────────────────────────
-  const rightTbodyRef = useRef<HTMLTableSectionElement>(null);
-  const leftTbodyRef = useRef<HTMLTableSectionElement>(null);
-  const rightTheadRef = useRef<HTMLTableSectionElement>(null);
-  const leftTheadRef = useRef<HTMLTableSectionElement>(null);
+  // ── Pre-compute cumulative left offsets for sticky columns ─────────────
+  const allHeaders = table.getHeaderGroups()[0]?.headers ?? [];
 
-  // Sync row heights (right → left)
-  useSyncRowHeights(rightTbodyRef, leftTbodyRef, rowCount);
+  // ── Compute explicit table width from column definitions ───────────────
+  // Must NOT use "max-content" — when tbody is empty the browser computes
+  // max-content from header text alone (ignoring <colgroup>), causing headers
+  // to reflow. An explicit pixel width keeps columns locked regardless of data.
+  const totalTableWidth = useMemo(() => {
+    return allHeaders.reduce((sum, header) => {
+      const meta = header.column.columnDef.meta as ColumnMeta | undefined;
+      const w = meta?.width ? parseInt(meta.width, 10) : 150;
+      return sum + (isNaN(w) ? 150 : w);
+    }, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allHeaders.length]);
 
-  // Sync header height (right → left)
-  useLayoutEffect(() => {
-    const src = rightTheadRef.current;
-    const mir = leftTheadRef.current;
-    if (!src || !mir) return;
-    const h = src.getBoundingClientRect().height;
-    Array.from(mir.querySelectorAll<HTMLTableCellElement>("th")).forEach(
-      (th) => { th.style.height = `${h}px`; }
-    );
-  });
+  const stickyLeftOffsets = useMemo(() => {
+    const offsets: number[] = [];
+    let accumulated = 0;
+    allHeaders.forEach((header, i) => {
+      if (i < stickyColumns) {
+        offsets.push(accumulated);
+        const meta = header.column.columnDef.meta as ColumnMeta | undefined;
+        const w    = meta?.width ? parseInt(meta.width, 10) : 150;
+        accumulated += isNaN(w) ? 150 : w;
+      } else {
+        offsets.push(-1);
+      }
+    });
+    return offsets;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allHeaders.length, stickyColumns]);
 
   // ── Style helpers ──────────────────────────────────────────────────────
-  const baseThStyle = (width?: string): React.CSSProperties => ({
+  const STICKY_LAST_PAD = "12px";
+
+  const thStyle = (width?: string, stickyLeft?: number, isLastSticky?: boolean): React.CSSProperties => ({
     background: HEADER_BG,
     whiteSpace: "normal",
     wordBreak: "break-word",
     overflowWrap: "break-word",
+    minWidth: width ?? "150px",
+    padding: STICKY_LAST_PAD,
+    textAlign: "left",
     ...(width ? { width, maxWidth: width } : {}),
+    ...(stickyLeft !== undefined ? { position: "sticky", left: stickyLeft, zIndex: 3 } : {}),
+    ...(isLastSticky ? { position: "sticky", right: 0, zIndex: 3 } : {}),
   });
 
-  const rowBg = (rowIndex: number) =>
-    rowIndex % 2 === 0 ? EVEN_ROW_BG : ODD_ROW_BG;
-
-  const baseTdStyle = (rowIndex: number, width?: string): React.CSSProperties => ({
-    background: rowBg(rowIndex),
+  const tdStyle = (rowIndex: number, width?: string, stickyLeft?: number, isLastSticky?: boolean): React.CSSProperties => ({
+    background: rowIndex % 2 === 0 ? EVEN_ROW_BG : ODD_ROW_BG,
+    minWidth: width ?? "150px",
+    padding: STICKY_LAST_PAD,
     ...(width ? { width, maxWidth: width } : {}),
+    ...(stickyLeft !== undefined ? { position: "sticky", left: stickyLeft, zIndex: 2 } : {}),
+    ...(isLastSticky ? { position: "sticky", right: 0, zIndex: 2 } : {}),
   });
 
-  // ── Sort icon renderer ─────────────────────────────────────────────────
+  // ── Sort icon ──────────────────────────────────────────────────────────
   const SortIcon = ({ header }: { header: Header<Data, unknown> }) => {
-    const meta = header.column.columnDef.meta as ColumnMeta | undefined;
+    const meta      = header.column.columnDef.meta as ColumnMeta | undefined;
     const sortParam = meta?.sortParam ?? header.column.id;
-    const isSorted = enableClientSideSearch ? !!header.column.getIsSorted() : sortBy === sortParam;
-    const sortDir = enableClientSideSearch
+    const isSorted  = enableClientSideSearch ? !!header.column.getIsSorted() : sortBy === sortParam;
+    const sortDir   = enableClientSideSearch
       ? header.column.getIsSorted()
       : sortBy === sortParam ? sortDirection : false;
 
     return (
-      <Box ml={2} flexShrink={0} display="inline-flex"
-        animation={isSorted ? `${blink} 1s ease-in-out infinite` : ""}
-      >
+      <Box ml={2} flexShrink={0} display="inline-flex" animation={isSorted ? `${blink} 1s ease-in-out infinite` : ""}>
         {isSorted
-          ? (sortDir === "desc" ? <LuMoveDown strokeWidth={4} /> : <LuMoveUp strokeWidth={4} />)
+          ? sortDir === "desc" ? <LuMoveDown strokeWidth={4} /> : <LuMoveUp strokeWidth={4} />
           : <LuArrowUpDown opacity={0.5} />}
       </Box>
     );
   };
 
-  // ── Shared table sx ────────────────────────────────────────────────────
-  const tableSx = {
-    "& table": { borderCollapse: "separate", borderSpacing: 0 },
-    "& th, & td": { borderBottom: "1px solid", borderColor: "gray.200" },
-  };
-
   // ── Loading ────────────────────────────────────────────────────────────
   if (loading) return <Center p={4}><Spinner /></Center>;
-
-  const hasLeftPane = stickyColumns > 0;
 
   // ── Render ─────────────────────────────────────────────────────────────
   return (
     <Box>
       <style>{`
-        tr:has([aria-expanded="true"]) td { z-index: 2 !important; }
-        .chakra-data-table th {
+        tr:has([aria-expanded="true"]) td { z-index: 4 !important; }
+        .chakra-data-table th,
+        .chakra-data-table td {
           white-space: normal !important;
           word-break: break-word !important;
           overflow-wrap: break-word !important;
@@ -407,164 +397,64 @@ export function DataTable<Data extends object>({
 
       {/* Status tabs */}
       {statusTabsStatus && onStatusChange && (
-        <StatusTabs status={status ?? "all"} onStatusChange={onStatusChange} />
+        <StatusTabs status={status ?? "all"} onStatusChange={onStatusChange} sx={{ border: 1, borderColor: "#0C2556" }}/>
       )}
 
-      {/* ── Main table wrapper: side-by-side flex ── */}
       <Box
         {...containerProps}
+        className="chakra-data-table"
         position="relative"
-        minH={rowCount === 0 ? "200px": "200px"}
+        background="#fff"
         border="1px"
-        borderColor="gray.500"
+        borderColor="#0C2556"
         borderTopWidth="0"
         width="100%"
-        overflow="hidden"
-        display="flex"
-        alignItems="stretch"
+        overflowX="auto"
+        overflowY="auto"
+        height="460px"
+        sx={{
+          "& table": { borderCollapse: "separate", borderSpacing: 0 },
+          "& th, & td": { borderBottom: "1px solid", borderColor: "gray.200" },
+          scrollbarWidth: "thin",
+          scrollbarColor: "#718096 transparent",
+          "&::-webkit-scrollbar":             { height: "8px" },
+          "&::-webkit-scrollbar-track":       { background: "#E2E8F0", borderRadius: "4px" },
+          "&::-webkit-scrollbar-thumb":       { background: "#718096", borderRadius: "4px" },
+          "&::-webkit-scrollbar-thumb:hover": { background: "#4A5568" },
+        }}
       >
-
-        {rowCount === 0 && (
-          <Center
-            position="absolute"
-            top={0}
-            left={0}
-            w="100%"
-            h="100%" // 🔥 full container height
-            pointerEvents="none"
-            zIndex={2}
-          >
-            <Box
-              fontSize="md"
-              fontWeight="bold"
-              color="gray.700"
-              textAlign="center"
-            >
-              {searchValue ? "No matching results found" : "No items to display"}
-            </Box>
-          </Center>
-        )}
-        {/* ══ LEFT PANE — fixed sticky columns, no scroll ══ */}
-        {hasLeftPane && (
-          <Box
-            className="chakra-data-table"
-            flexShrink={0}
-            overflow="hidden"
-            sx={{
-              ...tableSx
-            }}
-            background={"#fff"}
-          >
-            <Table
-              {...tableProps}
-              size={tableProps?.size ?? "sm"}
-              variant="unstyled"
-              // bg={HEADER_BG}
-              style={{ tableLayout: "auto", width: "max-content", background: "white" }}
-            >
-              <Thead ref={leftTheadRef}>
-                <Tr>
-                  {leftHeaders.map((header) => {
-                    const meta = header.column.columnDef.meta as ColumnMeta | undefined;
-                    const width = (meta as any)?.width;
-                    return (
-                      <Th
-                        key={header.id}
-                        isNumeric={meta?.isNumeric}
-                        color="white"
-                        p={4}
-                        minW="100px"
-                        cursor={meta?.sortable ? "pointer" : "default"}
-                        onClick={meta?.sortable ? () => handleSort(meta?.sortParam ?? header.column.id) : undefined}
-                        style={baseThStyle(width)}
-                      >
-                        <Box display="flex" alignItems="center" flexWrap="wrap">
-                          <Box flex="1" minW={0} whiteSpace="normal" wordBreak="break-word" overflowWrap="break-word">
-                            {flexRender(header.column.columnDef.header, header.getContext())}
-                          </Box>
-                          {meta?.sortable && <SortIcon header={header} />}
-                        </Box>
-                      </Th>
-                    );
-                  })}
-                </Tr>
-              </Thead>
-              <Tbody ref={leftTbodyRef} sx={{
-                border: "none"
-              }}>
-                {rows.map((row) => {
-                  const rowProps = getRowProps?.(row) ?? {};
-                  return (
-                    <Tr key={row.id} {...rowProps}>
-                      {row.getVisibleCells().slice(0, stickyColumns).map((cell) => {
-                        const width = (cell.column.columnDef.meta as any)?.width;
-                        return (
-                          <Td
-                            key={cell.id}
-                            isNumeric={(cell.column.columnDef.meta as ColumnMeta)?.isNumeric}
-                            whiteSpace="normal"
-                            wordBreak="break-word"
-                            overflowWrap="break-word"
-                            lineHeight="1.6"
-                            style={baseTdStyle(row.index, width)}
-                          >
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </Td>
-                        );
-                      })}
-                    </Tr>
-                  );
-                })}
-              </Tbody>
-            </Table>
-          </Box>
-        )}
-
-        {/* ══ RIGHT PANE — scrollable columns, scrollbar only here ══ */}
-        <Box
-          className="chakra-data-table"
-          flex={1}
-          minW={0}
-          overflowX="auto"
-          overflowY="hidden"
-          background={"#fff"}
-          sx={{
-            ...tableSx,
-            scrollbarWidth: "thin",
-            scrollbarColor: "#718096 transparent",
-            "&::-webkit-scrollbar": { height: "8px" },
-            "&::-webkit-scrollbar-track": { background: "#E2E8F0", borderRadius: "4px" },
-            "&::-webkit-scrollbar-thumb": { background: "#718096", borderRadius: "4px" },
-            "&::-webkit-scrollbar-thumb:hover": { background: "#4A5568" },
-          }}
+        <Table
+          {...tableProps}
+          size={tableProps?.size ?? "sm"}
+          variant="unstyled"
+          style={{ tableLayout: "fixed", width: `${totalTableWidth}px`, minWidth: "100%", background: "white" }}
         >
-          <Table
-            {...tableProps}
-            size={tableProps?.size ?? "sm"}
-            variant="unstyled"
-            // bg={HEADER_BG}
-            style={{ tableLayout: "auto", width: "max-content", minWidth: "100%", background: "white" }}
-          >
-            <Thead ref={rightTheadRef}>
-              <Tr>
-                {rightHeaders.map((header, i) => {
-                  const meta = header.column.columnDef.meta as ColumnMeta | undefined;
-                  const isLastSticky = stickyLastColumn && i === rightHeaders.length - 1;
-                  const width = (meta as any)?.width;
+          <colgroup>
+            {allHeaders.map((header) => {
+              const meta  = header.column.columnDef.meta as ColumnMeta | undefined;
+              const width = meta?.width ?? "150px";
+              return <col key={header.id} style={{ width, minWidth: width }} />;
+            })}
+          </colgroup>
+
+          <Thead style={{ position: "sticky", top: 0, zIndex: 4 }}>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <Tr key={headerGroup.id}>
+                {headerGroup.headers.map((header, colIndex) => {
+                  const meta         = header.column.columnDef.meta as ColumnMeta | undefined;
+                  const width        = meta?.width;
+                  const isSticky     = colIndex < stickyColumns;
+                  const isLastSticky = stickyLastColumn && colIndex === headerGroup.headers.length - 1;
+                  const leftOffset   = isSticky ? stickyLeftOffsets[colIndex] : undefined;
+
                   return (
                     <Th
                       key={header.id}
-                      isNumeric={meta?.isNumeric}
+                      isNumeric={false}
                       color="white"
-                      p={4}
-                      minH="46px"
-                      minW="100px"
                       cursor={meta?.sortable ? "pointer" : "default"}
                       onClick={meta?.sortable ? () => handleSort(meta?.sortParam ?? header.column.id) : undefined}
-                      style={{
-                        ...baseThStyle(width),
-                        ...(isLastSticky ? { position: "sticky", right: 0, zIndex: 1 } : {}),
-                      }}
+                      style={thStyle(width, leftOffset, isLastSticky)}
                     >
                       <Box display="flex" alignItems="center" flexWrap="wrap">
                         <Box flex="1" minW={0} whiteSpace="normal" wordBreak="break-word" overflowWrap="break-word">
@@ -576,61 +466,109 @@ export function DataTable<Data extends object>({
                   );
                 })}
               </Tr>
-            </Thead>
+            ))}
+          </Thead>
 
-            <Tbody ref={rightTbodyRef}>
-              {(
-                rows.map((row) => {
-                  const rowProps = getRowProps?.(row) ?? {};
-                  const rightCells = row.getVisibleCells().slice(stickyColumns);
-                  return (
-                    <Tr key={row.id} {...rowProps}>
-                      {rightCells.map((cell, i) => {
-                        const isLastSticky = stickyLastColumn && i === rightCells.length - 1;
-                        const width = (cell.column.columnDef.meta as any)?.width;
-                        return (
-                          <Td
-                            key={cell.id}
-                            isNumeric={(cell.column.columnDef.meta as ColumnMeta)?.isNumeric}
-                            maxW={isLastSticky ? undefined : "200px"}
-                            whiteSpace="normal"
-                            wordBreak="break-word"
-                            overflowWrap="break-word"
-                            lineHeight="1.6"
-                            style={{
-                              ...baseTdStyle(row.index, width),
-                              ...(isLastSticky ? { position: "sticky", right: 0 } : {}),
-                            }}
-                          >
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </Td>
-                        );
-                      })}
-                    </Tr>
-                  );
-                })
-              )}
-            </Tbody>
-          </Table>
-        </Box>
+          {/* ── Tbody: ONLY real data rows — no empty-state markup here ── */}
+          <Tbody>
+            {rows.map((row, displayIndex) => {
+              const rowProps = getRowProps?.(row) ?? {};
+              const cells    = row.getVisibleCells();
+
+              // Override row.index with the rendered position so that
+              // `info.row.index + 1` in column defs (like the S.No column)
+              // always shows 1, 2, 3… based on what's visible on screen,
+              // even after client-side filtering or sorting.
+              const displayRow = Object.create(row, {
+                index: { value: displayIndex, enumerable: true },
+              });
+
+              return (
+                <RowDisplayIndexContext.Provider key={row.id} value={displayIndex}>
+                <Tr {...rowProps}>
+                  {cells.map((cell, colIndex) => {
+                    const meta         = cell.column.columnDef.meta as ColumnMeta | undefined;
+                    const width        = meta?.width;
+                    const isSticky     = colIndex < stickyColumns;
+                    const isLastSticky = stickyLastColumn && colIndex === cells.length - 1;
+                    const leftOffset   = isSticky ? stickyLeftOffsets[colIndex] : undefined;
+
+                    // Merge displayRow into the cell context so info.row.index
+                    // returns displayIndex instead of the original data-array position.
+                    const cellContext = { ...cell.getContext(), row: displayRow };
+
+                    return (
+                      <Td
+                        key={cell.id}
+                        whiteSpace="normal"
+                        wordBreak="break-word"
+                        overflowWrap="break-word"
+                        lineHeight="1.6"
+                        style={tdStyle(displayIndex, width, leftOffset, isLastSticky)}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cellContext)}
+                      </Td>
+                    );
+                  })}
+                </Tr>
+                </RowDisplayIndexContext.Provider>
+              );
+            })}
+          </Tbody>
+        </Table>
+
+        {/* ── Empty-state message: fills remaining container height below header ── */}
+        {rowCount === 0 && (
+          <Flex
+            position="sticky"
+            left={0}
+            justify="center"
+            align="center"
+            fontSize="lg"
+            color="gray.500"
+            bg={EVEN_ROW_BG}
+            style={{ height: "calc(460px - 45px)" }}
+          >
+            {searchValue ? "No matching results found" : "No items to display"}
+          </Flex>
+        )}
       </Box>
 
       {/* Pagination footer */}
       <Flex mt={4} px={2} justify="space-between" align="center" flexWrap="wrap">
         {overallCount > 0 && (
-          <Box fontSize="sm">
-            Showing {startRecord} to {endRecord} of {overallCount} records
-          </Box>
+          <Box fontSize="sm">Showing {startRecord} to {endRecord} of {overallCount} records</Box>
         )}
         {enablePagination && (
-          <Pagination
-            currentPage={currentPage}
-            totalCount={overallCount}
-            pageSize={pageSize}
-            onPageChange={onPageChange!}
-          />
+          <Pagination currentPage={currentPage} totalCount={overallCount} pageSize={pageSize} onPageChange={onPageChange!} />
         )}
       </Flex>
     </Box>
   );
+}
+
+// ── S.No helper (export for column definitions) ────────────────────────────
+// Uses RowDisplayIndexContext provided by DataTable so the number always
+// reflects the row's position in the currently rendered (filtered + sorted)
+// list, starting at 1 — regardless of the original data array index.
+export function makeSnoCellRenderer({
+  enableClientSideSearch = false,
+  currentPage = 1,
+  pageSize = 10,
+}: {
+  enableClientSideSearch?: boolean;
+  currentPage?: number;
+  pageSize?: number;
+} = {}) {
+  return function SnoCellRenderer() {
+    // displayIndex is the 0-based position of this row in the rendered list.
+    // DataTable provides it via RowDisplayIndexContext — no need to search rows.
+    const displayIndex = React.useContext(RowDisplayIndexContext);
+    if (enableClientSideSearch) {
+      // Client-side: always 1, 2, 3… through the filtered+sorted results.
+      return <>{displayIndex + 1}</>;
+    }
+    // Server-side pagination: offset by the current page.
+    return <>{(currentPage - 1) * pageSize + displayIndex + 1}</>;
+  };
 }

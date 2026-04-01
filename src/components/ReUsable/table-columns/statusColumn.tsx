@@ -17,11 +17,11 @@ export const getStatusColumn = <T extends BaseRow>() => {
       return (
         <Badge
           colorScheme={deleted ? 'red' : 'green'}
-          minW="90px"
-          px={3}
-          py={1}
           textAlign="center"
           borderRadius="md"
+          size={'sm'}
+          px={3}
+          py={1}
         >
           {deleted ? 'Trashed' : 'Active'}
         </Badge>

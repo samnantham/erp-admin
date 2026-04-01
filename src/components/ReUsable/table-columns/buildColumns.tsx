@@ -72,7 +72,7 @@ export function buildColumns<T extends object>(
     if (col.type === "actions" && col.actions) {
       return columnHelper.display({
         id: col.key,
-        header: () => <Text textAlign="end">{resolveHeader(col.header)}</Text>,
+        header: "Actionsssss",
         size: col.size,
         meta: {
           isNumeric: col.isNumeric,
@@ -88,15 +88,6 @@ export function buildColumns<T extends object>(
           if (!visibleActions?.length) return null;
 
           return (
-            <div
-      style={{
-    display: "flex",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    width: "100%",
-    height: "100%",
-  }}
-    >
             <Menu placement="bottom-end" strategy="fixed" isLazy>
               <MenuButton
                 as={Button}
@@ -152,7 +143,6 @@ export function buildColumns<T extends object>(
                 })}
               </MenuList>
             </Menu>
-            </div>
           );
         },
       });

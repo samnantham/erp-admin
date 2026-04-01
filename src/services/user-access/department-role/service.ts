@@ -9,7 +9,7 @@ import {
     DropdownPayload, zIndexPayload, zDetailsPayload
 } from '@/services/global-schema';
 
-import { zCreatePayload, CreatePayload } from '@/services/user-access/department-role/schema';
+import { zCreatePayload, CreatePayload } from '@/services/user-access/role/schema';
 
 
 /* ================= DepartmentRole Index ================= */
