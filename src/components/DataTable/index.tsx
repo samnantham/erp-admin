@@ -417,7 +417,7 @@ export function DataTable<Data extends object>({
         width="100%"
         overflowX="auto"
         overflowY="auto"
-        height="460px"
+        height="58vh"
         sx={{
           "& table": { borderCollapse: "separate", borderSpacing: 0 },
           "& th, & td": { borderBottom: "1px solid", borderColor: "gray.200" },
