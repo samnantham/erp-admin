@@ -384,7 +384,9 @@ export function DataTable<Data extends object>({
         <HStack bg="white" justify="space-between" mb={4} p={noTitlePadding ? 0 : 4} borderTopRadius={4}>
           {title && <Heading size="md">{title}</Heading>}
           {headerAction}
-          {enablePagination && onPageSizeChange && (
+          {/* Show PageLimit here only when status tabs are NOT present;
+              otherwise it moves to the tabs row below */}
+          {enablePagination && onPageSizeChange && !(statusTabsStatus && onStatusChange) && (
             <PageLimit currentLimit={pageSize} loading={loading} changeLimit={onPageSizeChange} total={overallCount} />
           )}
           {enableClientSideSearch && onSearchChange && (
@@ -395,18 +397,22 @@ export function DataTable<Data extends object>({
         </HStack>
       )}
 
-      {/* Status tabs */}
+      {/* Status tabs + PageLimit on the same row */}
       {statusTabsStatus && onStatusChange && (
-        <StatusTabs status={status ?? "all"} onStatusChange={onStatusChange} sx={{ border: 1, borderColor: "#0C2556" }}/>
+        <Flex align="center" justify="space-between">
+          <StatusTabs status={status ?? "all"} onStatusChange={onStatusChange} />
+          {enablePagination && onPageSizeChange && (
+            <PageLimit currentLimit={pageSize} loading={loading} changeLimit={onPageSizeChange} total={overallCount} />
+          )}
+        </Flex>
       )}
 
       <Box
         {...containerProps}
         className="chakra-data-table"
         position="relative"
-        background="#fff"
         border="1px"
-        borderColor="#0C2556"
+        borderColor="gray.500"
         borderTopWidth="0"
         width="100%"
         overflowX="auto"
@@ -524,7 +530,8 @@ export function DataTable<Data extends object>({
             left={0}
             justify="center"
             align="center"
-            fontSize="lg"
+            fontSize="md"
+            fontWeight="bold"
             color="gray.500"
             bg={EVEN_ROW_BG}
             style={{ height: "calc(460px - 45px)" }}
