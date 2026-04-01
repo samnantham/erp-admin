@@ -6,8 +6,10 @@ import { endPoints } from '@/api/endpoints';
 import { useApiMutation } from '@/api/hooks/useApiMutation';
 import {
     QueryParams, zDropdownPayload,
-    DropdownPayload, zCreatePayload, CreatePayload, zIndexPayload, zDetailsPayload
+    DropdownPayload, zIndexPayload, zDetailsPayload
 } from '@/services/global-schema';
+
+import { zCreatePayload, CreatePayload } from '@/services/user-access/role/schema';
 
 
 /* ================= DepartmentRole Index ================= */
