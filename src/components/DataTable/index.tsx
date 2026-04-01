@@ -32,6 +32,8 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { LuArrowUpDown, LuMoveDown, LuMoveUp } from "react-icons/lu";
+import { OverlayScrollbarsComponent } from "overlayscrollbars-react";
+import "overlayscrollbars/overlayscrollbars.css";
 
 import { TableSearchBox } from "@/components/DataTable/SearchBox";
 import { Status, StatusTabs } from "@/components/StatusTabs";
@@ -377,6 +379,20 @@ export function DataTable<Data extends object>({
           word-break: break-word !important;
           overflow-wrap: break-word !important;
         }
+        /* ── OverlayScrollbars custom theme ── */
+        .chakra-data-table .os-scrollbar {
+          --os-size: 8px;
+          --os-handle-border-radius: 4px;
+          --os-handle-bg: #718096;
+          --os-handle-bg-hover: #4A5568;
+          --os-handle-bg-active: #2D3748;
+        }
+        .chakra-data-table .os-scrollbar-horizontal {
+          bottom: 0;
+        }
+        .chakra-data-table .os-scrollbar-vertical {
+          right: 0;
+        }
       `}</style>
 
       {/* Title bar */}
@@ -415,20 +431,24 @@ export function DataTable<Data extends object>({
         borderColor="gray.500"
         borderTopWidth="0"
         width="100%"
-        overflowX="auto"
-        overflowY="auto"
-        height="58vh"
+        background="#fff"
         sx={{
           "& table": { borderCollapse: "separate", borderSpacing: 0 },
           "& th, & td": { borderBottom: "1px solid", borderColor: "gray.200" },
-          scrollbarWidth: "thin",
-          scrollbarColor: "#718096 transparent",
-          "&::-webkit-scrollbar":             { height: "8px" },
-          "&::-webkit-scrollbar-track":       { background: "#E2E8F0", borderRadius: "4px" },
-          "&::-webkit-scrollbar-thumb":       { background: "#718096", borderRadius: "4px" },
-          "&::-webkit-scrollbar-thumb:hover": { background: "#4A5568" },
         }}
       >
+        <OverlayScrollbarsComponent
+          defer
+          options={{
+            scrollbars: {
+              autoHide: "scroll",
+              autoHideDelay: 600,
+              clickScroll: true,
+            },
+            overflow: { x: "scroll", y: "scroll" },
+          }}
+          style={{ height: "460px", width: "100%" }}
+        >
         <Table
           {...tableProps}
           size={tableProps?.size ?? "sm"}
@@ -539,6 +559,7 @@ export function DataTable<Data extends object>({
             {searchValue ? "No matching results found" : "No items to display"}
           </Flex>
         )}
+        </OverlayScrollbarsComponent>
       </Box>
 
       {/* Pagination footer */}
