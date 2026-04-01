@@ -5,7 +5,7 @@ type BaseRow = {
     id: string | number;
     name: string;
     created_at: string;
-    updated_at: string;
+    updated_at: any;
 };
 
 export const getBaseColumns = <T extends BaseRow>() => {
@@ -45,7 +45,7 @@ export const getBaseColumns = <T extends BaseRow>() => {
             cell: (info) => format(new Date(info.getValue()), 'dd-MMM-yyyy HH:mm'),
             meta: {
                 sortable: true,
-                searchable: true,
+                searchable: false,
                 sortType: 'string',
             },
         }),
@@ -53,12 +53,22 @@ export const getBaseColumns = <T extends BaseRow>() => {
         columnHelper.accessor((row) => row.updated_at, {
             id: 'updated_at',
             header: 'Modified At',
-            cell: (info) => format(new Date(info.getValue()), 'dd-MMM-yyyy HH:mm'),
+            cell: (info) => {
+                const value = info.getValue();
+
+                if (!value) return ' -';
+
+                const date = new Date(value);
+
+                return isNaN(date.getTime())
+                ? ' -'
+                : format(date, 'dd-MMM-yyyy HH:mm');
+            },
             meta: {
                 sortable: true,
                 searchable: true,
-                sortType: 'string',
+                sortType: 'timestamp', // ✅ FIX
             },
-        }),
+            })
     ];
 };

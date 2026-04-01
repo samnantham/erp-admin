@@ -26,7 +26,7 @@ export type DataColumn<T = {}> = {
   id: string;
   name: string;
   created_at: string;
-  updated_at: string;
+  updated_at?: string | null;
   deleted_at?: string | null;
   is_fixed?: boolean | null;
 } & T;

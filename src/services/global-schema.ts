@@ -52,7 +52,7 @@ export const zStandardObject = z.object({
   created_at: z.string(),
   has_pending_request: z.boolean().optional(),
   pending_request_message: z.string().nullable().optional(),
-  updated_at: z.string(),
+  updated_at: z.string().nullable(),
   deleted_at: z.string().nullable().optional()
 });
 

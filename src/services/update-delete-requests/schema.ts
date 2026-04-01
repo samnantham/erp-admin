@@ -45,7 +45,7 @@ export const zApprovalLogEntry = z.object({
   requested_by: z.string().nullable(),
   reason: z.string().nullable(),
   created_at: z.string(),
-  updated_at: z.string(),
+  updated_at: z.string().nullable(),
   deleted_at: z.string().nullable(),
 });
 

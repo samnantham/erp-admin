@@ -9,7 +9,7 @@ export const zRole = z.object({
   is_fixed: z.boolean().nullable().optional(),
   is_super_admin: z.boolean().nullable().optional(),
   created_at: z.string(),
-  updated_at: z.string(),
+  updated_at: z.string().nullable(),
   deleted_at: z.string().nullable().optional(),
 });
 
@@ -26,7 +26,7 @@ export const zDepartmentWithRoles = z.object({
   name: z.string(),
   is_fixed: z.boolean().nullable().optional(),
   created_at: z.string(),
-  updated_at: z.string(),
+  updated_at: z.string().nullable(),
   deleted_at: z.string().nullable().optional(),
   roles: z.array(zDepartmentRoleItem),
 });
@@ -39,7 +39,7 @@ export const zDepartmentRole = z.object({
 
   is_fixed: z.boolean().nullable().optional(),
   created_at: z.string(),
-  updated_at: z.string(),
+  updated_at: z.string().nullable(),
   deleted_at: z.string().nullable().optional(),
 
   department: zDepartmentWithRoles,
@@ -60,7 +60,7 @@ export const zUser = z.object({
   department: zBasicObject,
   is_fixed: z.boolean().nullable().optional(),
   created_at: z.string(),
-  updated_at: z.string(),
+  updated_at: z.string().nullable(),
   deleted_At: z.string().nullable().optional(),
 });
 
