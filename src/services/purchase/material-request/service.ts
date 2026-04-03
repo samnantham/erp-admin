@@ -99,7 +99,7 @@ export const useMaterialRequestList = ({
   queryParams,
 }: UseMaterialRequestListProps = {}) =>
   useQuery({
-    queryKey: ['salesLogList', queryParams], // ✅ include params in cache key
+    queryKey: ['materialRequestList', queryParams], // ✅ include params in cache key
     queryFn: () =>
       getRequest(
         endPoints.list.material_request,

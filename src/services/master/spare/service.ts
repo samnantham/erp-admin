@@ -18,7 +18,9 @@ import {
   zPartNumberUniqueCheckPayload,
   zSearchPartNumberPayload,
   zSpareDetailsPayload,
-  zAssignAltSparePartsRespPayload
+  zAssignAltSparePartsRespPayload,
+  zPartNumberListPayload,
+PartNumberListPayload
 } from '@/services/master/spare/schema';
 import { AxiosError } from "axios";
 import { ApiResp } from "@/services/global-schema";
@@ -187,3 +189,26 @@ export const useAssignAltParts = () => {
     }
   );
 };
+
+/* ================= Quotation Items ================= */
+type useAltPartItemProps = {
+    enabled?: boolean;
+    queryParams?: QueryParams;
+};
+
+export const useAltPartNumberList = (
+    partNumberId?: string,
+    { enabled = true, queryParams }: useAltPartItemProps = {}
+) =>
+    useQuery<PartNumberListPayload>({
+        queryKey: ['alternatePartsItems', partNumberId, queryParams],
+        queryFn: () =>
+            getRequest(
+                endPoints.list.alternate_parts.replace(':id', String(partNumberId)),
+                zPartNumberListPayload,
+                queryParams
+            ),
+        enabled: !!partNumberId && enabled,
+        retry: 2,
+        refetchOnWindowFocus: false,
+    });

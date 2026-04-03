@@ -99,7 +99,7 @@ export const FieldInput = <FormattedValue = Value,>(
 
     switch (type) {
       case 'decimal':
-        if (!/^\d*\.?\d*$/.test(value)) return;
+        if (!/^\d*\.?\d{0,2}$/.test(value)) return;
         break;
       case 'integer': {
         const integerPattern = allowedSpecialChars.length
@@ -161,6 +161,10 @@ export const FieldInput = <FormattedValue = Value,>(
     let processedValue = value;
 
     switch (type) {
+
+      case 'decimal':
+        processedValue = value.replace(/^0+(?=\d)/, '');
+        break;
       case 'alpha-numeric':
         processedValue = value.replace(/\s/g, '').toUpperCase();
         break;

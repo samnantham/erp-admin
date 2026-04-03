@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { zStandardObject, zBasicObject, zPagination } from "@/services/global-schema";
+import { zStandardObject, zBasicObject, zPagination, zSelectOption } from "@/services/global-schema";
 import { zMaterialRequestItem, zMaterialRequest } from "@/services/purchase/material-request/schema";
 import { zCustomerContactManager } from "@/services/master/customer/schema";
 
@@ -156,3 +156,8 @@ export const zPRFQVendorsPayload = z.object({
     data: z.array(zPRFQVendorInfo),
 });
 export type PRFQVendorsPayload = z.infer<typeof zPRFQVendorsPayload>;
+
+export const zPRFQListPayload = z.object({
+  data: z.array(zSelectOption),
+  status: z.boolean(),
+});

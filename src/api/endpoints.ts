@@ -23,6 +23,7 @@ export const endPoints = {
     sales_log: '/sales-management/sales-log/',
     material_request: '/purchase/material-request/',
     prfq: '/purchase/rfq/',
+    purchase_quotation: '/purchase/quotation/',
   },
   list: {
     role:           '/user-access/role',
@@ -35,6 +36,10 @@ export const endPoints = {
     contact_group:       '/contact-management/contact-group/list',
     sales_log:      '/sales-management/sales-log/list',
     material_request: '/purchase/material-request/list',
+    prfq: '/purchase/rfq/list',
+    purchase_quotation: '/purchase/quotation/list',
+    quotation_items : '/purchase/quotation/:id/items',
+    alternate_parts: '/spare-management/part-number/:id/alternates'
   },
   info: {
     role:           '/user-access/role/:id',
@@ -50,6 +55,7 @@ export const endPoints = {
     sales_log: '/sales-management/sales-log/:id',
     material_request: '/purchase/material-request/:id',
     prfq: '/purchase/rfq/:id',
+    purchase_quotation: '/purchase/quotation/:id',
   },
   create: {
     role:           '/user-access/role',
@@ -70,6 +76,8 @@ export const endPoints = {
     sales_log: '/sales-management/sales-log/',
     material_request: '/purchase/material-request/',
     prfq: '/purchase/rfq/',
+    purchase_quotation: '/purchase/quotation/',
+    quotation_items: '/purchase/quotation/:id/items'
   },
   update: {
     role:           '/user-access/role/:id',
@@ -90,7 +98,7 @@ export const endPoints = {
     sales_log: '/sales-management/sales-log/:id',
     material_request: '/purchase/material-request/:id',
     prfq: '/purchase/rfq/:id',
-
+    purchase_quotation: '/purchase/quotation/:id',
   },
   delete: {
     role:           '/user-access/role/:id',
@@ -107,7 +115,8 @@ export const endPoints = {
     bank:               '/contact-management/customer/:customer_id/banks/:id',
     principle_of_owner: '/contact-management/customer/:customer_id/principle-owners/:id',
     trader_reference:   '/contact-management/customer/:customer_id/trader-references/:id',
-    spare:          '/spare-management/part-number/:id'
+    spare:          '/spare-management/part-number/:id',
+    quotation_line_item : '/purchase/quotation/:quotation/line-items/:id'
   },
   drop_downs: {
     user:     '/user/drop-downs',
@@ -117,6 +126,7 @@ export const endPoints = {
     sales_log:  '/sales-management/sales-log/drop-downs',
     material_request: '/purchase/material-request/drop-downs',
     prfq: '/purchase/rfq/drop-downs',
+    purchase_quotation: '/purchase/quotation/drop-downs',
   },
   others: {
     upload:                    '/media/upload',

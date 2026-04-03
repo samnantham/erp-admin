@@ -161,11 +161,12 @@ export const removeHtmlTags = (html: string): string => {
 
 export const convertToOptions = (
   options: any,
-  valueKey: string = "id"
+  valueKey: string = "id",
+  optionKey: string = "name"
 ) => {
   return options.map((item: any) => ({
     value: item?.[valueKey]?.toString(),
-    label: item?.name,
+    label: item?.[optionKey]?.toString(),
   }));
 };
 

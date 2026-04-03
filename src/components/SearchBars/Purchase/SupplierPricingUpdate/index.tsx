@@ -1,13 +1,13 @@
-// components/SearchBars/Purchase/PRFQ.tsx
+// components/SearchBars/Purchase/SupplierPricingUpdate.tsx
 
 import { useMemo, useState, useEffect } from 'react';
-import { BiEdit, BiSolidFilePdf } from 'react-icons/bi';
+import { BiEdit } from 'react-icons/bi';
 import { LuCheck, LuX } from 'react-icons/lu';
 import {
   Box, Button, HStack, Icon, IconButton, Stack, Tag, TagCloseButton, TagLabel, Text,
 } from '@chakra-ui/react';
 import { Formiz, useForm } from '@formiz/core';
-import { HiRefresh, HiOutlineSearch, HiEye } from 'react-icons/hi';
+import { HiRefresh, HiOutlineSearch } from 'react-icons/hi';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 
@@ -16,10 +16,7 @@ import { FieldInput } from '@/components/FieldInput';
 import { FieldSelect } from '@/components/FieldSelect';
 import { FieldDayPicker } from '@/components/FieldDayPicker';
 import { buildColumns, DynamicColumn } from '@/components/ReUsable/table-columns/buildColumns';
-import { usePRFQIndex, usePRFQDropdowns } from '@/services/purchase/rfq/service';
-import { usePDFPreview } from '@/context/PDFPreviewContext';
-import { PRFQVendorsPopup } from '@/components/Popups/PRFQCustomers';
-import { endPoints } from '@/api/endpoints';
+import { usePurchaseQuotationIndex, usePurchaseQuotationDropdowns } from '@/services/purchase/quotation/service';
 import LoadingOverlay from '@/components/LoadingOverlay';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -34,8 +31,8 @@ type PageModeProps = {
 
 type ModalModeProps = {
   mode: 'modal';
-  initialSelectedId?: any;
-  onApply: (selectedId: any) => void;
+  initialSelectedId?: string;
+  onApply: (selectedId: string | null) => void;
   onClear?: () => void;
 };
 
@@ -50,8 +47,12 @@ const STATUS_OPTIONS = [
 
 const INITIAL_QUERY = {
   page: 1, limit: 10,
-  search: '', priority_id: '',
-  is_closed: '', need_by_date_from: '', need_by_date_to: '',
+  search: '',
+  is_closed: '',
+  vendor_quotation_date_from: '',
+  vendor_quotation_date_to: '',
+  expiry_date_from: '',
+  expiry_date_to: '',
 };
 
 // ─── Sub-component: Filter Panel ──────────────────────────────────────────────
@@ -59,7 +60,7 @@ const INITIAL_QUERY = {
 type FilterPanelProps = {
   form: ReturnType<typeof useForm>;
   formKey: number;
-  priorityOptions: any[];
+  currencyOptions: any[];
   dropdownLoading: boolean;
   isModal: boolean;
   onFilter: (key: string, value: any) => void;
@@ -67,7 +68,7 @@ type FilterPanelProps = {
 };
 
 const FilterPanel = ({
-  form, formKey, priorityOptions, dropdownLoading, isModal, onFilter, onReset,
+  form, formKey, currencyOptions, dropdownLoading, isModal, onFilter, onReset,
 }: FilterPanelProps) => (
   <Formiz autoForm connect={form}>
     {isModal ? (
@@ -90,17 +91,6 @@ const FilterPanel = ({
           size="sm"
         />
         <FieldSelect
-          key={`priority_${formKey}`}
-          name="priority_id"
-          label="Priority"
-          placeholder="Select..."
-          options={priorityOptions}
-          selectProps={{ isLoading: dropdownLoading }}
-          onValueChange={(v) => onFilter('priority_id', v)}
-          isClearable
-          size="sm"
-        />
-        <FieldSelect
           key={`is_closed_${formKey}`}
           name="is_closed"
           label="Status"
@@ -110,18 +100,42 @@ const FilterPanel = ({
           isClearable
           size="sm"
         />
-        <FieldDayPicker
-          name="need_by_date_from"
-          label="Date Range"
-          placeholder="From date"
+        <FieldSelect
+          key={`currency_${formKey}`}
+          name="currency_id"
+          label="Currency"
+          placeholder="Select..."
+          options={currencyOptions}
+          selectProps={{ isLoading: dropdownLoading }}
+          onValueChange={(v) => onFilter('currency_id', v)}
+          isClearable
           size="sm"
-          onValueChange={(v) => onFilter('need_by_date_from', v ?? '')}
         />
         <FieldDayPicker
-          name="need_by_date_to"
+          name="vendor_quotation_date_from"
+          label="Quotation Date Range"
+          placeholder="From date"
+          size="sm"
+          onValueChange={(v) => onFilter('vendor_quotation_date_from', v ?? '')}
+        />
+        <FieldDayPicker
+          name="vendor_quotation_date_to"
           placeholder="To date"
           size="sm"
-          onValueChange={(v) => onFilter('need_by_date_to', v ?? '')}
+          onValueChange={(v) => onFilter('vendor_quotation_date_to', v ?? '')}
+        />
+        <FieldDayPicker
+          name="expiry_date_from"
+          label="Expiry Date Range"
+          placeholder="From date"
+          size="sm"
+          onValueChange={(v) => onFilter('expiry_date_from', v ?? '')}
+        />
+        <FieldDayPicker
+          name="expiry_date_to"
+          placeholder="To date"
+          size="sm"
+          onValueChange={(v) => onFilter('expiry_date_to', v ?? '')}
         />
         <Button
           variant="@primary"
@@ -146,16 +160,6 @@ const FilterPanel = ({
             size="sm"
           />
           <FieldSelect
-            key={`priority_${formKey}`}
-            name="priority_id"
-            placeholder="Priority"
-            options={priorityOptions}
-            selectProps={{ isLoading: dropdownLoading }}
-            onValueChange={(v) => onFilter('priority_id', v)}
-            isClearable
-            size="sm"
-          />
-          <FieldSelect
             key={`is_closed_${formKey}`}
             name="is_closed"
             placeholder="Status"
@@ -164,19 +168,41 @@ const FilterPanel = ({
             isClearable
             size="sm"
           />
+          <FieldSelect
+            key={`currency_${formKey}`}
+            name="currency_id"
+            placeholder="Currency"
+            options={currencyOptions}
+            selectProps={{ isLoading: dropdownLoading }}
+            onValueChange={(v) => onFilter('currency_id', v)}
+            isClearable
+            size="sm"
+          />
         </Box>
         <Box display="grid" gridTemplateColumns="repeat(2, 1fr)" gap={4} mb={4}>
           <FieldDayPicker
-            name="need_by_date_from"
-            placeholder="Need By Date From"
+            name="vendor_quotation_date_from"
+            placeholder="Quotation Date From"
             size="sm"
-            onValueChange={(v) => onFilter('need_by_date_from', v ?? '')}
+            onValueChange={(v) => onFilter('vendor_quotation_date_from', v ?? '')}
           />
           <FieldDayPicker
-            name="need_by_date_to"
-            placeholder="Need By Date To"
+            name="vendor_quotation_date_to"
+            placeholder="Quotation Date To"
             size="sm"
-            onValueChange={(v) => onFilter('need_by_date_to', v ?? '')}
+            onValueChange={(v) => onFilter('vendor_quotation_date_to', v ?? '')}
+          />
+          <FieldDayPicker
+            name="expiry_date_from"
+            placeholder="Expiry Date From"
+            size="sm"
+            onValueChange={(v) => onFilter('expiry_date_from', v ?? '')}
+          />
+          <FieldDayPicker
+            name="expiry_date_to"
+            placeholder="Expiry Date To"
+            size="sm"
+            onValueChange={(v) => onFilter('expiry_date_to', v ?? '')}
           />
         </Box>
         <Box display="flex" justifyContent="center">
@@ -191,16 +217,15 @@ const FilterPanel = ({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export const PRFQSearch = (props: Props) => {
+export const SupplierPricingUpdateSearch = (props: Props) => {
   const { mode } = props;
   const isModal = mode === 'modal';
 
   const navigate = useNavigate();
-  const { openPreview } = usePDFPreview();
 
   const { data: dropdownData, isLoading: dropdownLoading, isSuccess: dropdownsFetched } =
-    usePRFQDropdowns();
-  const priorityOptions = dropdownData?.priorities ?? [];
+    usePurchaseQuotationDropdowns();
+  const currencyOptions = dropdownData?.currencies ?? [];
 
   const [itemsPerPage, setItemsPerPage]   = useState(10);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -212,9 +237,6 @@ export const PRFQSearch = (props: Props) => {
   // ── Single-select state ────────────────────────────────────────────────────
   const [selectedId,   setSelectedId]   = useState<string | null>(null);
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
-
-  // ── Vendor popup state ─────────────────────────────────────────────────────
-  const [vendorModalRow, setVendorModalRow] = useState<any>(null);
 
   // Seed from parent if provided
   useEffect(() => {
@@ -228,7 +250,7 @@ export const PRFQSearch = (props: Props) => {
   }, [isModal, (props as ModalModeProps).initialSelectedId]);
 
   const { data: listData, isSuccess: listFetched, isLoading: listDataLoading } =
-    usePRFQIndex(queryParams);
+    usePurchaseQuotationIndex(queryParams);
 
   const allLoaded      = dropdownsFetched && listFetched;
   const data           = listData?.data ?? [];
@@ -251,14 +273,9 @@ export const PRFQSearch = (props: Props) => {
     setQueryParams((prev: any) => ({ ...prev, sort_field: columnId, sort_order: direction, page: 1 }));
   };
 
-  const handleOpenPreview = (row: any) => {
-    const url = `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview.prfq.replace(':id', row.id)}`;
-    openPreview(url, `PRFQ Preview - #${row.code}`, true);
-  };
-
   const handleToggleSelect = (row: any) => {
     const id   = String(row.id);
-    const code = String(row.code ?? row.id);
+    const code = String(row.vendor_quotation_no ?? row.id);
     if (selectedId === id) {
       setSelectedId(null);
       setSelectedCode(null);
@@ -285,35 +302,48 @@ export const PRFQSearch = (props: Props) => {
 
     const baseColumns: DynamicColumn<any>[] = [
       {
-        key: 'code',
-        header: 'ID',
-        meta: { sortable: true, sortParam: 'code' },
+        key: 'vendor_quotation_no',
+        header: 'Quotation No',
+        meta: { sortable: true, sortParam: 'vendor_quotation_no' },
       },
       {
-        key: 'total_vendors',
-        header: 'Vendors',
+        key: 'rfq.code',
+        header: 'RFQ',
+        meta: { sortable: true, sortParam: 'rfq_id' },
+      },
+      {
+        key: 'customer.business_name',
+        header: 'Vendor',
+        meta: { sortable: true, sortParam: 'customer_id' },
+      },
+      {
+        key: 'vendor_quotation_date',
+        header: 'Quotation Date',
+        meta: { sortable: true, sortParam: 'vendor_quotation_date' },
+        render: (row: any) =>
+          row.vendor_quotation_date ? dayjs(row.vendor_quotation_date).format('DD-MMM-YYYY') : '-',
+      },
+      {
+        key: 'expiry_date',
+        header: 'Expiry Date',
+        meta: { sortable: true, sortParam: 'expiry_date' },
+        render: (row: any) =>
+          row.expiry_date ? dayjs(row.expiry_date).format('DD-MMM-YYYY') : '-',
+      },
+      { key: 'currency.name', header: 'Currency' },
+      { key: 'total_items',   header: 'Items' },
+      { key: 'total_qty',     header: 'Total Qty' },
+      { key: 'total_open',    header: 'Open' },
+      { key: 'total_closed',  header: 'Closed' },
+      {
+        key: 'is_closed',
+        header: 'Status',
         render: (row: any) => (
-          <Button
-            size="sm"
-            colorScheme="blue"
-            leftIcon={<HiEye />}
-            onClick={() => setVendorModalRow(row)}
-          >
-            View{row.total_vendors !== 1 ? 's' : ''} ({row.total_vendors ?? 0})
-          </Button>
+          <Tag colorScheme={row.is_closed ? 'red' : 'green'} size="sm">
+            {row.is_closed ? 'Closed' : 'Open'}
+          </Tag>
         ),
       },
-      {
-        key: 'need_by_date',
-        header: 'Need By Date',
-        meta: { sortable: true, sortParam: 'need_by_date' },
-        render: (row: any) => row.need_by_date ? dayjs(row.need_by_date).format('DD-MMM-YYYY') : '-',
-      },
-      { key: 'priority.name', header: 'Priority',     meta: { sortable: true, sortParam: 'priority_id' } },
-      { key: 'total_items',   header: 'Tot Items' },
-      { key: 'total_qty',     header: 'Total Qty' },
-      { key: 'total_open',    header: 'Open Items' },
-      { key: 'total_closed',  header: 'Closed Items' },
       {
         key: 'actions',
         header: isModal ? 'Select' : 'Actions',
@@ -323,7 +353,7 @@ export const PRFQSearch = (props: Props) => {
                 const isSelected = selectedId === String(row.id);
                 return (
                   <IconButton
-                    aria-label={isSelected ? 'Deselect PRFQ' : 'Select PRFQ'}
+                    aria-label={isSelected ? 'Deselect' : 'Select'}
                     colorScheme={isSelected ? 'red' : 'green'}
                     icon={isSelected ? <LuX /> : <LuCheck />}
                     size="xs"
@@ -339,15 +369,10 @@ export const PRFQSearch = (props: Props) => {
                   label: 'Edit',
                   icon: <BiEdit />,
                   isDisabled: (row: any) => !!row.has_pending_request || !!row.is_closed,
-                  onClick: (row: any) => navigate(`/purchase/rfq/form/${row.id}`),
+                  onClick: (row: any) => navigate(`/purchase/supplier-pricing-update/form/${row.id}`),
                   disabledTooltip: (row: any) =>
-                    row.is_closed ? 'PRFQ is closed' : row.pending_request_message,
-                }] : []),
-                {
-                  label: 'Preview',
-                  icon: <BiSolidFilePdf />,
-                  onClick: handleOpenPreview,
-                },
+                    row.is_closed ? 'Quotation is closed' : row.pending_request_message,
+                }] : [])
               ],
             }),
       },
@@ -372,7 +397,7 @@ export const PRFQSearch = (props: Props) => {
           columns={columns}
           data={data}
           loading={!allLoaded || dropdownLoading || listDataLoading}
-          title="PRFQs"
+          title="Supplier Pricing Updates"
           enablePagination
           enableClientSideSearch={false}
           onSortChange={handleSortChange}
@@ -398,7 +423,7 @@ export const PRFQSearch = (props: Props) => {
             {selectedId && selectedCode && (
               <>
                 <Text fontWeight="bold" fontSize="sm" whiteSpace="nowrap">
-                  Selected PRFQ:
+                  Selected Quotation:
                 </Text>
                 <Tag size="md" borderRadius="full" variant="solid" colorScheme="green">
                   <TagLabel>{selectedCode}</TagLabel>
@@ -424,7 +449,7 @@ export const PRFQSearch = (props: Props) => {
     <FilterPanel
       form={form}
       formKey={formKey}
-      priorityOptions={priorityOptions}
+      currencyOptions={currencyOptions}
       dropdownLoading={dropdownLoading}
       isModal={isModal}
       onFilter={updateFilter}
@@ -436,49 +461,27 @@ export const PRFQSearch = (props: Props) => {
 
   if (isModal) {
     return (
-      <>
-        <Box display="flex" flexDirection="row" alignItems="flex-start" gap={4} w="100%">
-          <Box flexShrink={0} w="300px">
-            {filterPanel}
-          </Box>
-          <Box flex="1" minW={0} overflow="hidden">
-            {tableBlock}
-          </Box>
+      <Box display="flex" flexDirection="row" alignItems="flex-start" gap={4} w="100%">
+        <Box flexShrink={0} w="300px">
+          {filterPanel}
         </Box>
-
-        {vendorModalRow && (
-          <PRFQVendorsPopup
-            isOpen={!!vendorModalRow}
-            onClose={() => setVendorModalRow(null)}
-            prfqId={String(vendorModalRow.id)}
-            prfqCode={vendorModalRow.code}
-          />
-        )}
-      </>
+        <Box flex="1" minW={0} overflow="hidden">
+          {tableBlock}
+        </Box>
+      </Box>
     );
   }
 
   return (
-    <>
-      <Stack spacing={4}>
-        <Box sx={{ bg: 'green.200', width: '100%', padding: '4', borderRadius: '4' }}>
-          <Box bg="white" p={6} borderRadius={4} mt={2}>
-            {filterPanel}
-          </Box>
+    <Stack spacing={4}>
+      <Box sx={{ bg: 'green.200', width: '100%', padding: '4', borderRadius: '4' }}>
+        <Box bg="white" p={6} borderRadius={4} mt={2}>
+          {filterPanel}
         </Box>
-        {tableBlock}
-      </Stack>
-
-      {vendorModalRow && (
-        <PRFQVendorsPopup
-          isOpen={!!vendorModalRow}
-          onClose={() => setVendorModalRow(null)}
-          prfqId={String(vendorModalRow.id)}
-          prfqCode={vendorModalRow.code}
-        />
-      )}
-    </>
+      </Box>
+      {tableBlock}
+    </Stack>
   );
 };
 
-export default PRFQSearch;
+export default SupplierPricingUpdateSearch;

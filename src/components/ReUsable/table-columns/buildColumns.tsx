@@ -72,7 +72,7 @@ export function buildColumns<T extends object>(
     if (col.type === "actions" && col.actions) {
       return columnHelper.display({
         id: col.key,
-        header: "Actionsssss",
+        header: "Action",
         size: col.size,
         meta: {
           isNumeric: col.isNumeric,

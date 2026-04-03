@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { zStandardObject, zBasicObject, zPagination } from "@/services/global-schema";
+import { zStandardObject, zBasicObject, zPagination, zSelectOption } from "@/services/global-schema";
 
 /* =========================================================
    Sub Models
@@ -183,3 +183,9 @@ export const zAssignAltSparePartsRespPayload = () =>
   });
 
 export type AssignAltSpareRespPayload = z.infer<ReturnType<typeof zAssignAltSparePartsRespPayload>>;
+
+export const zPartNumberListPayload = z.object({
+    data: z.array(zSelectOption),
+    status: z.boolean(),
+});
+export type PartNumberListPayload = z.infer<typeof zPartNumberListPayload>;

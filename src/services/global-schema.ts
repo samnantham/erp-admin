@@ -125,6 +125,8 @@ export interface QueryParams {
   is_purchase_request_fulfilled?: boolean;
   exist_ids?: string;
   contact_type_id?: string;
+  prfq_id?: string;
+  vendor_id? : string;
 }
 
 

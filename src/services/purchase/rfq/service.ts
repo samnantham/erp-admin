@@ -11,6 +11,7 @@ import {
     zPRFQDetailsPayload,
     zPRFQSaveResponsePayload,
     zPRFQVendorsPayload,
+    zPRFQListPayload
 } from '@/services/purchase/rfq/schema';
 
 /* ================= PRFQ Index ================= */
@@ -95,3 +96,25 @@ export const usePRFQDropdowns = () =>
         retry: 2,
         refetchOnWindowFocus: false,
     });
+
+    type UsePRFQListProps = {
+      enabled?: boolean;
+      queryParams?: QueryParams;
+    };
+    
+    export const usePRFQList = ({
+      enabled = true,
+      queryParams,
+    }: UsePRFQListProps = {}) =>
+      useQuery({
+        queryKey: ['rfqLogList', queryParams], // ✅ include params in cache key
+        queryFn: () =>
+          getRequest(
+            endPoints.list.prfq,
+            zPRFQListPayload,
+            queryParams // ✅ pass params to API
+          ),
+        retry: 2,
+        refetchOnWindowFocus: false,
+        enabled,
+      }); 

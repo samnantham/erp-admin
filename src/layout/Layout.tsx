@@ -41,7 +41,8 @@ import {
   FaNotesMedical,
   FaShoppingBag,
   FaClipboardCheck,
-  FaFileContract
+  FaFileContract,
+  FaFileSignature
 } from 'react-icons/fa';
 import {
   FaBox,
@@ -198,6 +199,13 @@ const NavigationSections: Array<SectionProps> = [
             link: '/purchase/rfq/master',
             activeBase: '/purchase/rfq'
           },
+           {
+            name: 'Supplier Pricing Update',
+            icon: FaFileSignature,
+            link: '/purchase/supplier-pricing-update/master',
+            activeBase: '/purchase/supplier-pricing-update'
+          },
+          
         ],
       },
       {
