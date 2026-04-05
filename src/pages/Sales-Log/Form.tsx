@@ -21,7 +21,7 @@ import { SlideIn } from "@/components/SlideIn";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import { isFormFieldsChanged } from "@/helpers/FormChangeDetector";
 import { useToastError } from "@/components/Toast";
-import { getOptionValue, handleDownload, formatContactAddress, formatShippingAddress } from "@/helpers/commonHelper";
+import { formatDate, getOptionValue, handleDownload, formatContactAddress, formatShippingAddress } from "@/helpers/commonHelper";
 import { CSVUploadButton } from "@/components/ReUsable/CSVUploadButton";
 
 import { CustomerModal } from "@/components/Modals/CustomerMaster";
@@ -150,6 +150,16 @@ export const SalesLogForm = () => {
 
     const form = useForm({
         onValidSubmit: (values) => {
+            const dueDate = values.due_date ? dayjs(values.due_date) : null;
+            if (dueDate && dueDate.startOf('day').isBefore(dayjs().startOf('day'))) {
+                toastError({
+                    title: "Invalid Due Date!!",
+                    description: "Due date cannot be in the past. Please select today or a future date.",
+                });
+                return;
+            }
+
+
             if (rows.some(r => r.is_duplicate)) {
                 toastError({
                     title: "Duplicate entries found",
@@ -180,6 +190,8 @@ export const SalesLogForm = () => {
     const handleOpenPreview = () => {
         const popupVariables: any = { user_id: userInfo.id };
         Object.keys(fields).forEach(key => { popupVariables[key] = fields[key].value; });
+        popupVariables.due_date = formatDate(fields['due_date'].value) as string;
+        popupVariables.cust_rfq_date = formatDate(fields['cust_rfq_date'].value) as string;
         popupVariables.items = rows.map(row => ({
             part_number_id: fields[`part_number_${row.rowKey}`].value,
             condition_id: fields[`condition_${row.rowKey}`].value,

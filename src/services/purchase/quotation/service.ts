@@ -1,6 +1,6 @@
 import { useQuery, UseQueryOptions, useMutation } from 'react-query';
 import { useCreateUpdateService } from '@/services/global-service';
-import { getRequest, postRequest } from '@/api/client';
+import { getRequest, postRequest, putRequest } from '@/api/client';
 import { endPoints } from '@/api/endpoints';
 import { zDropdownPayload, DropdownPayload, QueryParams } from '@/services/global-schema';
 import {
@@ -14,6 +14,9 @@ import {
     zQuotationItemSaveResponsePayload,
     zQuotationItemsPayload,
     zQuotationListPayload,
+    QuotationLineItemUpdateVariables,
+    QuotationLineItemUpdateResponsePayload,
+    zQuotationLineItemUpdateResponsePayload,
 } from '@/services/purchase/quotation/schema';
 
 /* ================= Quotation Index ================= */
@@ -166,3 +169,15 @@ export const useQuotationItems = (
         retry: 2,
         refetchOnWindowFocus: false,
     });
+
+    export const useUpdateQuotationItem = () =>
+    useMutation<QuotationLineItemUpdateResponsePayload, Error, QuotationLineItemUpdateVariables>(
+        ({ quotation_id, line_item_id, ...body }) =>
+            putRequest(
+                endPoints.update.quotation_line_item
+                    .replace(':quotation', quotation_id)
+                    .replace(':line_item', line_item_id),
+                body,
+                zQuotationLineItemUpdateResponsePayload,
+            )
+    );

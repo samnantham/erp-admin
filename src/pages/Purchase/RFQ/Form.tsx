@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { ChevronRightIcon, DeleteIcon, SearchIcon, ViewIcon } from "@chakra-ui/icons";
 import {
     Box, Breadcrumb, BreadcrumbItem, BreadcrumbLink,
@@ -34,11 +34,13 @@ import { ContactManagerModal } from "@/components/Modals/CustomerMaster/ContactM
 import { MaterialRequestSearchPopup } from "@/components/Popups/Search/Purchase/MaterialRequest";
 import { useToastError } from '@/components/Toast';
 import ConfirmationPopup from '@/components/ConfirmationPopup';
-// ─── Constants ────────────────────────────────────────────────────────────────
+
+// ─── Constants ─────────────────────────────────────────────────────────────────
 
 const FORM_KEYS = ["need_by_date", "priority_id", "remarks"];
+const str = (v: any) => String(v ?? '');
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types ──────────────────────────────────────────────────────────────────────
 
 type MRIDRow = { material_request_id: any; id?: any };
 
@@ -51,11 +53,6 @@ type MRRow = {
     id?: any; is_existing?: boolean;
 };
 
-type MRRowSnapshot = {
-    material_request_item_id: any;
-    condition_id: any; qty: any; unit_of_measure_id: any; remark: any;
-};
-
 type VendorRow = {
     rowKey: string; vendor_id: any; customer_contact_manager_id: any;
     customer?: any; customer_contact_manager?: any;
@@ -63,15 +60,11 @@ type VendorRow = {
     is_loading?: boolean; id?: any; is_existing?: boolean;
 };
 
-type VendorSnapshot = { vendor_id: any; customer_contact_manager_id: any };
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Helpers ───────────────────────────────────────────────────────────────────
 
 const makeEmptyVendor = (): VendorRow => ({
     rowKey: crypto.randomUUID(), vendor_id: "", customer_contact_manager_id: "",
 });
-
-const str = (v: any) => String(v ?? '');
 
 const recomputeDuplicates = (rows: VendorRow[]): VendorRow[] => {
     const count = new Map<string, number>();
@@ -87,7 +80,7 @@ const recomputeDuplicates = (rows: VendorRow[]): VendorRow[] => {
     }));
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Component ─────────────────────────────────────────────────────────────────
 
 export const PRFQForm = () => {
     const navigate = useNavigate();
@@ -96,37 +89,49 @@ export const PRFQForm = () => {
     const isEdit = !!id;
     const toastError = useToastError();
     const title = isEdit ? "Edit Purchase RFQ" : "Add New Purchase RFQ";
+
+    // ── Refs ───────────────────────────────────────────────────────────────────
+    // Tracks whether we've already prefilled from itemInfo so MR-sync effect doesn't overwrite
+    const prefillDoneRef = useRef(false);
+    const fetchTriggeredRef = useRef(false);
+
+    // ── UI State ───────────────────────────────────────────────────────────────
     const [isMRLoading, setIsMRLoading] = useState(false);
     const { isOpen: isMRModalOpen, onOpen: openMRModal, onClose: closeMRModal } = useDisclosure();
-    const [openConfirmation, setOpenConfirmation] = useState<boolean>(false);
+    const [openConfirmation, setOpenConfirmation] = useState(false);
     const [vendorGroup, setVendorGroup] = useState<any>('');
+    const [groupVendorsAdded, setGroupVendorsAdded] = useState(false);
+    const [disabledDatePicker, setDisabledDatePicker] = useState(true);
 
-    // ── State ──────────────────────────────────────────────────────────────────
+    // ── Data State ─────────────────────────────────────────────────────────────
     const [selectedMRIds, setSelectedMRIds] = useState<string[]>([]);
     const [selectedMaterialRequests, setSelectedMaterialRequests] = useState<any[]>([]);
-    const [initialValues, setInitialValues] = useState<any>(null);
-    const [initialMRIds, setInitialMRIds] = useState<string[]>([]);
-    const [initialVendorSnapshots, setInitialVendorSnapshots] = useState<VendorSnapshot[]>([]);
-    const [initialRowSnapshots, setInitialRowSnapshots] = useState<MRRowSnapshot[]>([]);
+    const [mrIds, setMRIds] = useState<MRIDRow[]>([]);
     const [rows, setRows] = useState<MRRow[]>([]);
     const [vendors, setVendors] = useState<VendorRow[]>([makeEmptyVendor()]);
-    const [mrIds, setMRIds] = useState<MRIDRow[]>([]);
-    const [disabledDatePicker, setDisabledDatePicker] = useState(true);
-    const [groupVendorsAdded, setGroupVendorsAdded] = useState(false);
-    // ── Data fetching ──────────────────────────────────────────────────────────
+
+    // Snapshots for change detection
+    const [initialValues, setInitialValues] = useState<any>(null);
+    const [initialMRIds, setInitialMRIds] = useState<string[]>([]);
+    const [initialVendorSnapshots, setInitialVendorSnapshots] = useState<{ vendor_id: any; customer_contact_manager_id: any }[]>([]);
+    const [initialRowSnapshots, setInitialRowSnapshots] = useState<{ material_request_item_id: any; condition_id: any; qty: any; unit_of_measure_id: any; remark: any }[]>([]);
+
+    // ── Remote Data ────────────────────────────────────────────────────────────
     const { data: dropdownData, isLoading: l1, refetch: reloadDropDowns } = usePRFQDropdowns();
-    const { data: itemInfo, isLoading: l2 } = usePRFQDetails(id, { enabled: isEdit });
+    const { data: itemInfo, isLoading: l2, refetch: fetchItemInfo } = usePRFQDetails(id, { enabled: false });
     const { data: materialRequestList, isLoading: l3 } = useMaterialRequestList();
     const { data: customerList, isLoading: l4, refetch: reloadCustomers } = useCustomerList();
     const { data: contactGroupList, isLoading: l5 } = useContactGroupList();
 
-    const filterContactTypeCodes = ['SUP', 'PUR'];
     const { data: priorityList } = useSubmasterItemIndex("priorities", {});
     const { data: conditionData } = useSubmasterItemIndex("conditions", {});
     const { data: uomData } = useSubmasterItemIndex("unit-of-measures", {});
     const { data: contactTypeData } = useSubmasterItemIndex("contact-types", {});
 
-    const filteredContactTypeIds = contactTypeData?.data.filter(item => filterContactTypeCodes.includes(item.code)).map(item => item.id);
+    const filterContactTypeCodes = ['SUP', 'PUR'];
+    const filteredContactTypeIds = contactTypeData?.data
+        .filter((item: any) => filterContactTypeCodes.includes(item.code))
+        .map((item: any) => item.id);
 
     const { isLoading: l6, refetch: fetchGroupMembers } = useContactGroupMembers({
         groupId: vendorGroup,
@@ -134,10 +139,9 @@ export const PRFQForm = () => {
         enabled: false,
     });
 
-
     const isLoading = l1 || l2 || l3 || l4 || l5 || l6 || isMRLoading;
 
-    // ── Derived options ────────────────────────────────────────────────────────
+    // ── Derived Options ────────────────────────────────────────────────────────
     const priorityOptions = dropdownData?.priorities ?? [];
     const priorityItems = (priorityList?.data ?? []) as any[];
     const conditionOptions = conditionData?.data?.map((c: any) => ({ value: c.id, label: c.name })) ?? [];
@@ -160,7 +164,9 @@ export const PRFQForm = () => {
 
             if (isEdit) {
                 const existingMRs = mrIds.map(mr => ({ material_request_id: mr.material_request_id, ...(mr.id && { id: mr.id }) }));
-                const newMRs = selectedMRIds.filter(id => !initialMRIds.includes(str(id))).map(id => ({ material_request_id: id }));
+                const newMRs = selectedMRIds
+                    .filter(sid => !initialMRIds.includes(str(sid)))
+                    .map(sid => ({ material_request_id: sid }));
                 payload.material_requests = [...existingMRs, ...newMRs];
             } else {
                 payload.material_request_ids = selectedMRIds;
@@ -175,6 +181,7 @@ export const PRFQForm = () => {
                 material_request_item_id: row.material_request_item_id,
                 ...(row.id && { id: row.id }),
             }));
+
             payload.vendors = vendors.map(v => ({
                 vendor_id: v.vendor_id,
                 customer_contact_manager_id: v.customer_contact_manager_id,
@@ -189,11 +196,11 @@ export const PRFQForm = () => {
 
     const fields = useFormFields({ connect: form });
 
-    // ── Change detection ───────────────────────────────────────────────────────
+    // ── Change Detection ───────────────────────────────────────────────────────
     const isHeaderChanged = isFormFieldsChanged({ fields, initialValues, keys: FORM_KEYS });
 
     const isMRIdsChanged = selectedMRIds.length !== initialMRIds.length ||
-        selectedMRIds.some(id => !new Set(initialMRIds).has(str(id)));
+        selectedMRIds.some(sid => !new Set(initialMRIds).has(str(sid)));
 
     const isVendorsChanged = vendors.length !== initialVendorSnapshots.length ||
         vendors.some((v, i) =>
@@ -215,62 +222,213 @@ export const PRFQForm = () => {
         });
     })();
 
-    const handleChangeVendorGroup = (group: any) => {
-        setVendorGroup(group);
-        setGroupVendorsAdded(false); // re-enable Add when group changes
-        if (!group) {
-            setVendors([makeEmptyVendor()]);
+    const isFormValuesChanged = isHeaderChanged || isMRIdsChanged || isVendorsChanged || isRowsChanged;
+
+    // ── Trigger fetchItemInfo once priorityItems + id are ready ───────────────
+    // Using a ref so this only fires ONCE even if priorityItems re-renders
+    useEffect(() => {
+        if (id && priorityItems.length > 0 && !fetchTriggeredRef.current) {
+            fetchTriggeredRef.current = true;
+            fetchItemInfo();
         }
-    };
+    }, [id, priorityItems.length]);
 
-    const handleConfirm = async () => {
-        setOpenConfirmation(false);
-        if (!vendorGroup) return;
+    // ── Prefill form from itemInfo (edit mode) ─────────────────────────────────
+    useEffect(() => {
+        if (!itemInfo?.data || !priorityItems.length) return;
 
-        const result = await fetchGroupMembers();
-        const members = result?.data?.data ?? [];
+        const s = itemInfo.data;
+        prefillDoneRef.current = false; // reset while we're setting up
 
-        if (members.length === 0) return;
+        // Header fields
+        const values = Object.fromEntries(FORM_KEYS.map(k => [k, (s as any)[k]]));
+        values.need_by_date = dayjs(values.need_by_date);
+        setInitialValues(values);
+        form.setValues(values);
 
-        const newVendors: VendorRow[] = members.map((m: any) => ({
-            rowKey: crypto.randomUUID(),
-            vendor_id: m.contact_id,
-            customer_contact_manager_id: "",
-            customer: m.contact,
-            contact_managers: [],
+        // Priority → date picker
+        if (s.priority_id) {
+            const days = priorityItems.find((u: any) => str(u.id) === str(s.priority_id))?.days ?? 0;
+            setDisabledDatePicker(days !== 0);
+        }
+
+        // MR IDs
+        const mrIdRows: MRIDRow[] = (s.material_requests ?? []).map((mrItem: any) => ({
+            id: mrItem.id ?? "", material_request_id: mrItem.material_request_id ?? "",
         }));
+        setMRIds(mrIdRows);
 
-        // ✅ calculate BEFORE setVendors
-        const existingIds = new Set(vendors.map((v) => v.vendor_id).filter(Boolean));
-        const dedupedNew = newVendors.filter((v) => !existingIds.has(v.vendor_id));
-        const duplicateCount = newVendors.length - dedupedNew.length;
+        if (s.material_request_ids?.length) {
+            const mrIdStrings = s.material_request_ids.map(String);
+            setInitialMRIds(mrIdStrings);
+            setSelectedMRIds(mrIdStrings);
+            form.setValues({ material_request_id: s.material_request_ids });
+            // Prefill selectedMaterialRequests directly from nested data — no extra fetch needed
+            const embeddedMRs = (s.material_requests ?? []).map((pmr: any) => pmr.material_request).filter(Boolean);
+            setSelectedMaterialRequests(embeddedMRs);
+        }
 
-        if (duplicateCount > 0) {
-            toastError({
-                title: "Duplicate Vendors Skipped",
-                description: `${duplicateCount} vendor${duplicateCount > 1 ? "s" : ""} already exist and were not added.`,
+        // Vendors
+        if (s.vendors?.length) {
+            const prefilled: VendorRow[] = s.vendors.map((v: any) => ({
+                rowKey: crypto.randomUUID(), id: v.id ?? "",
+                vendor_id: v.vendor_id ?? "", customer_contact_manager_id: v.customer_contact_manager_id ?? "",
+                customer: v.vendor ?? undefined,
+                contact_managers: v.customer_contact_manager ? [v.customer_contact_manager] : [],
+                customer_contact_manager: v.customer_contact_manager ?? undefined,
+                is_existing: true,
+            }));
+            setVendors(recomputeDuplicates(prefilled));
+            setInitialVendorSnapshots(prefilled.map(v => ({
+                vendor_id: v.vendor_id,
+                customer_contact_manager_id: v.customer_contact_manager_id,
+            })));
+            prefilled.forEach((row, index) => { if (row.vendor_id) loadVendorData(index, row.vendor_id, true); });
+        }
+
+        // Items/Rows — set directly from API data, bypass MR sync
+        if (s.items?.length) {
+            const prefilledRows: MRRow[] = s.items.map((item: any) => ({
+                id: item.id ?? "", rowKey: crypto.randomUUID(),
+                material_request_id: item.material_request_info?.id ?? "",
+                material_request_code: item.material_request_code ?? item.material_request_info?.code ?? "",
+                part_number_id: item.part_number_id ?? "", part_number: item.part_number ?? null,
+                condition_id: item.condition_id ?? "", qty: item.qty ?? "",
+                unit_of_measure_id: item.unit_of_measure_id ?? "",
+                mr_remark: item.material_request_item_info?.remark ?? "",
+                remark: item.remark ?? "", material_request_item_id: item.material_request_item_id ?? "",
+                is_existing: true,
+            }));
+            setRows(prefilledRows);
+            setInitialRowSnapshots(prefilledRows.map(row => ({
+                material_request_item_id: row.material_request_item_id,
+                condition_id: row.condition_id, qty: row.qty,
+                unit_of_measure_id: row.unit_of_measure_id, remark: row.remark,
+            })));
+            // Defer so row fields are registered before values are set
+            setTimeout(() => {
+                const rowValues = prefilledRows.reduce((acc, row) => ({
+                    ...acc,
+                    [`condition_${row.rowKey}`]: row.condition_id,
+                    [`qty_${row.rowKey}`]: row.qty,
+                    [`uom_${row.rowKey}`]: row.unit_of_measure_id,
+                    [`remark_${row.rowKey}`]: row.remark,
+                }), {});
+                form.setValues(rowValues);
+            }, 0);
+        }
+
+        // Mark prefill complete — MR sync effect will now be allowed to run for NEW additions only
+        prefillDoneRef.current = true;
+
+    }, [itemInfo, priorityItems]);
+
+    // ── Fetch missing MR details when selectedMRIds changes ───────────────────
+    useEffect(() => {
+        if (selectedMRIds.length === 0) {
+            setSelectedMaterialRequests([]);
+            return;
+        }
+
+        const alreadyFetchedIds = new Set(selectedMaterialRequests.map(mr => str(mr.id)));
+        const toFetch = selectedMRIds.filter(sid => !alreadyFetchedIds.has(sid));
+        const retained = selectedMaterialRequests.filter(mr => selectedMRIds.includes(str(mr.id)));
+
+        // Remove rows from deselected MRs (keep existing rows in edit mode)
+        setRows(prev => prev.filter(row =>
+            !row.material_request_id ||
+            initialMRIds.includes(str(row.material_request_id)) ||
+            selectedMRIds.includes(str(row.material_request_id))
+        ));
+
+        if (toFetch.length === 0) {
+            if (retained.length !== selectedMaterialRequests.length) {
+                setSelectedMaterialRequests(retained);
+            }
+            return;
+        }
+
+        setIsMRLoading(true);
+        (async () => {
+            try {
+                const fetched = await Promise.all(toFetch.map(getMaterialRequestById));
+                setSelectedMaterialRequests([...retained, ...fetched]);
+            } finally {
+                setIsMRLoading(false);
+            }
+        })();
+    }, [selectedMRIds]);
+
+    // ── Sync header fields + NEW rows from selectedMaterialRequests ────────────
+    useEffect(() => {
+        if (selectedMaterialRequests.length === 0) {
+            // Only wipe rows/fields if not in edit mode or prefill hasn't run
+            if (!isEdit || !prefillDoneRef.current) {
+                setRows([]);
+                form.setValues({ priority_id: '', need_by_date: '' });
+                setDisabledDatePicker(true);
+            }
+            return;
+        }
+
+        // Always update header priority/date
+        const priorityIds = selectedMaterialRequests.map(mr => str(mr.priority?.id ?? (isEdit ? mr.priority_id : '')));
+        const allSamePriority = priorityIds.length > 0 && priorityIds.every(pid => pid === priorityIds[0]);
+        const today = dayjs().startOf('day');
+        const dueDates = selectedMaterialRequests
+            .map(mr => mr.due_date ? dayjs(mr.due_date) : null)
+            .filter(Boolean) as dayjs.Dayjs[];
+        const maxDueDate = dueDates.length > 0
+            ? dueDates.reduce((max, d) => d.isAfter(max) ? d : max)
+            : null;
+        const isMaxDateValid = maxDueDate ? maxDueDate.isSame(today) || maxDueDate.isAfter(today) : false;
+
+        if (allSamePriority && isMaxDateValid) {
+            setDisabledDatePicker(true);
+            form.setValues({ priority_id: priorityIds[0], need_by_date: maxDueDate });
+        } else {
+            const customPriority = priorityItems.find(p => p.is_custom);
+            setDisabledDatePicker(false);
+            form.setValues({
+                priority_id: customPriority ? str(customPriority.id) : '',
+                need_by_date: isMaxDateValid ? maxDueDate : '',
             });
         }
 
-        setVendors((prev) => {
-            const merged = [...prev.filter((v) => v.vendor_id), ...dedupedNew];
-            return recomputeDuplicates(merged.length ? merged : [makeEmptyVendor()]);
-        });
+        // In edit mode after prefill: only ADD rows for newly selected MRs, don't touch existing rows
+        if (isEdit && prefillDoneRef.current) {
+            const existingItemIds = new Set(rows.filter(r => r.is_existing).map(r => str(r.material_request_item_id)));
+            const newRows = selectedMaterialRequests.flatMap(mr =>
+                (mr.items ?? [])
+                    .filter((item: any) => !existingItemIds.has(str(item.id)))
+                    .map((item: any) => ({
+                        rowKey: crypto.randomUUID(), material_request_id: mr.id, material_request_code: mr.code,
+                        part_number_id: item.part_number_id ?? '', part_number: item.part_number,
+                        condition_id: item.condition_id ?? '', qty: item.qty ?? '',
+                        unit_of_measure_id: item.unit_of_measure_id ?? '', mr_remark: item.remark,
+                        remark: '', material_request_item_id: item.id ?? '',
+                    }))
+            );
+            if (newRows.length > 0) {
+                setRows(prev => [...prev, ...newRows]);
+            }
+            return;
+        }
 
-        dedupedNew.forEach((v, i) => {
-            const index = vendors.filter((r) => r.vendor_id).length + i;
-            if (v.vendor_id) loadVendorData(index, v.vendor_id, false);
-        });
-
-        setGroupVendorsAdded(true);
-    };
-
-    const handleClose = () => {
-        setOpenConfirmation(false);
-    };
-
-
-    const isFormValuesChanged = isHeaderChanged || isMRIdsChanged || isVendorsChanged || isRowsChanged;
+        // Add mode (or before prefill is done — shouldn't happen but safe fallback)
+        if (!isEdit) {
+            const newRows = selectedMaterialRequests.flatMap(mr =>
+                (mr.items ?? []).map((item: any) => ({
+                    rowKey: crypto.randomUUID(), material_request_id: mr.id, material_request_code: mr.code,
+                    part_number_id: item.part_number_id ?? '', part_number: item.part_number,
+                    condition_id: item.condition_id ?? '', qty: item.qty ?? '',
+                    unit_of_measure_id: item.unit_of_measure_id ?? '', mr_remark: item.remark,
+                    remark: '', material_request_item_id: item.id ?? '',
+                }))
+            );
+            setRows(newRows);
+        }
+    }, [selectedMaterialRequests]);
 
     // ── PDF Preview ────────────────────────────────────────────────────────────
     const previewPDF = usePDFPreviewController({ url: endPoints.preview_post.prfq, title: "PRFQ PREVIEW" });
@@ -301,12 +459,12 @@ export const PRFQForm = () => {
         previewPDF.open(vars);
     };
 
-    // ── MR modal ───────────────────────────────────────────────────────────────
+    // ── MR Modal ───────────────────────────────────────────────────────────────
     const handleMRApply = (ids: string[]) => {
         setSelectedMRIds(ids);
         setMRIds(prev => {
             const existingMap = new Map(prev.map(item => [item.material_request_id, item]));
-            return ids.map(id => existingMap.get(id) ?? { id: null, material_request_id: id });
+            return ids.map(sid => existingMap.get(sid) ?? { id: null, material_request_id: sid });
         });
         form.setValues({ material_request_id: ids });
         closeMRModal();
@@ -325,172 +483,54 @@ export const PRFQForm = () => {
         else { setDisabledDatePicker(true); form.setValues({ need_by_date: dayjs().add(days, 'day') }); }
     };
 
-    // ── Edit prefill ───────────────────────────────────────────────────────────
-    useEffect(() => {
-        if (!itemInfo?.data) return;
-        const s = itemInfo.data;
-        console.log("PRFQ Info", s);
+    // ── Vendor Group ───────────────────────────────────────────────────────────
+    const handleChangeVendorGroup = (group: any) => {
+        setVendorGroup(group);
+        setGroupVendorsAdded(false);
+        if (!group) setVendors([makeEmptyVendor()]);
+    };
 
-        const values = Object.fromEntries(FORM_KEYS.map(k => [k, (s as any)[k]]));
-        values.need_by_date = dayjs(values.need_by_date);
-        setInitialValues(values);
-        form.setValues(values);
+    const handleConfirm = async () => {
+        setOpenConfirmation(false);
+        if (!vendorGroup) return;
 
-        if (s.priority_id) {
-            const days = priorityItems.find((u: any) => str(u.id) === str(s.priority_id))?.days ?? 0;
-            setDisabledDatePicker(days !== 0);
-        }
+        const result = await fetchGroupMembers();
+        const members = result?.data?.data ?? [];
+        if (members.length === 0) return;
 
-        const defaultMRIDRows: MRIDRow[] = s.material_requests?.map((mrItem: any) => ({
-            id: mrItem.id ?? "", material_request_id: mrItem.material_request_id ?? "",
-        })) ?? [];
-        setMRIds(defaultMRIDRows);
+        const newVendors: VendorRow[] = members.map((m: any) => ({
+            rowKey: crypto.randomUUID(),
+            vendor_id: m.contact_id,
+            customer_contact_manager_id: "",
+            customer: m.contact,
+            contact_managers: [],
+        }));
 
-        if (s.material_request_ids?.length) {
-            const mrIdStrings = s.material_request_ids.map(String);
-            setInitialMRIds(mrIdStrings);
-            setSelectedMRIds(mrIdStrings);
-            form.setValues({ material_request_id: s.material_request_ids });
-            setSelectedMaterialRequests((s.material_requests ?? []).map((pmr: any) => pmr.material_request).filter(Boolean));
-        }
+        const existingIds = new Set(vendors.map(v => v.vendor_id).filter(Boolean));
+        const dedupedNew = newVendors.filter(v => !existingIds.has(v.vendor_id));
+        const duplicateCount = newVendors.length - dedupedNew.length;
 
-        if (s.vendors?.length) {
-            const prefilled: VendorRow[] = s.vendors.map((v: any) => ({
-                rowKey: crypto.randomUUID(), id: v.id ?? "", token: v.token ?? "",
-                vendor_id: v.vendor_id ?? "", customer_contact_manager_id: v.customer_contact_manager_id ?? "",
-                customer: v.vendor ?? undefined,
-                contact_managers: v.customer_contact_manager ? [v.customer_contact_manager] : [],
-                customer_contact_manager: v.customer_contact_manager ?? undefined,
-                is_existing: true,
-            }));
-            setVendors(recomputeDuplicates(prefilled));
-            setInitialVendorSnapshots(prefilled.map(v => ({ vendor_id: v.vendor_id, customer_contact_manager_id: v.customer_contact_manager_id })));
-            prefilled.forEach((row, index) => { if (row.vendor_id) loadVendorData(index, row.vendor_id, true); });
-        }
-
-        if (s.items?.length) {
-            const prefilledRows: MRRow[] = s.items.map((item: any) => ({
-                id: item.id ?? "", rowKey: crypto.randomUUID(),
-                material_request_id: item.material_request_info?.id ?? "",
-                material_request_code: item.material_request_code ?? item.material_request_info?.code ?? "",
-                part_number_id: item.part_number_id ?? "", part_number: item.part_number ?? null,
-                condition_id: item.condition_id ?? "", qty: item.qty ?? "",
-                unit_of_measure_id: item.unit_of_measure_id ?? "",
-                mr_remark: item.material_request_item_info?.remark ?? "",
-                remark: item.remark ?? "", material_request_item_id: item.material_request_item_id ?? "",
-                is_existing: true,
-            }));
-            setRows(prefilledRows);
-            setInitialRowSnapshots(prefilledRows.map(row => ({
-                material_request_item_id: row.material_request_item_id,
-                condition_id: row.condition_id, qty: row.qty,
-                unit_of_measure_id: row.unit_of_measure_id, remark: row.remark,
-            })));
-            const rowValues = prefilledRows.reduce((acc, row) => ({
-                ...acc,
-                [`condition_${row.rowKey}`]: row.condition_id,
-                [`qty_${row.rowKey}`]: row.qty,
-                [`uom_${row.rowKey}`]: row.unit_of_measure_id,
-                [`remark_${row.rowKey}`]: row.remark,
-            }), {});
-            form.setValues(rowValues);
-        }
-    }, [itemInfo]);
-
-    // ── Fetch MR details for newly selected IDs ────────────────────────────────
-    useEffect(() => {
-        if (selectedMRIds.length === 0) {
-            if (selectedMaterialRequests.length > 0) {
-                setSelectedMaterialRequests([]);
-            }
-            return;
-        }
-
-        const alreadyFetchedIds = new Set(selectedMaterialRequests.map(mr => str(mr.id)));
-        const toFetch = selectedMRIds.filter(id => !alreadyFetchedIds.has(id));
-        const retained = selectedMaterialRequests.filter(mr =>
-            selectedMRIds.includes(str(mr.id))
-        );
-
-        if (toFetch.length === 0) {
-            if (retained.length !== selectedMaterialRequests.length) {
-                setSelectedMaterialRequests(retained);
-            }
-            return;
-        }
-
-        setIsMRLoading(true);
-
-        (async () => {
-            try {
-                const fetched = await Promise.all(
-                    toFetch.map(getMaterialRequestById)
-                );
-
-                setSelectedMaterialRequests([...retained, ...fetched]);
-            } finally {
-                setIsMRLoading(false);
-            }
-        })();
-
-        // 🔥 KEEP THIS (important cleanup logic)
-        setRows(prev =>
-            prev.filter(row =>
-                !row.material_request_id ||
-                initialMRIds.includes(str(row.material_request_id)) ||
-                selectedMRIds.includes(str(row.material_request_id))
-            )
-        );
-
-    }, [selectedMRIds]);
-
-    // ── Sync rows + header fields from MR selection ────────────────────────────
-    useEffect(() => {
-        if (selectedMaterialRequests.length === 0) {
-            setRows([]);
-            form.setValues({ priority_id: '', need_by_date: '' });
-            setDisabledDatePicker(true);
-            return;
-        }
-
-        const priorityIds = selectedMaterialRequests.map(mr => str(mr.priority?.id ?? (isEdit ? mr.priority_id : '')));
-        const allSamePriority = priorityIds.length > 0 && priorityIds.every(id => id === priorityIds[0]);
-        const today = dayjs().startOf('day');
-        const dueDates = selectedMaterialRequests.map(mr => mr.due_date ? dayjs(mr.due_date) : null).filter(Boolean) as dayjs.Dayjs[];
-        const maxDueDate = dueDates.length > 0 ? dueDates.reduce((max, d) => d.isAfter(max) ? d : max) : null;
-        const isMaxDateValid = maxDueDate ? maxDueDate.isSame(today) || maxDueDate.isAfter(today) : false;
-
-        if (allSamePriority && isMaxDateValid) {
-            setDisabledDatePicker(true);
-            form.setValues({ priority_id: priorityIds[0], need_by_date: maxDueDate });
-        } else {
-            const customPriority = priorityItems.find(p => p.is_custom);
-            setDisabledDatePicker(false);
-            form.setValues({ priority_id: customPriority ? str(customPriority.id) : '', need_by_date: isMaxDateValid ? maxDueDate : '' });
-        }
-
-        const newRows = selectedMaterialRequests.flatMap(mr =>
-            (mr.items ?? []).map((item: any) => ({
-                rowKey: crypto.randomUUID(), material_request_id: mr.id, material_request_code: mr.code,
-                part_number_id: item.part_number_id ?? '', part_number: item.part_number,
-                condition_id: item.condition_id ?? '', qty: item.qty ?? '',
-                unit_of_measure_id: item.unit_of_measure_id ?? '', mr_remark: item.remark,
-                remark: '', material_request_item_id: item.id ?? '',
-            }))
-        );
-
-        if (isEdit) {
-            setRows(prev => {
-                const existingRows = prev.filter(r => r.is_existing);
-                const existingItemIds = new Set(existingRows.map(r => str(r.material_request_item_id)));
-                return [...existingRows, ...newRows.filter(r => !existingItemIds.has(str(r.material_request_item_id)))];
+        if (duplicateCount > 0) {
+            toastError({
+                title: "Duplicate Vendors Skipped",
+                description: `${duplicateCount} vendor${duplicateCount > 1 ? "s" : ""} already exist and were not added.`,
             });
-        } else {
-            setRows(newRows);
         }
-    }, [selectedMaterialRequests]);
 
-    // ── Vendor handlers ────────────────────────────────────────────────────────
+        setVendors(prev => {
+            const merged = [...prev.filter(v => v.vendor_id), ...dedupedNew];
+            return recomputeDuplicates(merged.length ? merged : [makeEmptyVendor()]);
+        });
+
+        dedupedNew.forEach((v, i) => {
+            const index = vendors.filter(r => r.vendor_id).length + i;
+            if (v.vendor_id) loadVendorData(index, v.vendor_id, false);
+        });
+
+        setGroupVendorsAdded(true);
+    };
+
+    // ── Vendor Handlers ────────────────────────────────────────────────────────
     const addVendor = () => setVendors(prev => [...prev, makeEmptyVendor()]);
     const deleteVendor = (key: string) => setVendors(prev => prev.filter(r => r.rowKey !== key));
 
@@ -499,19 +539,22 @@ export const PRFQForm = () => {
             const next = [...prev];
             next[index] = {
                 ...next[index], is_loading: true, customer: undefined, contact_managers: [],
-                ...(!preserveContact && { customer_contact_manager_id: "", customer_contact_manager: undefined })
+                ...(!preserveContact && { customer_contact_manager_id: "", customer_contact_manager: undefined }),
             };
             return next;
         });
         try {
-            const [customer, contacts] = await Promise.all([getCustomerById(vendorId), getCustomerRelations(vendorId, "contact-managers")]);
+            const [customer, contacts] = await Promise.all([
+                getCustomerById(vendorId),
+                getCustomerRelations(vendorId, "contact-managers"),
+            ]);
             setVendors(prev => {
                 const next = [...prev];
                 const existingContactId = next[index].customer_contact_manager_id;
                 const matchedContact = contacts?.find((c: any) => str(c.id) === str(existingContactId));
                 next[index] = {
                     ...next[index], customer, contact_managers: contacts ?? [], is_loading: false,
-                    ...(preserveContact && matchedContact && { customer_contact_manager: matchedContact })
+                    ...(preserveContact && matchedContact && { customer_contact_manager: matchedContact }),
                 };
                 return recomputeDuplicates(next);
             });
@@ -538,7 +581,7 @@ export const PRFQForm = () => {
             const next = [...prev];
             next[index] = {
                 ...next[index], customer_contact_manager_id: contactId,
-                customer_contact_manager: next[index].contact_managers?.find((c: any) => c.id === contactId)
+                customer_contact_manager: next[index].contact_managers?.find((c: any) => c.id === contactId),
             };
             return recomputeDuplicates(next);
         });
@@ -552,7 +595,7 @@ export const PRFQForm = () => {
             const next = [...prev];
             next[index] = {
                 ...next[index], contact_managers: contacts ?? [], customer_contact_manager_id: newId,
-                customer_contact_manager: contacts?.find((c: any) => c.id === newId)
+                customer_contact_manager: contacts?.find((c: any) => c.id === newId),
             };
             return recomputeDuplicates(next);
         });
@@ -565,11 +608,10 @@ export const PRFQForm = () => {
         setRows(prev => { const next = [...prev]; next[index] = { ...next[index], [field]: value }; return next; });
     };
 
-    // ── Derived totals ─────────────────────────────────────────────────────────
+    // ── Derived Totals ─────────────────────────────────────────────────────────
     const totalQty = rows.reduce((acc, row) => acc + (Number(fields[`qty_${row.rowKey}`]?.value) || 0), 0);
     const totalItems = rows.filter(row => fields[`part_number_${row.rowKey}`]?.value).length;
 
-    // ── Shared select props factory ────────────────────────────────────────────
     const mkSelectProps = (isLoadingFlag?: boolean) => ({
         type: 'creatable' as const,
         noOptionsMessage: () => 'No options found',
@@ -581,7 +623,7 @@ export const PRFQForm = () => {
         <SlideIn>
             <Stack pl={2} spacing={4}>
 
-                {/* ── Page header ── */}
+                {/* ── Page Header ── */}
                 <HStack justify="space-between">
                     <Stack spacing={0}>
                         <Breadcrumb fontWeight="medium" fontSize="sm" separator={<ChevronRightIcon boxSize={6} color="gray.500" />}>
@@ -608,7 +650,7 @@ export const PRFQForm = () => {
 
                             <Stack spacing={2}>
 
-                                {/* ── MR Selection + preview ── */}
+                                {/* ── MR Selection + Preview Table ── */}
                                 <Grid templateColumns={{ base: "1fr", md: "3fr 7fr" }} gap={6} alignItems="stretch">
                                     <GridItem>
                                         <Box rounded="md" border="1px solid" borderColor="gray.300" p={4} h="100%">
@@ -652,6 +694,7 @@ export const PRFQForm = () => {
                                                     <Thead>
                                                         <Tr>
                                                             <Th>MR Reference</Th>
+                                                            <Th>MR Type</Th>
                                                             <Th>Need by Date</Th>
                                                             <Th>Priority</Th>
                                                         </Tr>
@@ -661,11 +704,12 @@ export const PRFQForm = () => {
                                                             ? selectedMaterialRequests.map((item: any, i: number) => (
                                                                 <Tr key={i}>
                                                                     <Td>{item?.code}</Td>
+                                                                    <Td>{item?.type_label}</Td>
                                                                     <Td>{item?.due_date ? dayjs(item.due_date).format('DD-MMM-YYYY') : '-'}</Td>
                                                                     <Td>{getDisplayLabel(priorityOptions, item?.priority_id, 'priority')}</Td>
                                                                 </Tr>
                                                             ))
-                                                            : <Tr><Td colSpan={3} textAlign="center" color="gray.400">No Material Request Selected</Td></Tr>
+                                                            : <Tr><Td colSpan={4} textAlign="center" color="gray.400">No Material Request Selected</Td></Tr>
                                                         }
                                                     </Tbody>
                                                 </Table>
@@ -679,45 +723,37 @@ export const PRFQForm = () => {
                                     <Text fontSize="md" fontWeight="700">Vendors</Text>
                                     <HStack spacing={2} align="center">
                                         <FieldSelect
-                                            name={'customer_group_id'}
-                                            placeholder="Select Contact Group"
-                                            options={contactGroupOptions}
-                                            size={'sm'}
-                                            key={`customer_group_id`}
-                                            onValueChange={(value) => {
-                                                handleChangeVendorGroup(value);
-                                            }}
-                                            isClearable={true}
-                                            selectProps={{
-                                                noOptionsMessage: () => 'No Contact Group found',
-                                                //   isLoading: customerGroupList.isLoading,
-                                            }}
+                                            name="customer_group_id" placeholder="Select Contact Group"
+                                            options={contactGroupOptions} size="sm"
+                                            onValueChange={handleChangeVendorGroup} isClearable
+                                            selectProps={{ noOptionsMessage: () => 'No Contact Group found' }}
                                         />
                                         <Button
-                                            colorScheme="brand"
-                                            size={'sm'}
-                                            minW={0}
+                                            colorScheme="brand" size="sm" minW={0} type="button"
                                             onClick={() => setOpenConfirmation(true)}
                                             isDisabled={!vendorGroup || isLoading || groupVendorsAdded}
                                             isLoading={isLoading}
-                                            type={'button'}
                                         >
                                             Add
                                         </Button>
                                     </HStack>
                                 </HStack>
+
                                 <TableContainer rounded="md" overflow="auto" border="1px" borderColor="gray.500" borderRadius="md" boxShadow="md">
                                     <Table variant="striped" size="sm">
                                         <Thead bg="gray.500">
                                             <Tr>
-                                                {["S.No.", "Vendor Name", "Vendor Code", "Contact", "Address"].map(h => <Th key={h} color="white">{h}</Th>)}
+                                                {["S.No.", "Vendor Name", "Vendor Code", "Contact", "Address"].map(h =>
+                                                    <Th key={h} color="white">{h}</Th>)}
                                                 <Th color="white" isNumeric>Action</Th>
                                             </Tr>
                                         </Thead>
                                         <Tbody>
                                             {vendors.map((vendor, index) => {
                                                 const selectedVendorIds = vendors.map(v => v.vendor_id).filter(Boolean);
-                                                const filteredOptions = customerOptions.filter(opt => opt.value === vendor.vendor_id || !selectedVendorIds.includes(opt.value));
+                                                const filteredOptions = customerOptions.filter(opt =>
+                                                    opt.value === vendor.vendor_id || !selectedVendorIds.includes(opt.value)
+                                                );
                                                 const isLast = index === vendors.length - 1;
                                                 const canAdd = !vendor.vendor_id || !vendor.customer_contact_manager_id;
 
@@ -857,7 +893,8 @@ export const PRFQForm = () => {
                                                             </Td>
                                                             <Td><Text>{row?.mr_remark}</Text></Td>
                                                             <Tooltip label={fields[`remark_${row.rowKey}`]?.value ?? ""} placement="left"
-                                                                hasArrow color="white" isDisabled={str(fields[`remark_${row.rowKey}`]?.value ?? "").length <= 20}>
+                                                                hasArrow color="white"
+                                                                isDisabled={str(fields[`remark_${row.rowKey}`]?.value ?? "").length <= 20}>
                                                                 <Td>
                                                                     <FieldInput name={`remark_${row.rowKey}`} size="sm" placeholder="Remark"
                                                                         defaultValue={row.remark || ""} maxLength={60}
@@ -901,13 +938,14 @@ export const PRFQForm = () => {
                                 </FormControl>
                             </Stack>
 
-                            {/* ── Form actions ── */}
+                            {/* ── Form Actions ── */}
                             <Stack direction={{ base: "column", md: "row" }} justify="center" alignItems="center" mt={4}>
                                 <Button type="submit" colorScheme="brand" isLoading={isSaving}
                                     isDisabled={isSaving || (isEdit ? (!isFormValuesChanged || !form.isValid) : false)}>
                                     {isEdit ? "Update" : "Submit"}
                                 </Button>
-                                <Button onClick={() => handleOpenPreview()} colorScheme="green" isDisabled={!form.isValid} isLoading={previewPDF.isLoading}>
+                                <Button onClick={() => handleOpenPreview()} colorScheme="green"
+                                    isDisabled={!form.isValid} isLoading={previewPDF.isLoading}>
                                     Preview
                                 </Button>
                             </Stack>
@@ -916,7 +954,7 @@ export const PRFQForm = () => {
 
                     <ConfirmationPopup
                         isOpen={openConfirmation}
-                        onClose={handleClose}
+                        onClose={() => setOpenConfirmation(false)}
                         onConfirm={handleConfirm}
                         headerText="Add Vendors"
                         bodyText="Are you sure you want to add these group vendors to this PRFQ?"

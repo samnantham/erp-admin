@@ -147,3 +147,33 @@ export const zQuotationItemsPayload = z.object({
     status: z.boolean(),
 });
 export type QuotationItemsPayload = z.infer<typeof zQuotationItemsPayload>;
+
+/* =========================================================
+   Update Line Item
+========================================================= */
+export const zQuotationLineItemUpdatePayload = z.object({
+    part_number_id: z.string().uuid().nullable().optional(),
+    requested_part_number_id: z.string().uuid().nullable().optional(),
+    condition_id: z.string().uuid().nullable().optional(),
+    unit_of_measure_id: z.string().uuid().nullable().optional(),
+    qty: z.number().nullable().optional(),
+    price: z.number().nullable().optional(),
+    moq: z.number().nullable().optional(),
+    mov: z.number().nullable().optional(),
+    delivery_options: z.string().nullable().optional(),
+    remark: z.string().nullable().optional(),
+});
+export type QuotationLineItemUpdatePayload = z.infer<typeof zQuotationLineItemUpdatePayload>;
+
+export const zQuotationLineItemUpdateVariables = zQuotationLineItemUpdatePayload.extend({
+    quotation_id: z.string(),
+    line_item_id: z.string(),
+});
+export type QuotationLineItemUpdateVariables = z.infer<typeof zQuotationLineItemUpdateVariables>;
+
+export const zQuotationLineItemUpdateResponsePayload = z.object({
+    data: zQuotationItem.optional(),
+    message: z.string(),
+    status: z.boolean(),
+});
+export type QuotationLineItemUpdateResponsePayload = z.infer<typeof zQuotationLineItemUpdateResponsePayload>;

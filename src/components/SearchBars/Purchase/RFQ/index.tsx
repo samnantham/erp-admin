@@ -44,7 +44,7 @@ type Props = PageModeProps | ModalModeProps;
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const STATUS_OPTIONS = [
-  { value: 'true',  label: 'Closed' },
+  { value: 'true', label: 'Closed' },
   { value: 'false', label: 'Open' },
 ];
 
@@ -202,37 +202,51 @@ export const PRFQSearch = (props: Props) => {
     usePRFQDropdowns();
   const priorityOptions = dropdownData?.priorities ?? [];
 
-  const [itemsPerPage, setItemsPerPage]   = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [sortBy, setSortBy]               = useState('created_at');
-  const [formKey, setFormKey]             = useState(0);
-  const [queryParams, setQueryParams]     = useState<any>(INITIAL_QUERY);
+  const [sortBy, setSortBy] = useState('created_at');
+  const [formKey, setFormKey] = useState(0);
+  const [queryParams, setQueryParams] = useState<any>(INITIAL_QUERY);
   const form = useForm();
 
   // ── Single-select state ────────────────────────────────────────────────────
-  const [selectedId,   setSelectedId]   = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
 
   // ── Vendor popup state ─────────────────────────────────────────────────────
   const [vendorModalRow, setVendorModalRow] = useState<any>(null);
 
-  // Seed from parent if provided
-  useEffect(() => {
-    if (isModal) {
-      const init = (props as ModalModeProps).initialSelectedId;
-      if (init) {
-        setSelectedId(String(init));
-        setSelectedCode(String(init));
-      }
-    }
-  }, [isModal, (props as ModalModeProps).initialSelectedId]);
-
   const { data: listData, isSuccess: listFetched, isLoading: listDataLoading } =
     usePRFQIndex(queryParams);
 
-  const allLoaded      = dropdownsFetched && listFetched;
-  const data           = listData?.data ?? [];
+  const allLoaded = dropdownsFetched && listFetched;
+  const data = listData?.data ?? [];
   const paginationData = listData?.pagination;
+
+  // Replace the existing seed useEffect:
+  useEffect(() => {
+    if (!isModal) return;
+    const init = (props as ModalModeProps).initialSelectedId;
+    if (!init) return;
+    const id = String(init);
+    setSelectedId(id);
+
+    // Try to resolve code from already-loaded table data
+    if (data.length > 0) {
+      const match = data.find((row: any) => String(row.id) === id);
+      setSelectedCode(match?.code ? String(match.code) : id);
+    } else {
+      // Placeholder until data loads
+      setSelectedCode(id);
+    }
+  }, [isModal, (props as ModalModeProps).initialSelectedId]);
+
+  // Add a second effect to correct the code once data loads:
+  useEffect(() => {
+    if (!isModal || !selectedId || !data.length) return;
+    const match = data.find((row: any) => String(row.id) === selectedId);
+    if (match?.code) setSelectedCode(String(match.code));
+  }, [data]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -257,7 +271,7 @@ export const PRFQSearch = (props: Props) => {
   };
 
   const handleToggleSelect = (row: any) => {
-    const id   = String(row.id);
+    const id = String(row.id);
     const code = String(row.code ?? row.id);
     if (selectedId === id) {
       setSelectedId(null);
@@ -309,47 +323,47 @@ export const PRFQSearch = (props: Props) => {
         meta: { sortable: true, sortParam: 'need_by_date' },
         render: (row: any) => row.need_by_date ? dayjs(row.need_by_date).format('DD-MMM-YYYY') : '-',
       },
-      { key: 'priority.name', header: 'Priority',     meta: { sortable: true, sortParam: 'priority_id' } },
-      { key: 'total_items',   header: 'Tot Items' },
-      { key: 'total_qty',     header: 'Total Qty' },
-      { key: 'total_open',    header: 'Open Items' },
-      { key: 'total_closed',  header: 'Closed Items' },
+      { key: 'priority.name', header: 'Priority', meta: { sortable: true, sortParam: 'priority_id' } },
+      { key: 'total_items', header: 'Tot Items' },
+      { key: 'total_qty', header: 'Total Qty' },
+      { key: 'total_open', header: 'Open Items' },
+      { key: 'total_closed', header: 'Closed Items' },
       {
         key: 'actions',
         header: isModal ? 'Select' : 'Actions',
         ...(isModal
           ? {
-              render: (row: any) => {
-                const isSelected = selectedId === String(row.id);
-                return (
-                  <IconButton
-                    aria-label={isSelected ? 'Deselect PRFQ' : 'Select PRFQ'}
-                    colorScheme={isSelected ? 'red' : 'green'}
-                    icon={isSelected ? <LuX /> : <LuCheck />}
-                    size="xs"
-                    onClick={() => handleToggleSelect(row)}
-                  />
-                );
-              },
-            }
+            render: (row: any) => {
+              const isSelected = selectedId === String(row.id);
+              return (
+                <IconButton
+                  aria-label={isSelected ? 'Deselect PRFQ' : 'Select PRFQ'}
+                  colorScheme={isSelected ? 'red' : 'green'}
+                  icon={isSelected ? <LuX /> : <LuCheck />}
+                  size="xs"
+                  onClick={() => handleToggleSelect(row)}
+                />
+              );
+            },
+          }
           : {
-              type: 'actions' as const,
-              actions: [
-                ...(props.canUpdate ? [{
-                  label: 'Edit',
-                  icon: <BiEdit />,
-                  isDisabled: (row: any) => !!row.has_pending_request || !!row.is_closed,
-                  onClick: (row: any) => navigate(`/purchase/rfq/form/${row.id}`),
-                  disabledTooltip: (row: any) =>
-                    row.is_closed ? 'PRFQ is closed' : row.pending_request_message,
-                }] : []),
-                {
-                  label: 'Preview',
-                  icon: <BiSolidFilePdf />,
-                  onClick: handleOpenPreview,
-                },
-              ],
-            }),
+            type: 'actions' as const,
+            actions: [
+              ...(props.canUpdate ? [{
+                label: 'Edit',
+                icon: <BiEdit />,
+                isDisabled: (row: any) => !!row.has_pending_request || !!row.is_closed,
+                onClick: (row: any) => navigate(`/purchase/rfq/form/${row.id}`),
+                disabledTooltip: (row: any) =>
+                  row.is_closed ? 'PRFQ is closed' : row.pending_request_message,
+              }] : []),
+              {
+                label: 'Preview',
+                icon: <BiSolidFilePdf />,
+                onClick: handleOpenPreview,
+              },
+            ],
+          }),
       },
     ];
 

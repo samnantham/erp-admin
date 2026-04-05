@@ -99,6 +99,7 @@ export const endPoints = {
     material_request: '/purchase/material-request/:id',
     prfq: '/purchase/rfq/:id',
     purchase_quotation: '/purchase/quotation/:id',
+    quotation_line_item: '/purchase/quotation/:quotation/line-items/:line_item',
   },
   delete: {
     role:           '/user-access/role/:id',

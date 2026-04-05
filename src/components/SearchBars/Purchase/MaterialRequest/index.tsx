@@ -238,14 +238,27 @@ export const MaterialRequestSearch = (props: Props) => {
   // Tracks id → code so tags display the human-readable MR code
   const [selectedItems, setSelectedItems] = useState<{ id: string; code: string }[]>([]);
 
+
   useEffect(() => {
-    if (isModal && (props as ModalModeProps).initialSelectedIds?.length) {
-      const ids = ((props as ModalModeProps).initialSelectedIds ?? []).map(String);
-      setSelectedIds(ids);
-      // codes will be filled properly on toggle; fall back to id for pre-selected
+    if (!isModal) return;
+    const ids = ((props as ModalModeProps).initialSelectedIds ?? []).map(String);
+    if (!ids.length) return;
+    setSelectedIds(ids);
+
+    // Try to resolve codes from already-loaded table data
+    if (data.length > 0) {
+      setSelectedItems(
+        ids.map((id) => {
+          const match = data.find((row: any) => String(row.id) === id);
+          return { id, code: match?.code ? String(match.code) : id };
+        })
+      );
+    } else {
+      // Placeholder until data loads — will be corrected by the effect below
       setSelectedItems(ids.map((id) => ({ id, code: id })));
     }
   }, [isModal, (props as ModalModeProps).initialSelectedIds]);
+
 
   const {
     data: listData,
@@ -370,10 +383,26 @@ export const MaterialRequestSearch = (props: Props) => {
     return buildColumns(baseColumns, { showSerial: true });
   }, [dropdownsFetched, isModal, selectedIds, mode === 'page' && (props as PageModeProps).canUpdate]);
 
+  // Add a second effect to back-fill codes once table data loads
+  useEffect(() => {
+    if (!isModal || !data.length || !selectedItems.length) return;
+
+    const needsResolution = selectedItems.some((item) => item.code === item.id);
+    if (!needsResolution) return;
+
+    setSelectedItems((prev) =>
+      prev.map((item) => {
+        if (item.code !== item.id) return item; // already resolved
+        const match = data.find((row: any) => String(row.id) === item.id);
+        return match ? { id: item.id, code: String(match.code) } : item;
+      })
+    );
+  }, [data]);
+
   // ── Table + actions block ─────────────────────────────────────────────────
 
   const tableBlock = (
-    <Box w="100%" rounded="md" border={mode === 'modal' ? "1px solid" : "none"} borderColor="gray.300" p={mode === 'modal' ? 4: 0} overflowX="auto">
+    <Box w="100%" rounded="md" border={mode === 'modal' ? "1px solid" : "none"} borderColor="gray.300" p={mode === 'modal' ? 4 : 0} overflowX="auto">
       <LoadingOverlay isLoading={!allLoaded}>
         <DataTable
           columns={columns}

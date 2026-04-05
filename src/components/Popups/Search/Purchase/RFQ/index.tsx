@@ -17,7 +17,7 @@ type ModalPopupProps = {
   /** Called with selected IDs on Apply, or empty array on X-close */
   onClose: (selectedId: string) => void;
   data?: {
-    request_id?: string;
+    prfq_id?: string;
   };
 };
 
@@ -31,7 +31,7 @@ export const PRFQSearchPopup = ({ isOpen, onClose, data = {} }: ModalPopupProps)
   // Reset ref whenever modal opens fresh with new data
   useEffect(() => {
     if (isOpen) {
-      lastAppliedRef.current = data.request_id ?? '';
+      lastAppliedRef.current = data.prfq_id ?? '';
     }
   }, [isOpen]);
 
@@ -63,7 +63,7 @@ export const PRFQSearchPopup = ({ isOpen, onClose, data = {} }: ModalPopupProps)
         <ModalBody pb={6}>
           <PRFQSearch
             mode="modal"
-            initialSelectedId={data.request_id ?? ''}
+            initialSelectedId={data.prfq_id ?? ''}
             onApply={handleApply}
             onClear={() => {
               lastAppliedRef.current = '';
