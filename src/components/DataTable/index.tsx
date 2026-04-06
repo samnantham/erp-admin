@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
-  Center,
   Flex,
   HStack,
   Heading,
@@ -96,8 +95,6 @@ export type DataTableProps<Data extends object> = {
 };
 
 // ── Row display-index context ──────────────────────────────────────────────
-// DataTable provides this for each rendered row so makeSnoCellRenderer can
-// read the correct sequential position (1-based) without relying on row.index.
 export const RowDisplayIndexContext = React.createContext<number>(0);
 
 // ── Sorting helpers ────────────────────────────────────────────────────────
@@ -293,9 +290,6 @@ export function DataTable<Data extends object>({
   const allHeaders = table.getHeaderGroups()[0]?.headers ?? [];
 
   // ── Compute explicit table width from column definitions ───────────────
-  // Must NOT use "max-content" — when tbody is empty the browser computes
-  // max-content from header text alone (ignoring <colgroup>), causing headers
-  // to reflow. An explicit pixel width keeps columns locked regardless of data.
   const totalTableWidth = useMemo(() => {
     return allHeaders.reduce((sum, header) => {
       const meta = header.column.columnDef.meta as ColumnMeta | undefined;
@@ -365,9 +359,6 @@ export function DataTable<Data extends object>({
     );
   };
 
-  // ── Loading ────────────────────────────────────────────────────────────
-  if (loading) return <Center p={4}><Spinner /></Center>;
-
   // ── Render ─────────────────────────────────────────────────────────────
   return (
     <Box>
@@ -400,8 +391,6 @@ export function DataTable<Data extends object>({
         <HStack bg="white" justify="space-between" mb={4} p={noTitlePadding ? 0 : 4} borderTopRadius={4}>
           {title && <Heading size="md">{title}</Heading>}
           {headerAction}
-          {/* Show PageLimit here only when status tabs are NOT present;
-              otherwise it moves to the tabs row below */}
           {enablePagination && onPageSizeChange && !(statusTabsStatus && onStatusChange) && (
             <PageLimit currentLimit={pageSize} loading={loading} changeLimit={onPageSizeChange} total={overallCount} />
           )}
@@ -441,131 +430,143 @@ export function DataTable<Data extends object>({
           defer
           options={{
             scrollbars: {
-              autoHide: "move",  // FIX: was "scroll" — show scrollbar on mouse move, not only while dragging
+              autoHide: "move",
               autoHideDelay: 600,
               clickScroll: true,
             },
-            overflow: { x: "scroll", y: "scroll" },
+            overflow: {
+              // Disable scrollbars while loading so they never appear on the tiny spinner view
+              x: loading ? "hidden" : "scroll",
+              y: loading ? "hidden" : "scroll",
+            },
           }}
           style={{ height: "460px", width: "100%" }}
         >
-          {/*
-            FIX: This wrapper div is what OverlayScrollbars measures for overflow.
-            Putting both `width` and `minWidth` here (instead of on <Table>) ensures
-            the scroll host sees content that genuinely exceeds the viewport width,
-            triggering the horizontal scrollbar correctly.
-          */}
-          <div style={{ width: `${totalTableWidth}px`, minWidth: "100%" }}>
-            <Table
-              {...tableProps}
-              size={tableProps?.size ?? "sm"}
-              variant="unstyled"
-              style={{ tableLayout: "fixed", width: "100%", background: "white" }}
+          {loading ? (
+            // ── Loading state: fills the full 460px so no scrollbar appears ──
+            <Flex
+              justify="center"
+              align="center"
+              bg="white"
+              style={{ height: "460px", width: "100%" }}
             >
-              <colgroup>
-                {allHeaders.map((header) => {
-                  const meta  = header.column.columnDef.meta as ColumnMeta | undefined;
-                  const width = meta?.width ?? "150px";
-                  return <col key={header.id} style={{ width, minWidth: width }} />;
-                })}
-              </colgroup>
-
-              <Thead style={{ position: "sticky", top: 0, zIndex: 4 }}>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <Tr key={headerGroup.id}>
-                    {headerGroup.headers.map((header, colIndex) => {
-                      const meta         = header.column.columnDef.meta as ColumnMeta | undefined;
-                      const width        = meta?.width;
-                      const isSticky     = colIndex < stickyColumns;
-                      const isLastSticky = stickyLastColumn && colIndex === headerGroup.headers.length - 1;
-                      const leftOffset   = isSticky ? stickyLeftOffsets[colIndex] : undefined;
-
-                      return (
-                        <Th
-                          key={header.id}
-                          isNumeric={false}
-                          color="white"
-                          cursor={meta?.sortable ? "pointer" : "default"}
-                          onClick={meta?.sortable ? () => handleSort(meta?.sortParam ?? header.column.id) : undefined}
-                          style={thStyle(width, leftOffset, isLastSticky)}
-                        >
-                          <Box display="flex" alignItems="center" flexWrap="wrap">
-                            <Box flex="1" minW={0} whiteSpace="normal" wordBreak="break-word" overflowWrap="break-word">
-                              {flexRender(header.column.columnDef.header, header.getContext())}
-                            </Box>
-                            {meta?.sortable && <SortIcon header={header} />}
-                          </Box>
-                        </Th>
-                      );
+              <Spinner size="lg" color="blue.500" thickness="3px" speed="0.65s" />
+            </Flex>
+          ) : (
+            <>
+              {/*
+                FIX: This wrapper div is what OverlayScrollbars measures for overflow.
+                Putting both `width` and `minWidth` here ensures the scroll host sees
+                content that genuinely exceeds the viewport width, triggering the
+                horizontal scrollbar correctly.
+              */}
+              <div style={{ width: `${totalTableWidth}px`, minWidth: "100%" }}>
+                <Table
+                  {...tableProps}
+                  size={tableProps?.size ?? "sm"}
+                  variant="unstyled"
+                  style={{ tableLayout: "fixed", width: "100%", background: "white" }}
+                >
+                  <colgroup>
+                    {allHeaders.map((header) => {
+                      const meta  = header.column.columnDef.meta as ColumnMeta | undefined;
+                      const width = meta?.width ?? "150px";
+                      return <col key={header.id} style={{ width, minWidth: width }} />;
                     })}
-                  </Tr>
-                ))}
-              </Thead>
+                  </colgroup>
 
-              {/* ── Tbody: ONLY real data rows — no empty-state markup here ── */}
-              <Tbody>
-                {rows.map((row, displayIndex) => {
-                  const rowProps = getRowProps?.(row) ?? {};
-                  const cells    = row.getVisibleCells();
-
-                  // Override row.index with the rendered position so that
-                  // `info.row.index + 1` in column defs (like the S.No column)
-                  // always shows 1, 2, 3… based on what's visible on screen,
-                  // even after client-side filtering or sorting.
-                  const displayRow = Object.create(row, {
-                    index: { value: displayIndex, enumerable: true },
-                  });
-
-                  return (
-                    <RowDisplayIndexContext.Provider key={row.id} value={displayIndex}>
-                      <Tr {...rowProps}>
-                        {cells.map((cell, colIndex) => {
-                          const meta         = cell.column.columnDef.meta as ColumnMeta | undefined;
+                  <Thead style={{ position: "sticky", top: 0, zIndex: 4 }}>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <Tr key={headerGroup.id}>
+                        {headerGroup.headers.map((header, colIndex) => {
+                          const meta         = header.column.columnDef.meta as ColumnMeta | undefined;
                           const width        = meta?.width;
                           const isSticky     = colIndex < stickyColumns;
-                          const isLastSticky = stickyLastColumn && colIndex === cells.length - 1;
+                          const isLastSticky = stickyLastColumn && colIndex === headerGroup.headers.length - 1;
                           const leftOffset   = isSticky ? stickyLeftOffsets[colIndex] : undefined;
 
-                          // Merge displayRow into the cell context so info.row.index
-                          // returns displayIndex instead of the original data-array position.
-                          const cellContext = { ...cell.getContext(), row: displayRow };
-
                           return (
-                            <Td
-                              key={cell.id}
-                              whiteSpace="normal"
-                              wordBreak="break-word"
-                              overflowWrap="break-word"
-                              lineHeight="1.6"
-                              style={tdStyle(displayIndex, width, leftOffset, isLastSticky)}
+                            <Th
+                              key={header.id}
+                              isNumeric={false}
+                              color="white"
+                              cursor={meta?.sortable ? "pointer" : "default"}
+                              onClick={meta?.sortable ? () => handleSort(meta?.sortParam ?? header.column.id) : undefined}
+                              style={thStyle(width, leftOffset, isLastSticky)}
                             >
-                              {flexRender(cell.column.columnDef.cell, cellContext)}
-                            </Td>
+                              <Box display="flex" alignItems="center" flexWrap="wrap">
+                                <Box flex="1" minW={0} whiteSpace="normal" wordBreak="break-word" overflowWrap="break-word">
+                                  {flexRender(header.column.columnDef.header, header.getContext())}
+                                </Box>
+                                {meta?.sortable && <SortIcon header={header} />}
+                              </Box>
+                            </Th>
                           );
                         })}
                       </Tr>
-                    </RowDisplayIndexContext.Provider>
-                  );
-                })}
-              </Tbody>
-            </Table>
-          </div>
+                    ))}
+                  </Thead>
 
-          {/* ── Empty-state message: fills remaining container height below header ── */}
-          {rowCount === 0 && (
-            <Flex
-              position="sticky"
-              left={0}
-              justify="center"
-              align="center"
-              fontSize="md"
-              fontWeight="bold"
-              color="gray.500"
-              bg={EVEN_ROW_BG}
-              style={{ height: "calc(460px - 45px)" }}
-            >
-              {searchValue ? "No matching results found" : "No items to display"}
-            </Flex>
+                  {/* ── Tbody: ONLY real data rows ── */}
+                  <Tbody>
+                    {rows.map((row, displayIndex) => {
+                      const rowProps = getRowProps?.(row) ?? {};
+                      const cells    = row.getVisibleCells();
+
+                      const displayRow = Object.create(row, {
+                        index: { value: displayIndex, enumerable: true },
+                      });
+
+                      return (
+                        <RowDisplayIndexContext.Provider key={row.id} value={displayIndex}>
+                          <Tr {...rowProps}>
+                            {cells.map((cell, colIndex) => {
+                              const meta         = cell.column.columnDef.meta as ColumnMeta | undefined;
+                              const width        = meta?.width;
+                              const isSticky     = colIndex < stickyColumns;
+                              const isLastSticky = stickyLastColumn && colIndex === cells.length - 1;
+                              const leftOffset   = isSticky ? stickyLeftOffsets[colIndex] : undefined;
+
+                              const cellContext = { ...cell.getContext(), row: displayRow };
+
+                              return (
+                                <Td
+                                  key={cell.id}
+                                  whiteSpace="normal"
+                                  wordBreak="break-word"
+                                  overflowWrap="break-word"
+                                  lineHeight="1.6"
+                                  style={tdStyle(displayIndex, width, leftOffset, isLastSticky)}
+                                >
+                                  {flexRender(cell.column.columnDef.cell, cellContext)}
+                                </Td>
+                              );
+                            })}
+                          </Tr>
+                        </RowDisplayIndexContext.Provider>
+                      );
+                    })}
+                  </Tbody>
+                </Table>
+              </div>
+
+              {/* ── Empty-state message ── */}
+              {rowCount === 0 && (
+                <Flex
+                  position="sticky"
+                  left={0}
+                  justify="center"
+                  align="center"
+                  fontSize="md"
+                  fontWeight="bold"
+                  color="gray.500"
+                  bg={EVEN_ROW_BG}
+                  style={{ height: "calc(460px - 45px)" }}
+                >
+                  {searchValue ? "No matching results found" : "No items to display"}
+                </Flex>
+              )}
+            </>
           )}
         </OverlayScrollbarsComponent>
       </Box>
@@ -583,10 +584,7 @@ export function DataTable<Data extends object>({
   );
 }
 
-// ── S.No helper (export for column definitions) ────────────────────────────
-// Uses RowDisplayIndexContext provided by DataTable so the number always
-// reflects the row's position in the currently rendered (filtered + sorted)
-// list, starting at 1 — regardless of the original data array index.
+// ── S.No helper ────────────────────────────────────────────────────────────
 export function makeSnoCellRenderer({
   enableClientSideSearch = false,
   currentPage = 1,
@@ -597,14 +595,10 @@ export function makeSnoCellRenderer({
   pageSize?: number;
 } = {}) {
   return function SnoCellRenderer() {
-    // displayIndex is the 0-based position of this row in the rendered list.
-    // DataTable provides it via RowDisplayIndexContext — no need to search rows.
     const displayIndex = React.useContext(RowDisplayIndexContext);
     if (enableClientSideSearch) {
-      // Client-side: always 1, 2, 3… through the filtered+sorted results.
       return <>{displayIndex + 1}</>;
     }
-    // Server-side pagination: offset by the current page.
     return <>{(currentPage - 1) * pageSize + displayIndex + 1}</>;
   };
 }

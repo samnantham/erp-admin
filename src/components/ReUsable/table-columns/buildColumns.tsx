@@ -175,7 +175,11 @@ export function buildColumns<T extends object>(
         isNumeric: col.isNumeric,
         ...col.meta,
       },
-      cell: (info) => info.getValue(),
+      cell: (info) => {
+        const value = info.getValue();
+        if (value === null || value === undefined || value === "") return <Text fontWeight="bold">—</Text>;
+        return value;
+      },
     });
   });
 

@@ -16,7 +16,6 @@ import { Formiz, useForm } from '@formiz/core';
 import { HiRefresh, HiOutlineSearch } from 'react-icons/hi';
 import { LuPlus, LuDownload, LuUpload } from 'react-icons/lu';
 import { useNavigate } from 'react-router-dom';
-import LoadingOverlay from '@/components/LoadingOverlay';
 import { DataTable } from '@/components/DataTable';
 import { FieldInput } from '@/components/FieldInput';
 import { FieldSelect } from '@/components/FieldSelect';
@@ -187,7 +186,7 @@ export const SpareMaster = () => {
         const baseColumnConfig: DynamicColumn<any>[] = [
             {
                 key: 'name',
-                header: () =>  <>PART<br/>NUMBER</>,
+                header: () => <>PART<br />NUMBER</>,
                 meta: { sortable: true, sortParam: 'name' },
                 render: (row: any) => {
                     const hasRefDoc = !!row.alternate_of_info?.alt_ref_doc;
@@ -253,13 +252,13 @@ export const SpareMaster = () => {
             },
             { key: 'description', header: 'Description', meta: { sortable: true, sortParam: 'description', width: 180 } },
             { key: 'manufacturer_name', header: 'MFG', meta: { sortable: true, sortParam: 'manufacturer_name' } },
-            { key: 'cage_code', header: () =>  <>Cage<br/>Code</>, },
+            { key: 'cage_code', header: () => <>Cage<br />Code</>, },
             { key: 'ata', header: 'ATA' },
             { key: 'spare_type.name', header: 'Type', meta: { sortable: true, sortParam: 'spare_type_id' } },
             { key: 'spare_model.name', header: 'Model', meta: { sortable: true, sortParam: 'spare_model_id' } },
-            { key: 'hsc_code.name', header: () =>  <>HSC<br/>Code</>, meta: { sortable: true, sortParam: 'hsc_code_id' } },
+            { key: 'hsc_code.name', header: () => <>HSC<br />Code</>, meta: { sortable: true, sortParam: 'hsc_code_id' } },
             { key: 'unit_of_measure.name', header: 'UOM', meta: { sortable: true, sortParam: 'unit_of_measure_id' } },
-            { key: 'is_shelf_life', header: () =>  <>Shelf<br/>Life</>, render: (row: any) => (row.is_shelf_life ? 'Yes' : 'No') },
+            { key: 'is_shelf_life', header: () => <>Shelf<br />Life</>, render: (row: any) => (row.is_shelf_life ? 'Yes' : 'No') },
             { key: 'is_llp', header: 'LLP', render: (row: any) => (row.is_llp ? 'Yes' : 'No') },
             { key: 'is_serialized', header: 'Serialized', render: (row: any) => (row.is_serialized ? 'Yes' : 'No') },
             { key: 'is_dg', header: 'DG', render: (row: any) => (row.is_dg ? 'Yes' : 'No') },
@@ -435,62 +434,60 @@ export const SpareMaster = () => {
                     </Box>
                 </Formiz>
 
-                <LoadingOverlay isLoading={!allApiDataLoaded}>
-                    <Box borderRadius={4}>
-                        <DataTable
-                            columns={columns}
-                            data={data}
-                            loading={!allApiDataLoaded || dropdownLoading || listDataLoading}
-                            title="Part Numbers"
-                            enablePagination
-                            enableClientSideSearch={false}
-                            onSortChange={handleSortChange}
-                            sortDirection={sortDirection}
-                            sortBy={sortBy}
-                            currentPage={paginationData?.current_page}
-                            totalCount={paginationData?.total}
-                            pageSize={itemsPerPage}
-                            stickyColumns={5}
-                            stickyLastColumn={true}
-                            onPageChange={(page) =>
-                                setQueryParams((prev: any) => ({ ...prev, page }))
-                            }
-                            onPageSizeChange={(limit) => {
-                                setItemsPerPage(limit);
-                                setQueryParams((prev: any) => ({ ...prev, limit, page: 1 }));
-                            }}
-                            headerAction={
-                                <HStack ml="auto">
-                                    {canBulkUpload && (
-                                        <Flex alignItems="center">
-                                            <Button
-                                                leftIcon={<LuUpload />}
-                                                colorScheme="green"
-                                                variant="solid"
-                                                size="sm"
-                                                onClick={() => navigate(`/spare-management/bulk-upload`)}
-                                            >
-                                                Bulk Upload
-                                            </Button>
-                                        </Flex>
-                                    )}
-                                    {canBulkUpload && (
-                                        <Flex alignItems="center">
-                                            <Button
-                                                leftIcon={<LuDownload />}
-                                                colorScheme="blue"
-                                                size="sm"
-                                                onClick={() => handleDownload(import.meta.env.VITE_SPARES_SAMPLE_CSV)}
-                                            >
-                                                Download Sample
-                                            </Button>
-                                        </Flex>
-                                    )}
-                                </HStack>
-                            }
-                        />
-                    </Box>
-                </LoadingOverlay>
+                <Box borderRadius={4}>
+                    <DataTable
+                        columns={columns}
+                        data={data}
+                        loading={!allApiDataLoaded || dropdownLoading || listDataLoading}
+                        title="Part Numbers"
+                        enablePagination
+                        enableClientSideSearch={false}
+                        onSortChange={handleSortChange}
+                        sortDirection={sortDirection}
+                        sortBy={sortBy}
+                        currentPage={paginationData?.current_page}
+                        totalCount={paginationData?.total}
+                        pageSize={itemsPerPage}
+                        stickyColumns={5}
+                        stickyLastColumn={true}
+                        onPageChange={(page) =>
+                            setQueryParams((prev: any) => ({ ...prev, page }))
+                        }
+                        onPageSizeChange={(limit) => {
+                            setItemsPerPage(limit);
+                            setQueryParams((prev: any) => ({ ...prev, limit, page: 1 }));
+                        }}
+                        headerAction={
+                            <HStack ml="auto">
+                                {canBulkUpload && (
+                                    <Flex alignItems="center">
+                                        <Button
+                                            leftIcon={<LuUpload />}
+                                            colorScheme="green"
+                                            variant="solid"
+                                            size="sm"
+                                            onClick={() => navigate(`/spare-management/bulk-upload`)}
+                                        >
+                                            Bulk Upload
+                                        </Button>
+                                    </Flex>
+                                )}
+                                {canBulkUpload && (
+                                    <Flex alignItems="center">
+                                        <Button
+                                            leftIcon={<LuDownload />}
+                                            colorScheme="blue"
+                                            size="sm"
+                                            onClick={() => handleDownload(import.meta.env.VITE_SPARES_SAMPLE_CSV)}
+                                        >
+                                            Download Sample
+                                        </Button>
+                                    </Flex>
+                                )}
+                            </HStack>
+                        }
+                    />
+                </Box>
 
                 <ConfirmationWithReasonPopup
                     isOpen={confirmMode === 'delete'}

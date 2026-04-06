@@ -198,16 +198,16 @@ export const CustomerMaster = () => {
         if (!dropdownsFetched) return [];
 
         const baseColumnConfig: DynamicColumn<any>[] = [
-            { key: "business_name", header: () =>  <>Business<br/>Name</>, meta: { sortable: true, isNumeric: false, sortParam: 'business_name' } },
-            { key: "code", header: () =>  <>Contact<br/>Code</>, meta: { sortable: true, isNumeric: false, sortParam: 'code' } },
-            { key: "email", header: "Email", meta: { sortable: true, sortParam: 'email', width:240 } },
-            { key: "nature_of_business", header: () =>  <>Business<br/>Nature</>, meta: { sortable: true, isNumeric: false, sortParam: 'nature_of_business' } },
-            { key: "contact_type.name", header: () =>  <>Contact<br/>Type</>, meta: { sortable: true, isNumeric: false, sortParam: 'contact_type_id' } },
-            { key: "business_type.name", header: () =>  <>Business<br/>Type</>, meta: { sortable: true, isNumeric: false, sortParam: 'business_type_id' } },
+            { key: "business_name", header: () => <>Business<br />Name</>, meta: { sortable: true, isNumeric: false, sortParam: 'business_name' } },
+            { key: "code", header: () => <>Contact<br />Code</>, meta: { sortable: true, isNumeric: false, sortParam: 'code' } },
+            { key: "email", header: "Email", meta: { sortable: true, sortParam: 'email', width: 240 } },
+            { key: "nature_of_business", header: () => <>Business<br />Nature</>, meta: { sortable: true, isNumeric: false, sortParam: 'nature_of_business' } },
+            { key: "contact_type.name", header: () => <>Contact<br />Type</>, meta: { sortable: true, isNumeric: false, sortParam: 'contact_type_id' } },
+            { key: "business_type.name", header: () => <>Business<br />Type</>, meta: { sortable: true, isNumeric: false, sortParam: 'business_type_id' } },
             { key: "currency.name", header: "Currency", meta: { sortable: true, isNumeric: false, sortParam: 'currency_id' } },
             {
                 key: "customer_status.name",
-                header: () =>  <>Customer<br/>Status</>,
+                header: () => <>Customer<br />Status</>,
                 meta: { sortable: true, isNumeric: false, sortParam: "customer_status_id" },
                 render: (row: any) => (
                     <Menu placement="bottom-start">
@@ -238,8 +238,8 @@ export const CustomerMaster = () => {
                     </Menu>
                 ),
             },
-            { key: "payment_term.name", header: () =>  <>Payment<br/>Term</>, meta: { sortable: true, isNumeric: false, sortParam: 'payment_term_id' } },
-            { key: "payment_mode.name", header: () =>  <>Payment<br/>Mode</>, meta: { sortable: true, isNumeric: false, sortParam: 'payment_mode_id' } },
+            { key: "payment_term.name", header: () => <>Payment<br />Term</>, meta: { sortable: true, isNumeric: false, sortParam: 'payment_term_id' } },
+            { key: "payment_mode.name", header: () => <>Payment<br />Mode</>, meta: { sortable: true, isNumeric: false, sortParam: 'payment_mode_id' } },
             {
                 key: "completion_percentage",
                 header: "Completion (%)",
@@ -417,64 +417,65 @@ export const CustomerMaster = () => {
                     </Box>
                 </Formiz>
 
-                <LoadingOverlay isLoading={!allApiDataLoaded}>
-                    <Box borderRadius={4}>
-                        {queryParams?.id ? (
+                <Box borderRadius={4}>
+                    {queryParams?.id ? (
+                        <LoadingOverlay isLoading={!allApiDataLoaded}>
                             <CustomerDetails customerId={queryParams?.id ?? 0} />
-                        ) : (
-                            <DataTable
-                                columns={columns}
-                                data={data}
-                                loading={!allApiDataLoaded || dropdownLoading || listDataLoading}
-                                title="Contacts"
-                                enablePagination
-                                enableClientSideSearch={false}
-                                onSortChange={handleSortChange}
-                                sortDirection={sortDirection}
-                                sortBy={sortBy}
-                                currentPage={paginationData?.current_page}
-                                totalCount={paginationData?.total}
-                                pageSize={itemsPerPage}
-                                stickyColumns={4}
-                                stickyLastColumn={true}
-                                onPageChange={(page) => setQueryParams((prev: any) => ({ ...prev, page }))}
-                                onPageSizeChange={(limit) => {
-                                    setItemsPerPage(limit);
-                                    setQueryParams((prev: any) => ({ ...prev, limit, page: 1 }));
-                                }}
-                                headerAction={
-                                    <HStack ml="auto">
-                                        {canBulkUpload && (
-                                            <Flex alignItems="center">
-                                                <ActionMenu
-                                                    label="Bulk Upload"
-                                                    icon={<LuUpload />}
-                                                    colorScheme="green"
-                                                    options={DownloadSampleOptions}
-                                                    onClick={handleUploadPageRedirection}
-                                                    isDisabled={!allApiDataLoaded}
-                                                />
-                                            </Flex>
-                                        )}
+                        </LoadingOverlay>
+                    ) : (
+                        <DataTable
+                            columns={columns}
+                            data={data}
+                            loading={!allApiDataLoaded || dropdownLoading || listDataLoading}
+                            title="Contacts"
+                            enablePagination
+                            enableClientSideSearch={false}
+                            onSortChange={handleSortChange}
+                            sortDirection={sortDirection}
+                            sortBy={sortBy}
+                            currentPage={paginationData?.current_page}
+                            totalCount={paginationData?.total}
+                            pageSize={itemsPerPage}
+                            stickyColumns={4}
+                            stickyLastColumn={true}
+                            onPageChange={(page) => setQueryParams((prev: any) => ({ ...prev, page }))}
+                            onPageSizeChange={(limit) => {
+                                setItemsPerPage(limit);
+                                setQueryParams((prev: any) => ({ ...prev, limit, page: 1 }));
+                            }}
+                            headerAction={
+                                <HStack ml="auto">
+                                    {canBulkUpload && (
+                                        <Flex alignItems="center">
+                                            <ActionMenu
+                                                label="Bulk Upload"
+                                                icon={<LuUpload />}
+                                                colorScheme="green"
+                                                options={DownloadSampleOptions}
+                                                onClick={handleUploadPageRedirection}
+                                                isDisabled={!allApiDataLoaded}
+                                            />
+                                        </Flex>
+                                    )}
 
-                                        {canBulkUpload && (
-                                            <Flex alignItems="center">
-                                                <ActionMenu
-                                                    label="Download Sample"
-                                                    icon={<LuDownload />}
-                                                    colorScheme="blue"
-                                                    options={DownloadSampleOptions}
-                                                    onClick={handleDownloadSampleFunction}
-                                                    isDisabled={!allApiDataLoaded}
-                                                />
-                                            </Flex>
-                                        )}
-                                    </HStack>
-                                }
-                            />
-                        )}
-                    </Box>
-                </LoadingOverlay>
+                                    {canBulkUpload && (
+                                        <Flex alignItems="center">
+                                            <ActionMenu
+                                                label="Download Sample"
+                                                icon={<LuDownload />}
+                                                colorScheme="blue"
+                                                options={DownloadSampleOptions}
+                                                onClick={handleDownloadSampleFunction}
+                                                isDisabled={!allApiDataLoaded}
+                                            />
+                                        </Flex>
+                                    )}
+                                </HStack>
+                            }
+                        />
+                    )}
+                </Box>
+
 
                 <ConfirmationWithReasonPopup
                     isOpen={confirmMode === "delete" || confirmMode === "status-update"}

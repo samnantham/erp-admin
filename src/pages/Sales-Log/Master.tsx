@@ -7,7 +7,6 @@ import { Formiz, useForm } from '@formiz/core';
 import { HiRefresh, HiOutlineSearch } from 'react-icons/hi';
 import { LuPlus } from 'react-icons/lu';
 import { useNavigate } from 'react-router-dom';
-import LoadingOverlay from '@/components/LoadingOverlay';
 import { DataTable } from '@/components/DataTable';
 import { FieldInput } from '@/components/FieldInput';
 import { FieldSelect } from '@/components/FieldSelect';
@@ -41,7 +40,7 @@ export const SalesLogMaster = () => {
 
     const handleOpenPreview = (itemInfo: any) => {
         const url = `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview.sales_log.replace(":id", itemInfo.id)}`;
-        openPreview(url, `SEL Preview - #${itemInfo.code}`, true );
+        openPreview(url, `SEL Preview - #${itemInfo.code}`, true);
     };
 
     const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -277,33 +276,31 @@ export const SalesLogMaster = () => {
                     </Box>
                 </Formiz>
 
-                <LoadingOverlay isLoading={!allApiDataLoaded}>
-                    <Box borderRadius={4}>
-                        <DataTable
-                            columns={columns}
-                            data={data}
-                            loading={!allApiDataLoaded || dropdownLoading || listDataLoading}
-                            title="Sales Logs"
-                            enablePagination
-                            enableClientSideSearch={false}
-                            onSortChange={handleSortChange}
-                            sortDirection={sortDirection}
-                            sortBy={sortBy}
-                            currentPage={paginationData?.current_page}
-                            totalCount={paginationData?.total}
-                            pageSize={itemsPerPage}
-                            stickyColumns={3}
-                            stickyLastColumn={true}
-                            onPageChange={(page) =>
-                                setQueryParams((prev: any) => ({ ...prev, page }))
-                            }
-                            onPageSizeChange={(limit) => {
-                                setItemsPerPage(limit);
-                                setQueryParams((prev: any) => ({ ...prev, limit, page: 1 }));
-                            }}
-                        />
-                    </Box>
-                </LoadingOverlay>
+                <Box borderRadius={4}>
+                    <DataTable
+                        columns={columns}
+                        data={data}
+                        loading={!allApiDataLoaded || dropdownLoading || listDataLoading}
+                        title="Sales Logs"
+                        enablePagination
+                        enableClientSideSearch={false}
+                        onSortChange={handleSortChange}
+                        sortDirection={sortDirection}
+                        sortBy={sortBy}
+                        currentPage={paginationData?.current_page}
+                        totalCount={paginationData?.total}
+                        pageSize={itemsPerPage}
+                        stickyColumns={3}
+                        stickyLastColumn={true}
+                        onPageChange={(page) =>
+                            setQueryParams((prev: any) => ({ ...prev, page }))
+                        }
+                        onPageSizeChange={(limit) => {
+                            setItemsPerPage(limit);
+                            setQueryParams((prev: any) => ({ ...prev, limit, page: 1 }));
+                        }}
+                    />
+                </Box>
             </Stack>
         </SlideIn>
     );

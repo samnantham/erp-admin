@@ -23,7 +23,7 @@ export const getBaseColumns = <T extends BaseRow>() => {
         }),
         columnHelper.display({
             cell: (info) => info.row.index + 1,
-            meta: { sortable: false },
+            meta: { sortable: false,  width: 50 },
             header: '#',
             id: 'sNo',
             size: 60,
