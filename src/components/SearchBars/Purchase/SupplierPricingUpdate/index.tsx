@@ -18,6 +18,7 @@ import { FieldDayPicker } from '@/components/FieldDayPicker';
 import { buildColumns, DynamicColumn } from '@/components/ReUsable/table-columns/buildColumns';
 import { usePurchaseQuotationIndex, usePurchaseQuotationDropdowns } from '@/services/purchase/quotation/service';
 import LoadingOverlay from '@/components/LoadingOverlay';
+import { fontWeight } from 'html2canvas/dist/types/css/property-descriptors/font-weight';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -304,7 +305,7 @@ export const SupplierPricingUpdateSearch = (props: Props) => {
       {
         key: 'code',
         header: 'ID',
-        meta: { sortable: true, sortParam: 'code' },
+        meta: { sortable: true, sortParam: 'code', fontWeight: 'bold' },
       },
       {
         key: 'vendor_quotation_no',

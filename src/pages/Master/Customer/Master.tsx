@@ -36,6 +36,7 @@ import { useDelete } from '@/api/useDelete';
 import { endPoints } from '@/api/endpoints';
 import { usePDFPreview } from "@/context/PDFPreviewContext";
 import { useRouterContext } from '@/services/auth/RouteContext';
+import { fontWeight } from 'html2canvas/dist/types/css/property-descriptors/font-weight';
 
 type ConfirmMode = null | "delete" | "status-update";
 
@@ -199,7 +200,7 @@ export const CustomerMaster = () => {
 
         const baseColumnConfig: DynamicColumn<any>[] = [
             { key: "business_name", header: () => <>Business<br />Name</>, meta: { sortable: true, isNumeric: false, sortParam: 'business_name' } },
-            { key: "code", header: () => <>Contact<br />Code</>, meta: { sortable: true, isNumeric: false, sortParam: 'code' } },
+            { key: "code", header: () => <>Contact<br />Code</>, meta: { sortable: true, isNumeric: false, sortParam: 'code', fontWeight: 'bold' } },
             { key: "email", header: "Email", meta: { sortable: true, sortParam: 'email', width: 240 } },
             { key: "nature_of_business", header: () => <>Business<br />Nature</>, meta: { sortable: true, isNumeric: false, sortParam: 'nature_of_business' } },
             { key: "contact_type.name", header: () => <>Contact<br />Type</>, meta: { sortable: true, isNumeric: false, sortParam: 'contact_type_id' } },

@@ -177,8 +177,9 @@ export function buildColumns<T extends object>(
       },
       cell: (info) => {
         const value = info.getValue();
+        const fontWeight = (info.column.columnDef.meta as any)?.fontWeight;
         if (value === null || value === undefined || value === "") return <Text fontWeight="bold">—</Text>;
-        return value;
+        return fontWeight ? <Text fontWeight={fontWeight}>{value as React.ReactNode}</Text> : value as React.ReactNode;
       },
     });
   });

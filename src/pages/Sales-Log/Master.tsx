@@ -85,7 +85,7 @@ export const SalesLogMaster = () => {
         if (!dropdownsFetched) return [];
 
         const baseColumnConfig: DynamicColumn<any>[] = [
-            { key: 'code', header: 'ID', meta: { sortable: true, sortParam: 'code' } },
+            { key: 'code', header: 'ID', meta: { sortable: true, sortParam: 'code', fontWeight: 'bold'} },
             { key: 'cust_rfq_no', header: 'RFQ No', meta: { sortable: true, sortParam: 'cust_rfq_no' } },
             {
                 key: 'cust_rfq_date',

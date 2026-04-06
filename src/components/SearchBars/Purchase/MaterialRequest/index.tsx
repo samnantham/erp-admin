@@ -326,7 +326,7 @@ export const MaterialRequestSearch = (props: Props) => {
     if (!dropdownsFetched) return [];
 
     const baseColumns: DynamicColumn<any>[] = [
-      { key: 'code', header: 'ID', meta: { sortable: true, sortParam: 'code' } },
+      { key: 'code', header: 'ID', meta: { sortable: true, sortParam: 'code' , fontWeight: 'bold'} },
       { key: 'type_label', header: 'Type', meta: { sortable: true, sortParam: 'type' } },
       {
         key: 'due_date',

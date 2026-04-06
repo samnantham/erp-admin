@@ -301,7 +301,7 @@ export const PRFQSearch = (props: Props) => {
       {
         key: 'code',
         header: 'ID',
-        meta: { sortable: true, sortParam: 'code' },
+        meta: { sortable: true, sortParam: 'code' , fontWeight: 'bold'},
       },
       {
         key: 'total_vendors',

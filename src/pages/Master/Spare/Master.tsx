@@ -9,6 +9,7 @@ import {
     Icon,
     Flex,
     Tooltip,
+    Text,
     Badge,
     useDisclosure
 } from '@chakra-ui/react';
@@ -187,7 +188,7 @@ export const SpareMaster = () => {
             {
                 key: 'name',
                 header: () => <>PART<br />NUMBER</>,
-                meta: { sortable: true, sortParam: 'name' },
+                meta: { sortable: true, sortParam: 'name' , fontWeight: 'bold'},
                 render: (row: any) => {
                     const hasRefDoc = !!row.alternate_of_info?.alt_ref_doc;
 
@@ -209,7 +210,7 @@ export const SpareMaster = () => {
                                     : {}
                             }
                         >
-                            <span>{row.name}</span>
+                            <Text as="span" fontWeight={'bold'}>{row.name}</Text>
 
                             {row.is_alternate && (
                                 <Tooltip
