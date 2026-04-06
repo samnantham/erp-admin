@@ -189,6 +189,9 @@ export function buildColumns<T extends object>(
         header: "#",
         size: 60,
         cell: (info) => info.row.index + 1,
+        meta: {
+          width: 50
+        },
       })
     );
   }

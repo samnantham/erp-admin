@@ -41,6 +41,7 @@ const zPRFQVendor = zStandardObject.extend({
     vendor_id: z.string().uuid(),
     customer_contact_manager_id: z.string().uuid(),
     token: z.string(),
+    is_approved: z.boolean().optional(),
     quotation_fulfillment: z.number().optional(),
     // Relations
     vendor: zStandardObject.extend({
@@ -93,9 +94,7 @@ export const zPRFQ = zStandardObject.extend({
         full_name: z.string().optional(),
     }).nullable().optional(),
     items: z.array(zPRFQItem).optional(),
-    // ── new: vendors from prfq_vendors table ──
     vendors: z.array(zPRFQVendor).optional(),
-    // ── new: MR junction rows from prfq_material_requests table ──
     material_requests: z.array(zPRFQMaterialRequest).optional(),
 });
 export type PRFQ = z.infer<typeof zPRFQ>;
@@ -133,8 +132,10 @@ export type PRFQItemSaveResponsePayload = z.infer<typeof zPRFQItemSaveResponsePa
 PRFQ Vendor Info (get_vendors endpoint)
 ========================================================= */
 export const zPRFQVendorInfo = z.object({
+    id: z.string().uuid(),
     vendor_id: z.string().uuid(),
     customer_contact_manager_id: z.string().uuid(),
+    is_approved: z.boolean().optional(),
     // Customer
     business_name: z.string().nullable().optional(),
     code: z.string().nullable().optional(),
@@ -157,7 +158,27 @@ export const zPRFQVendorsPayload = z.object({
 });
 export type PRFQVendorsPayload = z.infer<typeof zPRFQVendorsPayload>;
 
+/* =========================================================
+Add Vendor to PRFQ  (POST /<prfq_id>/vendors)
+========================================================= */
+export const zAddVendorToPRFQVariables = z.object({
+    prfq_id: z.string().uuid(),
+    vendor_id: z.string().uuid(),
+    customer_contact_manager_id: z.string().uuid(),
+});
+export type AddVendorToPRFQVariables = z.infer<typeof zAddVendorToPRFQVariables>;
+
+export const zAddVendorToPRFQPayload = z.object({
+    status: z.boolean(),
+    message: z.string(),
+    data: zPRFQVendorInfo.optional(),
+});
+export type AddVendorToPRFQPayload = z.infer<typeof zAddVendorToPRFQPayload>;
+
+/* =========================================================
+PRFQ List (select options)
+========================================================= */
 export const zPRFQListPayload = z.object({
-  data: z.array(zSelectOption),
-  status: z.boolean(),
+    data: z.array(zSelectOption),
+    status: z.boolean(),
 });

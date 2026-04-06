@@ -20,8 +20,7 @@ import { SlideIn } from "@/components/SlideIn";
 import { isFormFieldsChanged } from "@/helpers/FormChangeDetector";
 
 import { useSaveContactGroup, useContactGroupDetails } from "@/services/master/customer/service";
-import { useCustomerDropdowns } from "@/services/master/customer/service";
-import { useCustomerList } from "@/services/master/customer/service";
+import { useCustomerDropdowns, useCustomerList } from "@/services/master/customer/service";
 
 import ConfirmationPopup from '@/components/ConfirmationPopup';
 import LoadingOverlay from "@/components/LoadingOverlay";

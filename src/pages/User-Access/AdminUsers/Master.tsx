@@ -226,6 +226,8 @@ export const AdminUserMaster = () => {
               setItemsPerPage(limit);
               setQueryParams((prev: any) => ({ ...prev, limit, page: 1 }));
             }}
+            stickyColumns={3}
+            stickyLastColumn={true}
           />
         </Box>
       </Stack>

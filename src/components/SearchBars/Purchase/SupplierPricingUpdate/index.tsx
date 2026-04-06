@@ -302,17 +302,22 @@ export const SupplierPricingUpdateSearch = (props: Props) => {
 
     const baseColumns: DynamicColumn<any>[] = [
       {
+        key: 'code',
+        header: 'ID',
+        meta: { sortable: true, sortParam: 'code' },
+      },
+      {
         key: 'vendor_quotation_no',
         header: 'Quotation No',
         meta: { sortable: true, sortParam: 'vendor_quotation_no' },
       },
       {
-        key: 'rfq.code',
-        header: 'RFQ',
+        key: 'prfq.code',
+        header: 'RFQ Ref',
         meta: { sortable: true, sortParam: 'rfq_id' },
       },
       {
-        key: 'customer.business_name',
+        key: 'vendor.business_name',
         header: 'Vendor',
         meta: { sortable: true, sortParam: 'customer_id' },
       },
@@ -369,7 +374,7 @@ export const SupplierPricingUpdateSearch = (props: Props) => {
                   label: 'Edit',
                   icon: <BiEdit />,
                   isDisabled: (row: any) => !!row.has_pending_request || !!row.is_closed,
-                  onClick: (row: any) => navigate(`/purchase/supplier-pricing-update/form/${row.id}`),
+                 onClick: (row: any) => navigate(`/purchase/supplier-pricing-update/form/${row.id}?rfq_id=${row.prfq_id}&vendor_id=${row.vendor_id}`),
                   disabledTooltip: (row: any) =>
                     row.is_closed ? 'Quotation is closed' : row.pending_request_message,
                 }] : [])

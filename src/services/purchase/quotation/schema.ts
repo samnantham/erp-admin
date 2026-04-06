@@ -65,6 +65,7 @@ export const zPurchaseQuotation = zStandardObject.extend({
     remarks: z.string().nullable().optional(),
     quotation_file: z.string().nullable().optional(),
     version: z.number().nullable().optional(),
+    code: z.string().nullable().optional(),
     // Flags
     is_closed: z.boolean().nullable().optional(),
     is_editable: z.boolean().nullable().optional(),

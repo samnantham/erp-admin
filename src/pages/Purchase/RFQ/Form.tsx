@@ -120,7 +120,6 @@ export const PRFQForm = () => {
     const { data: dropdownData, isLoading: l1, refetch: reloadDropDowns } = usePRFQDropdowns();
     const { data: itemInfo, isLoading: l2, refetch: fetchItemInfo } = usePRFQDetails(id, { enabled: false });
     const { data: materialRequestList, isLoading: l3 } = useMaterialRequestList();
-    const { data: customerList, isLoading: l4, refetch: reloadCustomers } = useCustomerList();
     const { data: contactGroupList, isLoading: l5 } = useContactGroupList();
 
     const { data: priorityList } = useSubmasterItemIndex("priorities", {});
@@ -132,6 +131,9 @@ export const PRFQForm = () => {
     const filteredContactTypeIds = contactTypeData?.data
         .filter((item: any) => filterContactTypeCodes.includes(item.code))
         .map((item: any) => item.id);
+
+    const { data: customerList, isLoading: l4, refetch: reloadCustomers } = useCustomerList({ contact_type_id: filteredContactTypeIds });
+
 
     const { isLoading: l6, refetch: fetchGroupMembers } = useContactGroupMembers({
         groupId: vendorGroup,
@@ -234,6 +236,7 @@ export const PRFQForm = () => {
     }, [id, priorityItems.length]);
 
     // ── Prefill form from itemInfo (edit mode) ─────────────────────────────────
+    // ── Prefill form from itemInfo (edit mode) ─────────────────────────────────
     useEffect(() => {
         if (!itemInfo?.data || !priorityItems.length) return;
 
@@ -242,14 +245,20 @@ export const PRFQForm = () => {
 
         // Header fields
         const values = Object.fromEntries(FORM_KEYS.map(k => [k, (s as any)[k]]));
-        values.need_by_date = dayjs(values.need_by_date);
+
+        // Only restore need_by_date if it hasn't expired — otherwise leave it empty
+        const parsedDate = dayjs(values.need_by_date);
+        const isDateValid = parsedDate.isValid() && (parsedDate.isSame(dayjs(), 'day') || parsedDate.isAfter(dayjs(), 'day'));
+        values.need_by_date = isDateValid ? parsedDate : '';
+
         setInitialValues(values);
         form.setValues(values);
 
         // Priority → date picker
         if (s.priority_id) {
             const days = priorityItems.find((u: any) => str(u.id) === str(s.priority_id))?.days ?? 0;
-            setDisabledDatePicker(days !== 0);
+            // If date expired, force picker open regardless of priority days
+            setDisabledDatePicker(days !== 0 && isDateValid);
         }
 
         // MR IDs
@@ -360,6 +369,7 @@ export const PRFQForm = () => {
     }, [selectedMRIds]);
 
     // ── Sync header fields + NEW rows from selectedMaterialRequests ────────────
+    // ── Sync header fields + NEW rows from selectedMaterialRequests ────────────
     useEffect(() => {
         if (selectedMaterialRequests.length === 0) {
             // Only wipe rows/fields if not in edit mode or prefill hasn't run
@@ -371,8 +381,27 @@ export const PRFQForm = () => {
             return;
         }
 
-        // Always update header priority/date
-        const priorityIds = selectedMaterialRequests.map(mr => str(mr.priority?.id ?? (isEdit ? mr.priority_id : '')));
+        if (isEdit && prefillDoneRef.current) {
+            const existingItemIds = new Set(rows.filter(r => r.is_existing).map(r => str(r.material_request_item_id)));
+            const newRows = selectedMaterialRequests.flatMap(mr =>
+                (mr.items ?? [])
+                    .filter((item: any) => !existingItemIds.has(str(item.id)))
+                    .map((item: any) => ({
+                        rowKey: crypto.randomUUID(), material_request_id: mr.id, material_request_code: mr.code,
+                        part_number_id: item.part_number_id ?? '', part_number: item.part_number,
+                        condition_id: item.condition_id ?? '', qty: item.qty ?? '',
+                        unit_of_measure_id: item.unit_of_measure_id ?? '', mr_remark: item.remark,
+                        remark: '', material_request_item_id: item.id ?? '',
+                    }))
+            );
+            if (newRows.length > 0) {
+                setRows(prev => [...prev, ...newRows]);
+            }
+            return;
+        }
+
+        // Add mode only: derive priority/date from selected MRs
+        const priorityIds = selectedMaterialRequests.map(mr => str(mr.priority?.id ?? ''));
         const allSamePriority = priorityIds.length > 0 && priorityIds.every(pid => pid === priorityIds[0]);
         const today = dayjs().startOf('day');
         const dueDates = selectedMaterialRequests
@@ -395,39 +424,17 @@ export const PRFQForm = () => {
             });
         }
 
-        // In edit mode after prefill: only ADD rows for newly selected MRs, don't touch existing rows
-        if (isEdit && prefillDoneRef.current) {
-            const existingItemIds = new Set(rows.filter(r => r.is_existing).map(r => str(r.material_request_item_id)));
-            const newRows = selectedMaterialRequests.flatMap(mr =>
-                (mr.items ?? [])
-                    .filter((item: any) => !existingItemIds.has(str(item.id)))
-                    .map((item: any) => ({
-                        rowKey: crypto.randomUUID(), material_request_id: mr.id, material_request_code: mr.code,
-                        part_number_id: item.part_number_id ?? '', part_number: item.part_number,
-                        condition_id: item.condition_id ?? '', qty: item.qty ?? '',
-                        unit_of_measure_id: item.unit_of_measure_id ?? '', mr_remark: item.remark,
-                        remark: '', material_request_item_id: item.id ?? '',
-                    }))
-            );
-            if (newRows.length > 0) {
-                setRows(prev => [...prev, ...newRows]);
-            }
-            return;
-        }
-
-        // Add mode (or before prefill is done — shouldn't happen but safe fallback)
-        if (!isEdit) {
-            const newRows = selectedMaterialRequests.flatMap(mr =>
-                (mr.items ?? []).map((item: any) => ({
-                    rowKey: crypto.randomUUID(), material_request_id: mr.id, material_request_code: mr.code,
-                    part_number_id: item.part_number_id ?? '', part_number: item.part_number,
-                    condition_id: item.condition_id ?? '', qty: item.qty ?? '',
-                    unit_of_measure_id: item.unit_of_measure_id ?? '', mr_remark: item.remark,
-                    remark: '', material_request_item_id: item.id ?? '',
-                }))
-            );
-            setRows(newRows);
-        }
+        // Add mode: build all rows fresh from MR items
+        const newRows = selectedMaterialRequests.flatMap(mr =>
+            (mr.items ?? []).map((item: any) => ({
+                rowKey: crypto.randomUUID(), material_request_id: mr.id, material_request_code: mr.code,
+                part_number_id: item.part_number_id ?? '', part_number: item.part_number,
+                condition_id: item.condition_id ?? '', qty: item.qty ?? '',
+                unit_of_measure_id: item.unit_of_measure_id ?? '', mr_remark: item.remark,
+                remark: '', material_request_item_id: item.id ?? '',
+            }))
+        );
+        setRows(newRows);
     }, [selectedMaterialRequests]);
 
     // ── PDF Preview ────────────────────────────────────────────────────────────

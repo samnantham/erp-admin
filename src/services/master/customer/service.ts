@@ -308,26 +308,41 @@ export const useCustomerRelationIndex = (
 
 type UseCustomerListProps = {
   enabled?: boolean;
-  contact_type_id?: string;
+  contact_type_id?: string | string[];
   queryParams?: QueryParams;
 };
 
 export const useCustomerList = ({
   enabled = true,
+  contact_type_id,
   queryParams,
-}: UseCustomerListProps = {}) =>
-  useQuery({
-    queryKey: ['customerList', queryParams], // ✅ include params in cache key
+}: UseCustomerListProps = {}) => {
+  // normalize to array
+  const normalizedContactTypeIds = contact_type_id
+    ? Array.isArray(contact_type_id)
+      ? contact_type_id
+      : [contact_type_id]
+    : undefined;
+
+  // merge into query params
+  const finalParams = {
+    ...queryParams,
+    contact_type_id: normalizedContactTypeIds,
+  };
+
+  return useQuery({
+    queryKey: ['customerList', finalParams], // ✅ cache-safe
     queryFn: () =>
       getRequest(
         endPoints.list.customer,
         zCustomerListPayload,
-        queryParams // ✅ pass params to API
+        finalParams
       ),
     retry: 2,
     refetchOnWindowFocus: false,
     enabled,
   });
+};
 
 export const getCustomerById = (id: string) =>
   getRequest(

@@ -200,7 +200,7 @@ export const CustomerMaster = () => {
         const baseColumnConfig: DynamicColumn<any>[] = [
             { key: "business_name", header: () =>  <>Business<br/>Name</>, meta: { sortable: true, isNumeric: false, sortParam: 'business_name' } },
             { key: "code", header: () =>  <>Contact<br/>Code</>, meta: { sortable: true, isNumeric: false, sortParam: 'code' } },
-            { key: "email", header: "Email" },
+            { key: "email", header: "Email", meta: { sortable: true, sortParam: 'email', width:240 } },
             { key: "nature_of_business", header: () =>  <>Business<br/>Nature</>, meta: { sortable: true, isNumeric: false, sortParam: 'nature_of_business' } },
             { key: "contact_type.name", header: () =>  <>Contact<br/>Type</>, meta: { sortable: true, isNumeric: false, sortParam: 'contact_type_id' } },
             { key: "business_type.name", header: () =>  <>Business<br/>Type</>, meta: { sortable: true, isNumeric: false, sortParam: 'business_type_id' } },

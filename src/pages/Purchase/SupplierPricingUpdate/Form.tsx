@@ -8,8 +8,8 @@ import {
     Tbody, Td, Text, Th, Thead, Tr, Input, useDisclosure, Tooltip
 } from '@chakra-ui/react';
 import { Formiz, useForm } from '@formiz/core';
-import { HiArrowNarrowLeft, HiOutlinePencilAlt, HiX } from 'react-icons/hi';
-import { Link, useNavigate } from 'react-router-dom';
+import { HiArrowNarrowLeft, HiOutlinePencilAlt, HiOutlinePlus, HiX } from 'react-icons/hi';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import ConfirmationPopup from '@/components/ConfirmationPopup';
 import DocumentDownloadButton from '@/components/DocumentDownloadButton';
@@ -23,7 +23,7 @@ import { PRFQSearchPopup } from '@/components/Popups/Search/Purchase/RFQ';
 import { ResponsiveIconButton } from '@/components/ResponsiveIconButton';
 import { SlideIn } from '@/components/SlideIn';
 import { PairDocUpload } from '@/components/PairDocUpload';
-import { convertToOptions, formatDate, getDisplayLabel } from '@/helpers/commonHelper';
+import { formatDate, getDisplayLabel } from '@/helpers/commonHelper';
 import dayjs from 'dayjs';
 import { useCustomerDetails } from '@/services/master/customer/service';
 import { usePRFQDetails, usePRFQList } from '@/services/purchase/rfq/service';
@@ -39,6 +39,7 @@ import { useDelete } from '@/api/useDelete';
 import { endPoints } from '@/api/endpoints';
 import { SubMasterModalForm } from '@/pages/Submaster/ModalForm';
 import { PartNumberModal } from '@/components/Modals/SpareMaster';
+import { AddVendorToRFQModal } from '@/components/Popups/PRFQCustomers/AddVendorToRFQModal';
 import { format } from 'date-fns';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -78,6 +79,12 @@ const CONFIRM_DEFAULTS: ConfirmState = { title: 'Confirm', content: 'Are you sur
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const SupplierPricingUpdateForm = () => {
+
+    const { id: routeQuotationId } = useParams<{ id?: string }>();
+    const [searchParams] = useSearchParams();
+    const routeRfqId = searchParams.get('rfq_id');
+    const routeVendorId = searchParams.get('vendor_id');
+
     const navigate = useNavigate();
     const toastError = useToastError();
 
@@ -88,7 +95,7 @@ export const SupplierPricingUpdateForm = () => {
 
     // ── UI ────────────────────────────────────────────────────────────────────
     const [activeTab, setActiveTab] = useState(0);
-    const [isEditMode, setIsEditMode] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(!!routeQuotationId);
     const [formTabValues, setFormTabValues] = useState<Record<number, TabData>>({});
     const [sortField, setSortField] = useState('created_at');
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
@@ -111,11 +118,12 @@ export const SupplierPricingUpdateForm = () => {
     const [editingLineItem, setEditingLineItem] = useState<any | null>(null);
 
     const { isOpen: isSearchOpen, onOpen: openSearch, onClose: closeSearch } = useDisclosure();
+    const { isOpen: isAddVendorOpen, onOpen: openAddVendor, onClose: closeAddVendor } = useDisclosure();
 
     // ── Queries ───────────────────────────────────────────────────────────────
     const { data: prfqList } = usePRFQList();
     const { data: dropdownData, isLoading: dropdownLoading, refetch: reloadDropDowns } = usePurchaseQuotationDropdowns();
-    const { data: rfqDetails, isLoading: rfqLoading } = usePRFQDetails(prfqId ?? undefined);
+    const { data: rfqDetails, isLoading: rfqLoading, refetch: refetchRFQDetails } = usePRFQDetails(prfqId ?? undefined);
     const { data: vendorDetails, isLoading: vendorLoading } = useCustomerDetails(customerId, { enabled: !!customerId });
     const { data: quotationList, refetch: reloadQuotations } = useQuotationList({
         enabled: !!prfqId && !!customerId,
@@ -131,6 +139,23 @@ export const SupplierPricingUpdateForm = () => {
         rfqDetails?.data?.items?.[activeTab]?.part_number_id ?? undefined,
         { enabled: !!rfqDetails?.data?.items?.[activeTab]?.part_number_id },
     );
+
+    const [hasInitializedFromRoute, setHasInitializedFromRoute] = useState(false);
+
+
+    useEffect(() => {
+        if (routeQuotationId) return; // don't override route-seeded quotation
+
+        const existing = quotationList?.data ?? [];
+        if (existing.length > 0 && customerId) {
+            const firstId = existing[0].value;
+            setQuotationId(firstId);
+            headerForm.setValues({ quotation_id: firstId });
+        } else {
+            setQuotationId(null);
+            headerForm.setValues({ quotation_id: quotationOptions[0]?.value });
+        }
+    }, [quotationList, customerId]);
 
 
     const isNeedByDateExpired = !!rfqDetails?.data?.need_by_date && new Date(rfqDetails.data.need_by_date) < new Date();
@@ -166,8 +191,16 @@ export const SupplierPricingUpdateForm = () => {
     const activeLineItems = activeQuotationItem?.lines ?? [];
 
     const vendorOptions = useMemo(
-        () => convertToOptions(rfqVendors.map((v: any) => v.vendor), 'id', 'business_name'),
-        [rfqVendors],
+        () =>
+            rfqVendors.map((v: any) => {
+                const vendor = v.vendor;
+                return {
+                    value: vendor.id,
+                    label: `${vendor.business_name}${v.is_approved === false ? ' (Un Approved)' : ''
+                        }`,
+                };
+            }),
+        [rfqVendors]
     );
 
     const quotationOptions = useMemo(() => [
@@ -462,6 +495,32 @@ export const SupplierPricingUpdateForm = () => {
         });
     }, [quotationDetails, headerForm]);
 
+    // Replace the existing hasInitializedFromRoute effect with this:
+    useEffect(() => {
+        if (hasInitializedFromRoute) return;
+        if (routeRfqId) {
+            setPrfqId(routeRfqId);
+            headerForm.setValues({ prfq_id: routeRfqId });
+        }
+        if (routeQuotationId) {
+            setQuotationId(routeQuotationId);
+            headerForm.setValues({ quotation_id: routeQuotationId });
+            setIsEditMode(true);
+        }
+        // DON'T set vendor here — vendorOptions isn't ready yet
+        setHasInitializedFromRoute(true);
+    }, [routeRfqId, routeQuotationId]);
+
+    // New separate effect — fires once vendorOptions are loaded from rfqDetails
+    useEffect(() => {
+        if (!routeVendorId || !vendorOptions.length) return;
+        const exists = vendorOptions.some((o: any) => String(o.value) === String(routeVendorId));
+        if (exists) {
+            setCustomerId(routeVendorId);
+            headerForm.setValues({ vendor_id: routeVendorId });
+        }
+    }, [vendorOptions, routeVendorId]);
+
     // ── Render ────────────────────────────────────────────────────────────────
     return (
         <SlideIn>
@@ -491,7 +550,7 @@ export const SupplierPricingUpdateForm = () => {
                     {/* Title + Edit toggle */}
                     <Flex align="center" justify="space-between">
                         <Text fontSize="md" fontWeight="700">Supplier Pricing Update</Text>
-                        {quotationId && (
+                        {(quotationId && !routeQuotationId) && (
                             <ResponsiveIconButton
                                 variant="@primary"
                                 icon={isEditMode ? <HiX /> : <HiOutlinePencilAlt />}
@@ -525,7 +584,7 @@ export const SupplierPricingUpdateForm = () => {
                                         hasArrow
                                     >
                                         <Box
-                                            sx={isNeedByDateExpired  ? {
+                                            sx={isNeedByDateExpired ? {
                                                 '@keyframes blink': {
                                                     '0%, 100%': { backgroundColor: '#FED7D7' },
                                                     '50%': { backgroundColor: '#FC8181' },
@@ -541,7 +600,7 @@ export const SupplierPricingUpdateForm = () => {
                                                 size="sm"
                                                 style={{
                                                     backgroundColor: 'transparent',
-                                                    color:"#000"
+                                                    color: "#000"
                                                 }}
                                             />
                                         </Box>
@@ -550,7 +609,21 @@ export const SupplierPricingUpdateForm = () => {
                             </Box>
                             <Box>
                                 <FormControl>
-                                    <FormLabel fontSize="sm" minH="20px">Vendor</FormLabel>
+                                    <FormLabel fontSize="sm" minH="20px">
+                                        <HStack spacing={2} align="center">
+                                            <span>Vendor</span>
+                                            {(!!prfqId && !isEditMode) && (
+                                                <IconButton
+                                                    aria-label="Add Vendor to RFQ"
+                                                    icon={<HiOutlinePlus />}
+                                                    colorScheme="brand"
+                                                    size="xs"
+                                                    variant="@primary"
+                                                    onClick={openAddVendor}
+                                                />
+                                            )}
+                                        </HStack>
+                                    </FormLabel>
                                     <FieldSelect key={`vendor-${prfqId}`} name="vendor_id" required="Vendor is required" options={vendorOptions} placeholder="Select Vendor" size="sm" onValueChange={(v) => handleVendorSelect(v ?? '')} isDisabled={!prfqId || isEditMode} className={isEditMode ? 'disabled-input' : ''} />
                                 </FormControl>
                             </Box>
@@ -628,7 +701,19 @@ export const SupplierPricingUpdateForm = () => {
                         {(!quotationId || isEditMode) && (
                             <Flex justify="center" mt={2} gap={2}>
                                 {isEditMode && (
-                                    <Button size="sm" variant="outline" colorScheme="gray" onClick={() => { restoreHeaderForm(); setIsEditMode(false); }}>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        colorScheme="gray"
+                                        onClick={() => {
+                                            if (routeQuotationId) {
+                                                navigate(-1);
+                                            } else {
+                                                restoreHeaderForm();
+                                                setIsEditMode(false);
+                                            }
+                                        }}
+                                    >
                                         Cancel
                                     </Button>
                                 )}
@@ -637,7 +722,7 @@ export const SupplierPricingUpdateForm = () => {
                                     colorScheme={isEditMode ? 'green' : 'orange'}
                                     size="sm"
                                     isLoading={savePurchaseQuotation.isLoading}
-                                    // isDisabled={!headerForm.isValid}
+                                // isDisabled={!headerForm.isValid}
                                 >
                                     {isEditMode ? 'Update & Continue' : 'Save & Continue'}
                                 </Button>
@@ -806,6 +891,19 @@ export const SupplierPricingUpdateForm = () => {
 
             {/* Modals */}
             <PRFQSearchPopup isOpen={isSearchOpen} onClose={(selectedId) => { if (selectedId) { handleRfqSelect(String(selectedId)); headerForm.setValues({ prfq_id: String(selectedId) }); } closeSearch(); }} data={prfqId ? { prfq_id: prfqId } : {}} />
+
+            {!!prfqId && (
+                <AddVendorToRFQModal
+                    isOpen={isAddVendorOpen}
+                    onClose={closeAddVendor}
+                    prfqId={String(prfqId)}
+                    existVendorIds={rfqVendors.map((v: any) => String(v.vendor?.id ?? v.vendor_id))}
+                    onSuccess={() => {
+                        closeAddVendor();
+                        refetchRFQDetails();
+                    }}
+                />
+            )}
 
             <ConfirmationPopup isOpen={isConfirmOpen} onClose={() => setIsConfirmOpen(false)} onConfirm={handleConfirm} headerText={confirmState.title} bodyText={confirmState.content} />
 
