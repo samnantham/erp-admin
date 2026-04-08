@@ -9,7 +9,7 @@ import {
 } from '@chakra-ui/react';
 import { Formiz, useForm } from '@formiz/core';
 import { HiRefresh, HiOutlineSearch } from 'react-icons/hi';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import dayjs from 'dayjs';
 
 import { DataTable } from '@/components/DataTable';
@@ -66,12 +66,13 @@ type FilterPanelProps = {
   priorityOptions: any[];
   dropdownLoading: boolean;
   isModal: boolean;
+  defaultType?: string;
   onFilter: (key: string, value: any) => void;
   onReset: () => void;
 };
 
 const FilterPanel = ({
-  form, formKey, priorityOptions, dropdownLoading, isModal, onFilter, onReset,
+  form, formKey, priorityOptions, dropdownLoading, isModal, defaultType, onFilter, onReset,
 }: FilterPanelProps) => (
   <Formiz autoForm connect={form}>
     {isModal ? (
@@ -155,13 +156,15 @@ const FilterPanel = ({
             size="sm"
           />
           <FieldSelect
-            key={`type_${formKey}`}
+            key={defaultType ? 'type_locked' : `type_${formKey}`}  // ← stable key when locked
             name="type"
             placeholder="MR Type"
             options={TYPE_OPTIONS}
-            onValueChange={(v) => onFilter('type', v)}
-            isClearable
+            onValueChange={(v) => !defaultType && onFilter('type', v)}  // ← no-op when locked
+            isClearable={!defaultType}
+            isDisabled={!!defaultType}
             size="sm"
+            className={!!defaultType ? 'disabled-input' : ''}
           />
           <FieldSelect
             key={`priority_${formKey}`}
@@ -217,6 +220,9 @@ export const MaterialRequestSearch = (props: Props) => {
   const { mode } = props;
   const isModal = mode === 'modal';
 
+  const location = useLocation();
+  const defaultType = (location.state as { type?: string } | null)?.type ?? '';
+
   const navigate = useNavigate();
   const { openPreview } = usePDFPreview();
 
@@ -231,7 +237,11 @@ export const MaterialRequestSearch = (props: Props) => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [sortBy, setSortBy] = useState('created_at');
   const [formKey, setFormKey] = useState(0);
-  const [queryParams, setQueryParams] = useState<any>(INITIAL_QUERY);
+  // Update INITIAL_QUERY to be a function or use useMemo:
+  const [queryParams, setQueryParams] = useState<any>({
+    ...INITIAL_QUERY,
+    type: defaultType,
+  });
   const form = useForm();
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -260,6 +270,15 @@ export const MaterialRequestSearch = (props: Props) => {
   }, [isModal, (props as ModalModeProps).initialSelectedIds]);
 
 
+  // Pre-fill the form when defaultType is present
+  useEffect(() => {
+    setQueryParams((prev: any) => ({ ...prev, type: defaultType ?? '', page: 1 }));
+    if (defaultType) {
+      setTimeout(() => form.setValues({ type: defaultType }), 0);
+    }
+  }, [defaultType]);
+
+
   const {
     data: listData,
     isSuccess: listFetched,
@@ -278,7 +297,11 @@ export const MaterialRequestSearch = (props: Props) => {
   const handleReset = () => {
     form.reset();
     setFormKey((k) => k + 1);
-    setQueryParams(INITIAL_QUERY);
+    setQueryParams({ ...INITIAL_QUERY, type: defaultType }); // ← keep defaultType
+    // Re-apply defaultType to form after reset
+    if (defaultType) {
+      setTimeout(() => form.setValues({ type: defaultType }), 0);
+    }
   };
 
   const handleSortChange = (columnId: string, direction: 'asc' | 'desc') => {
@@ -326,7 +349,7 @@ export const MaterialRequestSearch = (props: Props) => {
     if (!dropdownsFetched) return [];
 
     const baseColumns: DynamicColumn<any>[] = [
-      { key: 'code', header: 'ID', meta: { sortable: true, sortParam: 'code' , fontWeight: 'bold'} },
+      { key: 'code', header: 'ID', meta: { sortable: true, sortParam: 'code', fontWeight: 'bold' } },
       { key: 'type_label', header: 'Type', meta: { sortable: true, sortParam: 'type' } },
       {
         key: 'due_date',
@@ -480,6 +503,7 @@ export const MaterialRequestSearch = (props: Props) => {
       isModal={isModal}
       onFilter={updateFilter}
       onReset={handleReset}
+      defaultType={defaultType}
     />
   );
 

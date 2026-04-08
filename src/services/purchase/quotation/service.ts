@@ -17,6 +17,8 @@ import {
     QuotationLineItemUpdateVariables,
     QuotationLineItemUpdateResponsePayload,
     zQuotationLineItemUpdateResponsePayload,
+    QuotationsByRfqPayload,
+    zQuotationsByRfqPayload,
 } from '@/services/purchase/quotation/schema';
 
 /* ================= Quotation Index ================= */
@@ -170,7 +172,7 @@ export const useQuotationItems = (
         refetchOnWindowFocus: false,
     });
 
-    export const useUpdateQuotationItem = () =>
+export const useUpdateQuotationItem = () =>
     useMutation<QuotationLineItemUpdateResponsePayload, Error, QuotationLineItemUpdateVariables>(
         ({ quotation_id, line_item_id, ...body }) =>
             putRequest(
@@ -181,3 +183,24 @@ export const useQuotationItems = (
                 zQuotationLineItemUpdateResponsePayload,
             )
     );
+
+/* ================= Quotations By RFQ ================= */
+type UseQuotationsByRfqProps = {
+    enabled?: boolean;
+};
+
+export const useQuotationsByRFQ = (
+    rfqId?: string,
+    { enabled = true }: UseQuotationsByRfqProps = {}
+) =>
+    useQuery<QuotationsByRfqPayload>({
+        queryKey: ['quotationsByRfq', rfqId],
+        queryFn: () =>
+            getRequest(
+                endPoints.list.quotation_by_rfq.replace(':id', String(rfqId)),
+                zQuotationsByRfqPayload,
+            ),
+        enabled: !!rfqId && enabled,
+        retry: 2,
+        refetchOnWindowFocus: false,
+    });

@@ -39,7 +39,8 @@ export const endPoints = {
     prfq: '/purchase/rfq/list',
     purchase_quotation: '/purchase/quotation/list',
     quotation_items : '/purchase/quotation/:id/items',
-    alternate_parts: '/spare-management/part-number/:id/alternates'
+    alternate_parts: '/spare-management/part-number/:id/alternates',
+    quotation_by_rfq: '/purchase/quotation/by-rfq/:id',
   },
   info: {
     role:           '/user-access/role/:id',

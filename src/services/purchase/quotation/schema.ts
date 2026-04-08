@@ -95,6 +95,7 @@ export const zPurchaseQuotation = zStandardObject.extend({
     }).nullable().optional(),
     currency: zBasicObject.extend({
         name: z.string().nullable().optional(),
+        symbol: z.string().nullable().optional(),
     }).nullable().optional(),
     items: z.array(zQuotationItem).optional(),
     // Extra
@@ -178,3 +179,9 @@ export const zQuotationLineItemUpdateResponsePayload = z.object({
     status: z.boolean(),
 });
 export type QuotationLineItemUpdateResponsePayload = z.infer<typeof zQuotationLineItemUpdateResponsePayload>;
+
+export const zQuotationsByRfqPayload = z.object({
+    data: z.array(zPurchaseQuotation),
+    status: z.boolean(),
+});
+export type QuotationsByRfqPayload = z.infer<typeof zQuotationsByRfqPayload>;

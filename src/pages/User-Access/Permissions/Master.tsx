@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import {
   Box, Stack, HStack, Heading, Text, Button,
-  VStack, Checkbox, Badge, Spinner, Divider
+  VStack, Checkbox, Badge, Spinner, Divider, Tooltip
 } from '@chakra-ui/react';
 import { LuArrowLeft } from 'react-icons/lu';
 import { SlideIn } from '@/components/SlideIn';
@@ -26,10 +26,20 @@ export const PermissionPage = () => {
   const { data, isLoading } = usePermissionsByDeptRole(id);
   const modules             = data?.data ?? [];
 
+  // Route IDs that are default (auto-selected, locked)
+  const defaultRouteIds = useMemo(() => {
+    const ids = new Set<string>();
+    modules.forEach((m) =>
+      m.routes.forEach((r) => { if (r.is_default) ids.add(r.id); })
+    );
+    return ids;
+  }, [data]);
+
   const initialGranted = useMemo(() => {
     const ids = new Set<string>();
     modules.forEach((m) =>
-      m.routes.forEach((r) => { if (r.is_granted) ids.add(r.id); })
+      // default routes are always granted regardless of is_granted flag
+      m.routes.forEach((r) => { if (r.is_granted || r.is_default) ids.add(r.id); })
     );
     return ids;
   }, [data]);
@@ -55,7 +65,7 @@ export const PermissionPage = () => {
   const saveEndpoint = useSavePermissionsForDeptRole();
 
   const handleToggle = (routeId: string) => {
-    if (!canUpdate) return;
+    if (!canUpdate || defaultRouteIds.has(routeId)) return;
     setCheckedIds((prev) => {
       const next = new Set(prev);
       next.has(routeId) ? next.delete(routeId) : next.add(routeId);
@@ -65,13 +75,15 @@ export const PermissionPage = () => {
 
   const handleToggleModule = (moduleRouteIds: string[]) => {
     if (!canUpdate) return;
-    const allCheckedInModule = moduleRouteIds.every((id) => checkedIds.has(id));
+    // Exclude default routes from toggle consideration
+    const toggleable      = moduleRouteIds.filter((id) => !defaultRouteIds.has(id));
+    const allToggleable   = toggleable.every((id) => checkedIds.has(id));
     setCheckedIds((prev) => {
       const next = new Set(prev);
-      if (allCheckedInModule) {
-        moduleRouteIds.forEach((id) => next.delete(id));
+      if (allToggleable) {
+        toggleable.forEach((id) => next.delete(id));
       } else {
-        moduleRouteIds.forEach((id) => next.add(id));
+        toggleable.forEach((id) => next.add(id));
       }
       return next;
     });
@@ -79,8 +91,10 @@ export const PermissionPage = () => {
 
   const handleSave = () => {
     if (!id) return;
+    // Default route IDs are always included even if somehow missing from state
+    const merged = new Set([...checkedIds, ...defaultRouteIds]);
     saveEndpoint.mutate(
-      { id, route_ids: [...checkedIds] },
+      { id, route_ids: [...merged] },
       { onSuccess: () => navigate('/user-access/departments') }
     );
   };
@@ -110,7 +124,6 @@ export const PermissionPage = () => {
             </Box>
           </HStack>
 
-          {/* Save button — hidden if no update permission */}
           {canUpdate && (
             <Button
               colorScheme="brand"
@@ -148,8 +161,11 @@ export const PermissionPage = () => {
                 const allInModule     = checkedInModule === moduleRouteIds.length;
                 const someInModule    = checkedInModule > 0 && !allInModule;
 
+                // Module header checkbox is only togglable if there are non-default routes
+                const hasToggleable = moduleRouteIds.some((id) => !defaultRouteIds.has(id));
+
                 return (
-                  <Box key={moduleGroup.module}>
+                  <Box key={moduleGroup.module_id}>
                     {/* ── Module header ── */}
                     <HStack
                       px={3} py={2}
@@ -157,17 +173,17 @@ export const PermissionPage = () => {
                       _dark={{ bg: 'gray.700' }}
                       borderRadius="md"
                       mb={2}
-                      cursor={canUpdate ? 'pointer' : 'default'}
-                      onClick={() => handleToggleModule(moduleRouteIds)}
+                      cursor={canUpdate && hasToggleable ? 'pointer' : 'default'}
+                      onClick={() => hasToggleable && handleToggleModule(moduleRouteIds)}
                     >
                       <Checkbox
                         isChecked={allInModule}
                         isIndeterminate={someInModule}
-                        onChange={() => handleToggleModule(moduleRouteIds)}
+                        onChange={() => hasToggleable && handleToggleModule(moduleRouteIds)}
                         pointerEvents="none"
-                        isReadOnly={!canUpdate}
+                        isReadOnly={!canUpdate || !hasToggleable}
                       />
-                      <Text fontWeight="600" fontSize="sm">{moduleGroup.module}</Text>
+                      <Text fontWeight="600" fontSize="sm">{moduleGroup.module_name}</Text>
                       <Badge colorScheme="gray" variant="subtle" ml="auto">
                         {checkedInModule} / {moduleRouteIds.length}
                       </Badge>
@@ -176,33 +192,57 @@ export const PermissionPage = () => {
                     {/* ── Routes ── */}
                     <VStack align="stretch" spacing={1} pl={4}>
                       {moduleGroup.routes.map((route) => {
-                        const isChecked = checkedIds.has(route.id);
+                        const isChecked  = checkedIds.has(route.id);
+                        const isDefault  = defaultRouteIds.has(route.id);
+                        const isDisabled = !canUpdate || isDefault;
+
                         return (
-                          <HStack
+                          <Tooltip
                             key={route.id}
-                            px={3} py={2}
-                            borderRadius="md"
-                            border="1px solid"
-                            borderColor={isChecked ? 'blue.200' : 'gray.100'}
-                            bg={isChecked ? 'blue.50' : 'transparent'}
-                            _dark={{
-                              borderColor: isChecked ? 'blue.600' : 'gray.700',
-                              bg:          isChecked ? 'blue.900' : 'transparent',
-                            }}
-                            cursor={canUpdate ? 'pointer' : 'default'}
-                            onClick={() => handleToggle(route.id)}
+                            label={isDefault ? 'This route is granted to all users by default' : undefined}
+                            isDisabled={!isDefault}
+                            placement="top-start"
+                            hasArrow
                           >
-                            <Checkbox
-                              isChecked={isChecked}
-                              onChange={() => handleToggle(route.id)}
-                              pointerEvents="none"
-                              isReadOnly={!canUpdate}
-                            />
-                            <Text fontSize="sm" flex={1}>{route.name}</Text>
-                            <Text fontSize="xs" color="gray.400" fontFamily="mono">
-                              {route.path}
-                            </Text>
-                          </HStack>
+                            <HStack
+                              px={3} py={2}
+                              borderRadius="md"
+                              border="1px solid"
+                              borderColor={
+                                isDefault   ? 'green.200' :
+                                isChecked   ? 'blue.200'  : 'gray.100'
+                              }
+                              bg={
+                                isDefault   ? 'green.50'  :
+                                isChecked   ? 'blue.50'   : 'transparent'
+                              }
+                              _dark={{
+                                borderColor: isDefault ? 'green.700' : isChecked ? 'blue.600' : 'gray.700',
+                                bg:          isDefault ? 'green.900' : isChecked ? 'blue.900' : 'transparent',
+                              }}
+                              cursor={isDisabled ? 'not-allowed' : 'pointer'}
+                              onClick={() => handleToggle(route.id)}
+                              opacity={isDefault ? 0.75 : 1}
+                            >
+                              <Checkbox
+                                isChecked={isChecked}
+                                onChange={() => handleToggle(route.id)}
+                                pointerEvents="none"
+                                isReadOnly={isDisabled}
+                                isDisabled={isDefault}
+                                colorScheme={isDefault ? 'green' : 'blue'}
+                              />
+                              <Text fontSize="sm" flex={1}>{route.name}</Text>
+                              {isDefault && (
+                                <Badge colorScheme="green" variant="subtle" fontSize="2xs">
+                                  default
+                                </Badge>
+                              )}
+                              <Text fontSize="xs" color="gray.400" fontFamily="mono">
+                                {route.path}
+                              </Text>
+                            </HStack>
+                          </Tooltip>
                         );
                       })}
                     </VStack>

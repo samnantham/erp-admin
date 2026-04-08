@@ -66,7 +66,7 @@ import {
   FaReceipt,
   FaRankingStar,
   FaChartLine,
-  FaPeopleGroup 
+  FaPeopleGroup
 } from 'react-icons/fa6';
 import { PiListNumbersFill } from 'react-icons/pi';
 import { BiSitemap } from 'react-icons/bi';
@@ -162,7 +162,7 @@ const NavigationSections: Array<SectionProps> = [
         icon: FaUsers,
         subItems: [
           { name: 'Contact Master', icon: FaUsersCog, link: '/contact-management/master' },
-          { name: 'Contact Group', icon: FaPeopleGroup , link: '/contact-management/contact-group' },
+          { name: 'Contact Group', icon: FaPeopleGroup, link: '/contact-management/contact-group' },
         ],
       },
       {
@@ -199,13 +199,13 @@ const NavigationSections: Array<SectionProps> = [
             link: '/purchase/rfq/master',
             activeBase: '/purchase/rfq'
           },
-           {
+          {
             name: 'Supplier Pricing Update',
             icon: FaFileSignature,
             link: '/purchase/supplier-pricing-update/master',
             activeBase: '/purchase/supplier-pricing-update'
           },
-          
+
         ],
       },
       {
@@ -292,9 +292,6 @@ const isLinkActive = (
   const target = normalize(link);
 
   // ── State-aware match ──────────────────────────────────────────────────────
-  // If the nav item declares a state, only activate when BOTH the path and
-  // every state key match. This prevents two items with the same link but
-  // different state from both being highlighted.
   if (itemState && Object.keys(itemState).length > 0) {
     const pathMatches = activeBase
       ? current === normalize(activeBase) || current.startsWith(normalize(activeBase) + '/')
@@ -302,7 +299,6 @@ const isLinkActive = (
 
     if (!pathMatches) return false;
 
-    // All state keys declared on the nav item must match location.state
     return Object.entries(itemState).every(
       ([k, v]) => locationState?.[k] === v
     );
@@ -314,9 +310,13 @@ const isLinkActive = (
     return current === base || current.startsWith(base + '/');
   }
 
+  // ── Root path: exact match only ───────────────────────────────────────────
+  if (target === '' || target === '/') {
+    return current === '' || current === '/';
+  }
+
   return current === target || current.startsWith(target + '/');
 };
-
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
 const SidebarContent = ({ onClose, permissions, isSuperAdmin, ...rest }: SidebarProps) => {

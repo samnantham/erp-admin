@@ -10,7 +10,7 @@ import { Formiz, useForm } from '@formiz/core';
 import { HiRefresh, HiOutlineSearch, HiEye } from 'react-icons/hi';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-
+import { FaCodeCompare } from 'react-icons/fa6';
 import { DataTable } from '@/components/DataTable';
 import { FieldInput } from '@/components/FieldInput';
 import { FieldSelect } from '@/components/FieldSelect';
@@ -357,6 +357,20 @@ export const PRFQSearch = (props: Props) => {
                 disabledTooltip: (row: any) =>
                   row.is_closed ? 'PRFQ is closed' : row.pending_request_message,
               }] : []),
+              {
+                                  label: 'Compare',
+                                  icon: <FaCodeCompare />,
+                                  isDisabled: (row: any) =>
+                                    !!row.has_pending_request || !!row.is_closed,
+                                  onClick: (row: any) =>
+                                    navigate(
+                                      `/purchase/supplier-pricing-update/compare-quotations/${row.id}`
+                                    ),
+                                  disabledTooltip: (row: any) =>
+                                    row.is_closed
+                                      ? 'Quotation is closed'
+                                      : row.pending_request_message,
+                                },
               {
                 label: 'Preview',
                 icon: <BiSolidFilePdf />,

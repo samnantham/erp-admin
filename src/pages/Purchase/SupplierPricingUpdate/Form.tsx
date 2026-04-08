@@ -68,7 +68,7 @@ type ConfirmState = {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TABLE_COLUMNS: [string, string | null][] = [
-    ['Req. P/N', null], ['Condition', null],
+    ['Quo. P/N', null], ['Condition', null],
     ['Qty', 'qty'], ['UOM', null], ['Price', 'price'],
     ['MOQ', 'moq'], ['MOV', 'mov'], ['Delivery', 'delivery_options'],
     ['Remark', 'remark'],
@@ -298,18 +298,23 @@ export const SupplierPricingUpdateForm = () => {
     }, [quotationDetails]);
 
     /** Sync item form on tab change */
+
     useEffect(() => {
         const data = formTabValues[activeTab];
-        if (!data) return;
-        itemForm.setValues({
-            part_number_id: data.part_number_id ?? '',
-            condition_id: data.condition_id ?? '',
-            qty: data.qty ? Number(data.qty) : '',
-            unit_of_measure_id: data.unit_of_measure_id ?? '',
-            price: data.price ?? '', moq: data.moq ?? '', mov: data.mov ?? '',
-            delivery_options: data.delivery_options ?? '', remark: data.remark ?? '',
-        });
-    }, [activeTab, formTabValues]);
+        if (!data || !quotationId) return;
+        const timeout = setTimeout(() => {
+            itemForm.setValues({
+                part_number_id: data.part_number_id ?? '',
+                condition_id: data.condition_id ?? '',
+                qty: data.qty ? Number(data.qty) : '',
+                unit_of_measure_id: data.unit_of_measure_id ?? '',
+                price: data.price ?? '', moq: data.moq ?? '', mov: data.mov ?? '',
+                delivery_options: data.delivery_options ?? '', remark: data.remark ?? '',
+            });
+        }, 50);
+        return () => clearTimeout(timeout);
+    }, [activeTab, formTabValues, quotationId]);
+
 
     // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -379,18 +384,29 @@ export const SupplierPricingUpdateForm = () => {
                 quotation_id: quotationId,
                 items: [{
                     prfq_item_id: activeTabData.prfq_item_id || undefined,
-                    requested_part_number_id: values.part_number_id || undefined,
-                    is_no_quote: false,
+
+                    // swapped here
+                    requested_part_number_id: formTabValues[activeTab].part_number_id || undefined,
                     part_number_id: values.part_number_id || undefined,
+
+                    is_no_quote: false,
                     condition_id: values.condition_id || undefined,
                     unit_of_measure_id: values.unit_of_measure_id || undefined,
-                    qty: Number(values.qty) || 0, price: Number(values.price) || 0,
-                    moq: Number(values.moq) || 0, mov: Number(values.mov) || 0,
+                    qty: Number(values.qty) || 0,
+                    price: Number(values.price) || 0,
+                    moq: Number(values.moq) || 0,
+                    mov: Number(values.mov) || 0,
                     delivery_options: values.delivery_options || undefined,
                     remark: values.remark || undefined,
                 }],
             },
-            { onSuccess: () => { reloadQuotations(); refetchQuotationItems(); resetItemForm(); } },
+            {
+                onSuccess: () => {
+                    reloadQuotations();
+                    refetchQuotationItems();
+                    resetItemForm();
+                },
+            }
         );
     }, [quotationId, activeTabData, activeLineItems, createItems, refetchQuotationItems, reloadQuotations, resetItemForm]);
 
@@ -856,7 +872,7 @@ export const SupplierPricingUpdateForm = () => {
                                                                 return (
                                                                     <Tr key={line.id} bg={isEditing ? 'yellow.100' : i % 2 === 0 ? 'white' : 'green.50'} outline={isEditing ? '2px solid' : undefined} outlineColor={isEditing ? 'yellow.400' : undefined}>
                                                                         <Td>{i + 1}</Td>
-                                                                        <Td>{line.requested_part_number?.name ?? activeRFQItem?.part_number?.name ?? '—'}</Td>
+                                                                        <Td>{line.part_number?.name ?? activeRFQItem?.part_number?.name ?? '—'}</Td>
                                                                         <Td>{getDisplayLabel(conditionOptions, line.condition_id ?? '', 'CN')}</Td>
                                                                         <Td>{line.qty}</Td>
                                                                         <Td>{getDisplayLabel(uomOptions, line.unit_of_measure_id ?? '', 'UOM')}</Td>

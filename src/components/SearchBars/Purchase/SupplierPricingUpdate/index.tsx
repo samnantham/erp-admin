@@ -18,7 +18,6 @@ import { FieldDayPicker } from '@/components/FieldDayPicker';
 import { buildColumns, DynamicColumn } from '@/components/ReUsable/table-columns/buildColumns';
 import { usePurchaseQuotationIndex, usePurchaseQuotationDropdowns } from '@/services/purchase/quotation/service';
 import LoadingOverlay from '@/components/LoadingOverlay';
-import { fontWeight } from 'html2canvas/dist/types/css/property-descriptors/font-weight';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -42,7 +41,7 @@ type Props = PageModeProps | ModalModeProps;
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const STATUS_OPTIONS = [
-  { value: 'true',  label: 'Closed' },
+  { value: 'true', label: 'Closed' },
   { value: 'false', label: 'Open' },
 ];
 
@@ -228,15 +227,15 @@ export const SupplierPricingUpdateSearch = (props: Props) => {
     usePurchaseQuotationDropdowns();
   const currencyOptions = dropdownData?.currencies ?? [];
 
-  const [itemsPerPage, setItemsPerPage]   = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [sortBy, setSortBy]               = useState('created_at');
-  const [formKey, setFormKey]             = useState(0);
-  const [queryParams, setQueryParams]     = useState<any>(INITIAL_QUERY);
+  const [sortBy, setSortBy] = useState('created_at');
+  const [formKey, setFormKey] = useState(0);
+  const [queryParams, setQueryParams] = useState<any>(INITIAL_QUERY);
   const form = useForm();
 
   // ── Single-select state ────────────────────────────────────────────────────
-  const [selectedId,   setSelectedId]   = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
 
   // Seed from parent if provided
@@ -253,8 +252,8 @@ export const SupplierPricingUpdateSearch = (props: Props) => {
   const { data: listData, isSuccess: listFetched, isLoading: listDataLoading } =
     usePurchaseQuotationIndex(queryParams);
 
-  const allLoaded      = dropdownsFetched && listFetched;
-  const data           = listData?.data ?? [];
+  const allLoaded = dropdownsFetched && listFetched;
+  const data = listData?.data ?? [];
   const paginationData = listData?.pagination;
 
   // ── Handlers ──────────────────────────────────────────────────────────────
@@ -275,7 +274,7 @@ export const SupplierPricingUpdateSearch = (props: Props) => {
   };
 
   const handleToggleSelect = (row: any) => {
-    const id   = String(row.id);
+    const id = String(row.id);
     const code = String(row.vendor_quotation_no ?? row.id);
     if (selectedId === id) {
       setSelectedId(null);
@@ -337,10 +336,10 @@ export const SupplierPricingUpdateSearch = (props: Props) => {
           row.expiry_date ? dayjs(row.expiry_date).format('DD-MMM-YYYY') : '-',
       },
       { key: 'currency.name', header: 'Currency' },
-      { key: 'total_items',   header: 'Items' },
-      { key: 'total_qty',     header: 'Total Qty' },
-      { key: 'total_open',    header: 'Open' },
-      { key: 'total_closed',  header: 'Closed' },
+      { key: 'total_items', header: 'Items' },
+      { key: 'total_qty', header: 'Total Qty' },
+      { key: 'total_open', header: 'Open' },
+      { key: 'total_closed', header: 'Closed' },
       {
         key: 'is_closed',
         header: 'Status',
@@ -355,32 +354,42 @@ export const SupplierPricingUpdateSearch = (props: Props) => {
         header: isModal ? 'Select' : 'Actions',
         ...(isModal
           ? {
-              render: (row: any) => {
-                const isSelected = selectedId === String(row.id);
-                return (
-                  <IconButton
-                    aria-label={isSelected ? 'Deselect' : 'Select'}
-                    colorScheme={isSelected ? 'red' : 'green'}
-                    icon={isSelected ? <LuX /> : <LuCheck />}
-                    size="xs"
-                    onClick={() => handleToggleSelect(row)}
-                  />
-                );
-              },
-            }
+            render: (row: any) => {
+              const isSelected = selectedId === String(row.id);
+              return (
+                <IconButton
+                  aria-label={isSelected ? 'Deselect' : 'Select'}
+                  colorScheme={isSelected ? 'red' : 'green'}
+                  icon={isSelected ? <LuX /> : <LuCheck />}
+                  size="xs"
+                  onClick={() => handleToggleSelect(row)}
+                />
+              );
+            },
+          }
           : {
-              type: 'actions' as const,
-              actions: [
-                ...(props.canUpdate ? [{
-                  label: 'Edit',
-                  icon: <BiEdit />,
-                  isDisabled: (row: any) => !!row.has_pending_request || !!row.is_closed,
-                 onClick: (row: any) => navigate(`/purchase/supplier-pricing-update/form/${row.id}?rfq_id=${row.prfq_id}&vendor_id=${row.vendor_id}`),
-                  disabledTooltip: (row: any) =>
-                    row.is_closed ? 'Quotation is closed' : row.pending_request_message,
-                }] : [])
-              ],
-            }),
+            type: 'actions' as const,
+            actions: [
+              ...(props.canUpdate
+                ? [
+                  {
+                    label: 'Edit',
+                    icon: <BiEdit />,
+                    isDisabled: (row: any) =>
+                      !!row.has_pending_request || !!row.is_closed,
+                    onClick: (row: any) =>
+                      navigate(
+                        `/purchase/supplier-pricing-update/form/${row.id}?rfq_id=${row.prfq_id}&vendor_id=${row.vendor_id}`
+                      ),
+                    disabledTooltip: (row: any) =>
+                      row.is_closed
+                        ? 'Quotation is closed'
+                        : row.pending_request_message,
+                  }
+                ]
+                : []),
+            ],
+          }),
       },
     ];
 
