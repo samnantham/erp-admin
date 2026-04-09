@@ -11,6 +11,7 @@ import {
   PartNumberSaveResponsePayload,
   PartNumberBulkUploadResponse,
   PartNumberUniqueCheckPayload,
+  ValidatePartNumbersByNamePayload,
   zPartNumberIndexPayload,
   zPartNumberDetailsPayload,
   zPartNumberSaveResponsePayload,
@@ -20,7 +21,8 @@ import {
   zSpareDetailsPayload,
   zAssignAltSparePartsRespPayload,
   zPartNumberListPayload,
-PartNumberListPayload
+  zValidatePartNumbersByNamePayload,
+  PartNumberListPayload,
 } from '@/services/master/spare/schema';
 import { AxiosError } from "axios";
 import { ApiResp } from "@/services/global-schema";
@@ -161,6 +163,7 @@ export const fetchSpareDetails = () => {
   };
 };
 
+/* ================= Assign Alternate Parts ================= */
 type useCreateAltSpareBody = {
   part_number_id: string;
   alternate_part_number_id: string;
@@ -190,25 +193,38 @@ export const useAssignAltParts = () => {
   );
 };
 
-/* ================= Quotation Items ================= */
+/* ================= Alternate Part Number List ================= */
 type useAltPartItemProps = {
-    enabled?: boolean;
-    queryParams?: QueryParams;
+  enabled?: boolean;
+  queryParams?: QueryParams;
 };
 
 export const useAltPartNumberList = (
-    partNumberId?: string,
-    { enabled = true, queryParams }: useAltPartItemProps = {}
+  partNumberId?: string,
+  { enabled = true, queryParams }: useAltPartItemProps = {}
 ) =>
-    useQuery<PartNumberListPayload>({
-        queryKey: ['alternatePartsItems', partNumberId, queryParams],
-        queryFn: () =>
-            getRequest(
-                endPoints.list.alternate_parts.replace(':id', String(partNumberId)),
-                zPartNumberListPayload,
-                queryParams
-            ),
-        enabled: !!partNumberId && enabled,
-        retry: 2,
-        refetchOnWindowFocus: false,
-    });
+  useQuery<PartNumberListPayload>({
+    queryKey: ['alternatePartsItems', partNumberId, queryParams],
+    queryFn: () =>
+      getRequest(
+        endPoints.list.alternate_parts.replace(':id', String(partNumberId)),
+        zPartNumberListPayload,
+        queryParams
+      ),
+    enabled: !!partNumberId && enabled,
+    retry: 2,
+    refetchOnWindowFocus: false,
+  });
+
+/* ================= Validate Part Numbers By Name (CSV upload) ================= */
+
+export async function validatePartNumbersByName(
+  names: string[]
+): Promise<Record<string, { id: any;[key: string]: any }>> {
+  const response = await postRequest(
+    endPoints.others.validate_part_numbers_by_name,
+    { names },
+    zValidatePartNumbersByNamePayload
+  );
+  return response.data ?? {};
+}

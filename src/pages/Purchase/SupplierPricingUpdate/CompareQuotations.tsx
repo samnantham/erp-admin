@@ -5,7 +5,6 @@ import { ChevronRightIcon } from '@chakra-ui/icons';
 import {
     Alert,
     AlertIcon,
-    IconButton,
     Badge,
     Box,
     Breadcrumb,
@@ -30,9 +29,7 @@ import {
     VStack,
     useColorModeValue,
 } from '@chakra-ui/react';
-
 import { BsPatchCheckFill } from "react-icons/bs";
-
 import { ResponsiveIconButton } from '@/components/ResponsiveIconButton';
 import {
     HiArrowNarrowLeft,
@@ -41,7 +38,7 @@ import {
     HiOutlineTag,
     HiOutlineTruck
 } from 'react-icons/hi';
-import { TbLayoutSidebarLeftCollapseFilled, TbLayoutSidebarRightCollapseFilled  } from "react-icons/tb";
+import { TbLayoutSidebarLeftCollapseFilled, TbLayoutSidebarRightCollapseFilled } from "react-icons/tb";
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ConfirmationPopup from '@/components/ConfirmationPopup';
 import { SlideIn } from '@/components/SlideIn';
@@ -63,7 +60,6 @@ const SummaryCard = ({
 }) => {
     const bg = useColorModeValue('#0C2556', 'white');
     const border = useColorModeValue('gray.100', 'gray.700');
-
     return (
         <Box
             bg={bg}
@@ -102,27 +98,44 @@ const SummaryCard = ({
 };
 
 /* ─── Inline price chip with optional "best" highlight ─── */
-const PriceChip = ({ price, isBest, currency }: { price: number; isBest: boolean; currency?: string }) => (
+const PriceChip = ({
+    price,
+    isBest,
+    isExactMatch,
+    currency,
+}: {
+    price: number;
+    isBest: boolean;
+    isExactMatch: boolean;
+    currency?: string;
+}) => (
     <HStack spacing={1}>
         <Text fontWeight={isBest ? '700' : '500'} fontSize="sm">
             {currency ? `${currency} ` : ''}{Number(price || 0).toFixed(2)}
         </Text>
         {isBest && (
-            <BsPatchCheckFill color="green" size={20} title="Best Price" />
+            <BsPatchCheckFill
+                color={isExactMatch ? 'green' : 'orange'}
+                size={20}
+                title={isExactMatch ? 'Best Price (Exact Match)' : 'Best Price (Alt Part)'}
+            />
         )}
     </HStack>
 );
 
 /* ─── Redesigned left sidebar vendor item ─── */
+// FIX 1: Added isExactMatch to props type and destructuring
 const SidebarVendorItem = ({
     quote,
     isBest,
+    isExactMatch,
     isSelected,
     isDisabled,
     onToggle,
 }: {
     quote: any;
     isBest: boolean;
+    isExactMatch: boolean;
     isSelected: boolean;
     isDisabled: boolean;
     onToggle: () => void;
@@ -135,7 +148,6 @@ const SidebarVendorItem = ({
     const priceColor = useColorModeValue('gray.600', 'gray.400');
     const priceSelected = useColorModeValue('blue.600', 'blue.300');
     const subTextColor = useColorModeValue('gray.400', 'gray.500');
-
     return (
         <Box
             px={4}
@@ -163,7 +175,6 @@ const SidebarVendorItem = ({
                 onClick={(e) => e.stopPropagation()}
             />
             <Box flex={1} minW={0}>
-                {/* Vendor name */}
                 <Text
                     fontSize="sm"
                     fontWeight={isSelected ? '600' : '500'}
@@ -172,17 +183,20 @@ const SidebarVendorItem = ({
                 >
                     {quote.vendorName}
                 </Text>
-                {/* Quotation number + best badge */}
                 <HStack spacing={1.5} mt={0.5}>
                     <Text fontSize="xs" color={subTextColor}>
                         {quote.quotationNumber}
                     </Text>
+                    {/* FIX 1: isExactMatch is now available as a prop */}
                     {isBest && (
-                        <BsPatchCheckFill color="green" size={14} title="Best Price" />
+                        <BsPatchCheckFill
+                            color={isExactMatch ? 'green' : 'orange'}
+                            size={14}
+                            title={isExactMatch ? 'Best Price (Exact)' : 'Best Price (Alt)'}
+                        />
                     )}
                 </HStack>
             </Box>
-            {/* Unit price – right aligned */}
             <Text
                 fontSize="sm"
                 fontWeight={isBest ? '700' : '500'}
@@ -205,8 +219,7 @@ export const CompareQuotations = () => {
     const [mrNo, setMrNo] = useState<string[]>([]);
     const [groupedQuotations, setGroupedQuotations] = useState<any[]>([]);
     const [isOpen, setIsOpen] = useState<boolean>(false);
-    const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
-
+    const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
     const cardBg = useColorModeValue('white', 'gray.800');
     const rowHoverBg = useColorModeValue('blue.50', 'blue.900');
     const borderColor = useColorModeValue('gray.200', 'gray.600');
@@ -218,16 +231,13 @@ export const CompareQuotations = () => {
     const reqMetaColor = useColorModeValue('gray.500', 'gray.400');
     const selectedBarBg = useColorModeValue('blue.50', 'blue.900');
     const selectedBarBorder = useColorModeValue('blue.100', 'blue.700');
-
     const handleConfirm = () => { redirctPage(); handleClose(); };
     const handleClose = () => setIsOpen(false);
-
     const {
         data: quotationsData,
         isLoading: isQuotationsLoading,
         isError: isQuotationsError,
     } = useQuotationsByRFQ(rfqId);
-
     const {
         data: prfqData,
         isLoading: isPrfqLoading,
@@ -241,8 +251,6 @@ export const CompareQuotations = () => {
     }, [prfqData]);
 
     useEffect(() => {
-
-        console.log(quotationsData)
         if (quotationsData?.data) {
             const allLines = quotationsData.data.flatMap((quotation) =>
                 quotation.items?.flatMap((item) =>
@@ -254,12 +262,10 @@ export const CompareQuotations = () => {
                 ) ?? []
             );
             setQuotationItems(allLines);
-
             const grouped = quotationsData.data.reduce((acc: any, quotation) => {
                 quotation.items?.forEach((item) => {
                     (item.lines ?? []).forEach((line) => {
                         const key = line.requested_part_number_id ?? line.part_number_id ?? line.id;
-
                         if (!acc[key]) {
                             acc[key] = {
                                 reqPartNumber: line.requested_part_number_id ?? line.part_number_id,
@@ -269,9 +275,6 @@ export const CompareQuotations = () => {
                                 quotations: [],
                             };
                         }
-
-                        console.log(quotation.currency)
-
                         acc[key].quotations.push({
                             id: line.id,
                             quotationId: quotation.id,
@@ -299,7 +302,6 @@ export const CompareQuotations = () => {
                 });
                 return acc;
             }, {});
-
             const sortedGrouped = (Object.values(grouped) as any[]).map((g: any) => ({
                 ...g,
                 quotations: [...g.quotations].sort((a: any, b: any) => {
@@ -316,9 +318,7 @@ export const CompareQuotations = () => {
     /* ─── Derived stats for dashboard ─── */
     const dashboardStats = useMemo(() => {
         if (!groupedQuotations.length) return { bestPrice: 'N/A', fastDelivery: 'N/A', mostQuoted: 'N/A' };
-
         const allQuotes = groupedQuotations.flatMap((g) => g.quotations);
-
         const vendorPrices: Record<string, { total: number; count: number; name: string }> = {};
         allQuotes.forEach((q) => {
             if (!vendorPrices[q.vendorId]) vendorPrices[q.vendorId] = { total: 0, count: 0, name: q.vendorName };
@@ -329,18 +329,26 @@ export const CompareQuotations = () => {
             Object.values(vendorPrices).sort((a, b) => a.total / a.count - b.total / b.count)[0]?.name ?? 'N/A';
         const mostQuoted =
             Object.values(vendorPrices).sort((a, b) => b.count - a.count)[0]?.name ?? 'N/A';
-
         return { bestPrice: bestPriceVendor, fastDelivery: 'N/A', mostQuoted };
     }, [groupedQuotations]);
 
     /* ─── Best price per grouped part ─── */
     const bestPriceByPart = useMemo(() => {
-        const map: Record<string, number> = {};
+        const exactMap: Record<string, number> = {};
+        const altMap: Record<string, number> = {};
         groupedQuotations.forEach((gq) => {
-            const prices = gq.quotations.map((q: any) => q.unitPrice);
-            map[gq.reqPartNumber] = Math.min(...prices);
+            const exactQuotes = gq.quotations.filter(
+                (q: any) => !q.requested_part_number_id || q.partNumber === q.requested_part_number_id
+            );
+            const altQuotes = gq.quotations.filter(
+                (q: any) => q.requested_part_number_id && q.partNumber !== q.requested_part_number_id
+            );
+            if (exactQuotes.length > 0)
+                exactMap[gq.reqPartNumber] = Math.min(...exactQuotes.map((q: any) => q.unitPrice));
+            if (altQuotes.length > 0)
+                altMap[gq.reqPartNumber] = Math.min(...altQuotes.map((q: any) => q.unitPrice));
         });
-        return map;
+        return { exactMap, altMap };
     }, [groupedQuotations]);
 
     const handleSelectItem = (itemId: string, vendorId: string) => {
@@ -395,7 +403,6 @@ export const CompareQuotations = () => {
         );
     };
 
-    /* ─── Selected vendor name ─── */
     const selectedVendorName =
         groupedQuotations
             .flatMap((g) => g.quotations)
@@ -409,7 +416,6 @@ export const CompareQuotations = () => {
             </Alert>
         );
 
-    /* ─── Column header config ─── */
     const blueCols = ['Req. Part', 'Quo. No', 'MR No', 'Vendor', 'Quo. Part', 'Quo. CD', 'Last Price'];
     const greenCols = ['Unit Price', 'Rec Qty', 'MOQ', 'MOV', 'Delivery', 'Remark'];
 
@@ -417,7 +423,6 @@ export const CompareQuotations = () => {
         <SlideIn>
             <Stack spacing={4} px={2} py={1}>
                 <LoadingOverlay isLoading={isQuotationsLoading || isPrfqLoading}>
-                    {/* ── Breadcrumb + heading ── */}
                     <Stack gap={2}>
                         <HStack justify="space-between">
                             <Stack spacing={0}>
@@ -460,16 +465,8 @@ export const CompareQuotations = () => {
                             borderColor={borderColor}
                             padding={4}
                         >
-
-                            {/* ── RFQ meta strip ── */}
                             <HStack bg="#0C2556" color="white" px={5} py={3} spacing={8} borderRadius="md" wrap="wrap">
-                                <VStack align="start" spacing={0}>
-                                    <Text fontSize="10px" fontWeight="700" textTransform="uppercase" letterSpacing="widest" opacity={0.7}>
-                                        MR Ref's
-                                    </Text>
-                                    <Text fontWeight="700" fontSize="sm">{mrNo.join(', ') || '—'}</Text>
-                                </VStack>
-                                <Divider orientation="vertical" borderColor="whiteAlpha.400" h="32px" />
+
                                 <VStack align="start" spacing={0}>
                                     <Text fontSize="10px" fontWeight="700" textTransform="uppercase" letterSpacing="widest" opacity={0.7}>
                                         PRFQ Code
@@ -479,59 +476,40 @@ export const CompareQuotations = () => {
                                 <Divider orientation="vertical" borderColor="whiteAlpha.400" h="32px" />
                                 <VStack align="start" spacing={0}>
                                     <Text fontSize="10px" fontWeight="700" textTransform="uppercase" letterSpacing="widest" opacity={0.7}>
-                                        Total Parts
+                                        MR Ref's
+                                    </Text>
+                                    <Text fontWeight="700" fontSize="sm">
+                                        {(mrNo?.slice().sort((a, b) => a.localeCompare(b)).join(', ')) || '—'}
+                                    </Text>
+                                </VStack>
+                                <Divider orientation="vertical" borderColor="whiteAlpha.400" h="32px" />
+                                <VStack align="start" spacing={0}>
+                                    <Text fontSize="10px" fontWeight="700" textTransform="uppercase" letterSpacing="widest" opacity={0.7}>
+                                        No of Requested Parts
                                     </Text>
                                     <Text fontWeight="700" fontSize="sm">{groupedQuotations.length}</Text>
                                 </VStack>
                                 <Divider orientation="vertical" borderColor="whiteAlpha.400" h="32px" />
                                 <VStack align="start" spacing={0}>
                                     <Text fontSize="10px" fontWeight="700" textTransform="uppercase" letterSpacing="widest" opacity={0.7}>
-                                        Total Quotations
+                                        No of Received Quotations
                                     </Text>
                                     <Text fontWeight="700" fontSize="sm">
                                         {groupedQuotations.reduce((sum, g) => sum + g.quotations.length, 0)}
                                     </Text>
                                 </VStack>
                             </HStack>
-
-                            {/* ── Insight cards ── */}
                             <Flex gap={3} wrap="wrap">
-                                <SummaryCard
-                                    icon={HiOutlineTag}
-                                    label="Best Price Vendor"
-                                    value={dashboardStats.bestPrice}
-                                    accent="blue.600"
-                                />
-                                <SummaryCard
-                                    icon={HiOutlineTruck}
-                                    label="Fast Delivery Vendor"
-                                    value={dashboardStats.fastDelivery}
-                                    accent="blue.600"
-                                />
-                                <SummaryCard
-                                    icon={HiOutlineShieldCheck}
-                                    label="Most Quoted Vendor"
-                                    value={dashboardStats.mostQuoted}
-                                    accent="blue.600"
-                                />
+                                <SummaryCard icon={HiOutlineTag} label="Best Price Vendor" value={dashboardStats.bestPrice} accent="blue.600" />
+                                <SummaryCard icon={HiOutlineTruck} label="Fast Delivery Vendor" value={dashboardStats.fastDelivery} accent="blue.600" />
+                                <SummaryCard icon={HiOutlineShieldCheck} label="Most Quoted Vendor" value={dashboardStats.mostQuoted} accent="blue.600" />
                             </Flex>
                         </Stack>
 
-                        {/* ── Main card: sidebar + table split ── */}
-                        <Box
-                            bg={cardBg}
-                            borderRadius="md"
-                            boxShadow="sm"
-                            border="1px solid"
-                            borderColor={borderColor}
-                            overflow="hidden"
-                        >
-                            {/* Card header */}
+                        <Box bg={cardBg} borderRadius="md" boxShadow="sm" border="1px solid" borderColor={borderColor} overflow="hidden">
                             <Box px={6} py={3} borderBottom="1px solid" borderColor={borderColor}>
                                 <HStack justify="space-between" align="center">
-                                    <Text fontWeight="700" fontSize="md" color="gray.700">
-                                        Comparison Table
-                                    </Text>
+                                    <Text fontWeight="700" fontSize="md" color="gray.700">Comparison Table</Text>
                                     <Button
                                         colorScheme="blue"
                                         size="sm"
@@ -547,69 +525,38 @@ export const CompareQuotations = () => {
                                 </HStack>
                             </Box>
 
-                            {/* Selection info bar */}
                             {selectedItems.length > 0 && (
-                                <HStack
-                                    bg="green.50"
-                                    border="1px solid"
-                                    borderColor="green.200"
-                                    px={4}
-                                    py={2}
-                                    spacing={3}
-                                    padding={5}
-                                >
+                                <HStack bg="green.50" border="1px solid" borderColor="green.200" px={4} py={2} spacing={3} padding={5}>
                                     <Text fontSize="sm" color="green.700" fontWeight="500">
                                         <Text as="span" fontWeight="700"> {selectedItems.length}</Text> item{selectedItems.length > 1 ? 's' : ''} selected from{' '}
                                         <Text as="span" fontWeight="700">{selectedVendorName}</Text>
                                     </Text>
-                                    <Button
-                                        size="xs"
-                                        colorScheme="red"
-                                        ml="auto"
-                                        onClick={() => { setSelectedItems([]); setSelectedVendor(null); }}
-                                    >
+                                    <Button size="xs" colorScheme="red" ml="auto" onClick={() => { setSelectedItems([]); setSelectedVendor(null); }}>
                                         Clear
                                     </Button>
                                 </HStack>
                             )}
 
-                            {/* ── Split layout: sidebar left, table right ── */}
                             <Flex align="stretch" maxH="calc(100vh - 340px)" minH="400px">
-
-                                {/* ════════════════════════════════════════
-                                    SIDEBAR TOGGLE BUTTON
-                                ════════════════════════════════════════ */}
-                                <Box
-                                    flexShrink={0}
-                                    display="flex"
-                                    alignItems="flex-start"
-                                    borderRight="1px solid"
-                                    borderColor={borderColor}
-                                    bg={sidebarHeaderBg}
-                                >
-                                    <Tooltip
-    label={isSidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
-    placement="right"
-    hasArrow
->
-    <Icon
-        as={isSidebarOpen ? TbLayoutSidebarLeftCollapseFilled : TbLayoutSidebarRightCollapseFilled}
-        boxSize={8}
-        color="#0C2556"
-        cursor="pointer"
-        mt={3}
-        mx={1}
-        transition="color 0.2s ease"
-        _hover={{ color: 'blue.400' }}
-        onClick={() => setIsSidebarOpen((v) => !v)}
-        aria-label={isSidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
-    />
-</Tooltip>
+                                {/* Sidebar toggle */}
+                                <Box flexShrink={0} display="flex" alignItems="flex-start" borderRight="1px solid" borderColor={borderColor} bg={sidebarHeaderBg}>
+                                    <Tooltip label={isSidebarOpen ? 'Hide sidebar' : 'Show sidebar'} placement="right" hasArrow>
+                                        <Icon
+                                            as={isSidebarOpen ? TbLayoutSidebarLeftCollapseFilled : TbLayoutSidebarRightCollapseFilled}
+                                            boxSize={8}
+                                            color="#0C2556"
+                                            cursor="pointer"
+                                            mt={3}
+                                            mx={1}
+                                            transition="color 0.2s ease"
+                                            _hover={{ color: 'blue.400' }}
+                                            onClick={() => setIsSidebarOpen((v) => !v)}
+                                            aria-label={isSidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
+                                        />
+                                    </Tooltip>
                                 </Box>
 
-                                {/* ════════════════════════════════════════
-                                    LEFT SIDEBAR
-                                ════════════════════════════════════════ */}
+                                {/* Left sidebar */}
                                 <Box
                                     w={isSidebarOpen ? '260px' : '0px'}
                                     minW={isSidebarOpen ? '220px' : '0px'}
@@ -622,19 +569,9 @@ export const CompareQuotations = () => {
                                     overflow="hidden"
                                     transition="width 0.2s ease, min-width 0.2s ease"
                                 >
-                                    {/* ── Sidebar header ── */}
-                                    <Box
-                                        px={4}
-                                        py={3}
-                                        bg={sidebarHeaderBg}
-                                        borderBottom="1px solid"
-                                        borderColor={borderColor}
-                                        flexShrink={0}
-                                    >
+                                    <Box px={4} py={3} bg={sidebarHeaderBg} borderBottom="1px solid" borderColor={borderColor} flexShrink={0}>
                                         <HStack justify="space-between" align="center">
-                                            <Text fontSize="sm" fontWeight="700" color="gray.700">
-                                                Vendor Quotes
-                                            </Text>
+                                            <Text fontSize="sm" fontWeight="700" color="gray.700">Vendor Quotes</Text>
                                             <Checkbox
                                                 isChecked={isAllSelected}
                                                 onChange={(e) => handleSelectAll(e.target.checked)}
@@ -649,148 +586,82 @@ export const CompareQuotations = () => {
                                         </Text>
                                     </Box>
 
-                                    {/* ── Selection context bar (only when items are selected) ── */}
                                     {selectedItems.length > 0 && (
-                                        <HStack
-                                            mx={3}
-                                            my={2}
-                                            px={3}
-                                            py={2}
-                                            bg={selectedBarBg}
-                                            border="1px solid"
-                                            borderColor={selectedBarBorder}
-                                            borderRadius="md"
-                                            flexShrink={0}
-                                            spacing={2}
-                                        >
+                                        <HStack mx={3} my={2} px={3} py={2} bg={selectedBarBg} border="1px solid" borderColor={selectedBarBorder} borderRadius="md" flexShrink={0} spacing={2}>
                                             <Text fontSize="xs" color="blue.700" fontWeight="500" flex={1} noOfLines={1}>
                                                 {selectedItems.length} item{selectedItems.length > 1 ? 's' : ''} · {selectedVendorName}
                                             </Text>
-                                            <Button
-                                                size="xs"
-                                                colorScheme="red"
-                                                px={1}
-                                                minW="auto"
-                                                h="auto"
-                                                py={0}
-                                                fontSize="xs"
-                                                onClick={() => { setSelectedItems([]); setSelectedVendor(null); }}
-                                            >
+                                            <Button size="xs" colorScheme="red" px={1} minW="auto" h="auto" py={0} fontSize="xs" onClick={() => { setSelectedItems([]); setSelectedVendor(null); }}>
                                                 Clear
                                             </Button>
                                         </HStack>
                                     )}
 
-                                    {/* ── Scrollable vendor list ── */}
                                     <OverlayScrollbarsComponent
                                         options={{ scrollbars: { autoHide: 'leave' } }}
                                         style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}
                                     >
                                         {groupedQuotations.length === 0 ? (
-                                            <Text fontSize="xs" color="gray.400" textAlign="center" mt={8} px={4}>
-                                                No quotations found.
-                                            </Text>
+                                            <Text fontSize="xs" color="gray.400" textAlign="center" mt={8} px={4}>No quotations found.</Text>
                                         ) : (
                                             groupedQuotations.map((reqPart, idx) => (
                                                 <Box key={idx}>
-                                                    {/* ── Part group header (non-interactive) ── */}
-                                                    <Box
-                                                        px={4}
-                                                        pt={idx === 0 ? 3 : 4}
-                                                        pb={1}
-                                                        bg={partLabelBg}
-                                                        borderBottom="1px solid"
-                                                        borderColor={partLabelBorderColor}
-                                                    >
+                                                    <Box px={4} pt={idx === 0 ? 3 : 4} pb={1} bg={partLabelBg} borderBottom="1px solid" borderColor={partLabelBorderColor}>
                                                         <HStack spacing={2} mb={1}>
                                                             <Text fontSize="sm" fontWeight="700" color={partNumColor} noOfLines={1}>
                                                                 {reqPart.quotations[0]?.requested_part_number?.name ?? reqPart.reqPartNumber ?? '—'}
                                                             </Text>
-
                                                         </HStack>
                                                         <HStack justify="space-between" pb={2} w="100%">
-                                                            {/* Left */}
                                                             <Text fontSize="xs" color={reqMetaColor}>
                                                                 Req. Qty : <strong>{reqPart.reqQty}</strong>
                                                             </Text>
-
-                                                            {/* Right */}
                                                             <HStack spacing={1}>
-                                                                <Text fontSize="xs" color={reqMetaColor}>
-                                                                    Req. CD :
-                                                                </Text>
-
+                                                                <Text fontSize="xs" color={reqMetaColor}>Req. CD :</Text>
                                                                 {reqPart.quotations[0]?.condition && (
-                                                                    <Badge
-                                                                        colorScheme="purple"
-                                                                        fontSize="xs"
-                                                                        px={2}
-                                                                        py={0.5}
-                                                                        lineHeight="14px"
-                                                                    >
+                                                                    <Badge colorScheme="purple" fontSize="xs" px={2} py={0.5} lineHeight="14px">
                                                                         {reqPart.quotations[0].condition}
                                                                     </Badge>
                                                                 )}
                                                             </HStack>
                                                         </HStack>
                                                     </Box>
-
-                                                    {/* ── Vendor quote rows for this part ── */}
-                                                    {reqPart.quotations.map((quote: any) => (
-                                                        <SidebarVendorItem
-                                                            key={quote.id}
-                                                            quote={quote}
-                                                            isBest={reqPart.quotations.length > 1 && quote.unitPrice === bestPriceByPart[reqPart.reqPartNumber]}
-                                                            isSelected={selectedItems.includes(quote.id)}
-                                                            isDisabled={!isItemSelectable(quote.vendorId)}
-                                                            onToggle={() => handleSelectItem(quote.id, quote.vendorId)}
-                                                        />
-                                                    ))}
+                                                    {/* FIX 2: Compute isExactMatch per quote and pass to both isBest and isExactMatch props */}
+                                                    {reqPart.quotations.map((quote: any) => {
+                                                        const sidebarIsExact = !quote.requested_part_number_id || quote.partNumber === quote.requested_part_number_id;
+                                                        const sidebarIsBest = sidebarIsExact
+                                                            ? quote.unitPrice === bestPriceByPart.exactMap[reqPart.reqPartNumber]
+                                                            : quote.unitPrice === bestPriceByPart.altMap[reqPart.reqPartNumber];
+                                                        return (
+                                                            <SidebarVendorItem
+                                                                key={quote.id}
+                                                                quote={quote}
+                                                                isBest={sidebarIsBest}
+                                                                isExactMatch={sidebarIsExact}
+                                                                isSelected={selectedItems.includes(quote.id)}
+                                                                isDisabled={!isItemSelectable(quote.vendorId)}
+                                                                onToggle={() => handleSelectItem(quote.id, quote.vendorId)}
+                                                            />
+                                                        );
+                                                    })}
                                                 </Box>
                                             ))
                                         )}
-
-                                        <Text
-                                            fontSize="10px"
-                                            color="gray.400"
-                                            textAlign="center"
-                                            fontStyle="italic"
-                                            px={4}
-                                            py={3}
-                                        >
+                                        <Text fontSize="10px" color="gray.400" textAlign="center" fontStyle="italic" px={4} py={3}>
                                             Select quotes from one vendor at a time
                                         </Text>
                                     </OverlayScrollbarsComponent>
                                 </Box>
-                                {/* ════════════════════════════════════════
-                                    END LEFT SIDEBAR
-                                ════════════════════════════════════════ */}
 
-                                {/* ── RIGHT TABLE AREA ── */}
+                                {/* Right table area */}
                                 <OverlayScrollbarsComponent
                                     options={{ scrollbars: { autoHide: 'leave' } }}
                                     style={{ flex: 1, overflow: 'hidden' }}
                                 >
-                                    <Table
-                                        variant="unstyled"
-                                        size="sm"
-                                        style={{ borderCollapse: 'separate', borderSpacing: 0 }}
-                                    >
+                                    <Table variant="unstyled" size="sm" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
                                         <Thead>
                                             <Tr>
-                                                {/* Checkbox sticky col */}
-                                                <Th
-                                                    bg="blue.600"
-                                                    color="white"
-                                                    borderRight="1px solid"
-                                                    borderColor="gray.600"
-                                                    position="sticky"
-                                                    left={0}
-                                                    top={0}
-                                                    zIndex={3}
-                                                    px={3}
-                                                    py={3}
-                                                >
+                                                <Th bg="blue.600" color="white" borderRight="1px solid" borderColor="gray.600" position="sticky" left={0} top={0} zIndex={3} px={3} py={3}>
                                                     <Checkbox
                                                         isChecked={isAllSelected}
                                                         onChange={(e) => handleSelectAll(e.target.checked)}
@@ -800,54 +671,27 @@ export const CompareQuotations = () => {
                                                     />
                                                 </Th>
                                                 {blueCols.map((col) => (
-                                                    <Th
-                                                        key={col}
-                                                        bg="blue.600"
-                                                        color="white"
-                                                        borderRight="1px solid"
-                                                        borderColor="gray.600"
-                                                        py={3}
-                                                        fontSize="10px"
-                                                        letterSpacing="wider"
-                                                        textTransform="uppercase"
-                                                        whiteSpace="nowrap"
-                                                        position="sticky"
-                                                        top={0}
-                                                        zIndex={2}
-                                                    >
+                                                    <Th key={col} bg="blue.600" color="white" borderRight="1px solid" borderColor="gray.600" py={3} fontSize="10px" letterSpacing="wider" textTransform="uppercase" whiteSpace="nowrap" position="sticky" top={0} zIndex={2}>
                                                         {col}
                                                     </Th>
                                                 ))}
                                                 {greenCols.map((col, i) => (
-                                                    <Th
-                                                        key={col}
-                                                        bg="green.600"
-                                                        color="white"
-                                                        borderRight={i < greenCols.length - 1 ? '1px solid' : 'none'}
-                                                        borderColor="green.400"
-                                                        py={3}
-                                                        fontSize="10px"
-                                                        letterSpacing="wider"
-                                                        textTransform="uppercase"
-                                                        whiteSpace="nowrap"
-                                                        position="sticky"
-                                                        top={0}
-                                                        zIndex={2}
-                                                    >
+                                                    <Th key={col} bg="green.600" color="white" borderRight={i < greenCols.length - 1 ? '1px solid' : 'none'} borderColor="green.400" py={3} fontSize="10px" letterSpacing="wider" textTransform="uppercase" whiteSpace="nowrap" position="sticky" top={0} zIndex={2}>
                                                         {col}
                                                     </Th>
                                                 ))}
                                             </Tr>
                                         </Thead>
-
                                         <Tbody>
                                             {groupedQuotations.map((reqPart, reqPartIndex) => (
                                                 <React.Fragment key={reqPartIndex}>
                                                     {reqPart.quotations.map((quote: any, quoteIndex: number) => {
                                                         const disabled = !isItemSelectable(quote.vendorId);
                                                         const selected = selectedItems.includes(quote.id);
-                                                        const isBest = reqPart.quotations.length > 1 && quote.unitPrice === bestPriceByPart[reqPart.reqPartNumber];
-
+                                                        const isExactMatch = !quote.requested_part_number_id || quote.partNumber === quote.requested_part_number_id;
+                                                        const isBest = isExactMatch
+                                                            ? quote.unitPrice === bestPriceByPart.exactMap[reqPart.reqPartNumber]
+                                                            : quote.unitPrice === bestPriceByPart.altMap[reqPart.reqPartNumber];
                                                         return (
                                                             <Tr
                                                                 key={`${quoteIndex}_${quote.id}`}
@@ -856,24 +700,8 @@ export const CompareQuotations = () => {
                                                                 transition="background 0.15s"
                                                                 _hover={!disabled ? { bg: selected ? 'blue.100' : rowHoverBg } : {}}
                                                             >
-                                                                <Td
-                                                                    borderBottom="1px solid"
-                                                                    borderRight="1px solid"
-                                                                    borderColor={borderColor}
-                                                                    px={3}
-                                                                    position="sticky"
-                                                                    left={0}
-                                                                    bg={selected ? 'blue.50' : disabled ? 'gray.50' : 'white'}
-                                                                    zIndex={1}
-                                                                    whiteSpace="nowrap"
-                                                                >
-                                                                    <Checkbox
-                                                                        isChecked={selected}
-                                                                        onChange={() => handleSelectItem(quote.id, quote.vendorId)}
-                                                                        isDisabled={disabled}
-                                                                        colorScheme="blue"
-                                                                        size="sm"
-                                                                    />
+                                                                <Td borderBottom="1px solid" borderRight="1px solid" borderColor={borderColor} px={3} position="sticky" left={0} bg={selected ? 'blue.50' : disabled ? 'gray.50' : 'white'} zIndex={1} whiteSpace="nowrap">
+                                                                    <Checkbox isChecked={selected} onChange={() => handleSelectItem(quote.id, quote.vendorId)} isDisabled={disabled} colorScheme="blue" size="sm" />
                                                                 </Td>
                                                                 <Td borderBottom="1px solid" borderRight="1px solid" borderColor={borderColor} py={2.5} whiteSpace="nowrap">
                                                                     <Text fontSize="sm" fontWeight="600">{quote.requested_part_number?.name}</Text>
@@ -889,19 +717,10 @@ export const CompareQuotations = () => {
                                                                 </Td>
                                                                 <Td borderBottom="1px solid" borderRight="1px solid" borderColor={borderColor} py={2.5} whiteSpace="nowrap">
                                                                     {(() => {
-                                                                        const isMatch =
-                                                                            !quote.requested_part_number_id ||
-                                                                            quote.requested_part_number_id === quote.partNumber;
-
+                                                                        const isMatch = !quote.requested_part_number_id || quote.requested_part_number_id === quote.partNumber;
                                                                         const content = (
                                                                             <Box>
-                                                                                <Text
-                                                                                    fontSize="sm"
-                                                                                    fontWeight="600"
-                                                                                    color={isMatch ? 'green.700' : 'orange.500'}
-                                                                                    cursor="default"
-                                                                                    display="inline-block"
-                                                                                >
+                                                                                <Text fontSize="sm" fontWeight="600" color={isMatch ? 'green.700' : 'orange.500'} cursor="default" display="inline-block">
                                                                                     {quote.part_number?.name ?? '—'}
                                                                                 </Text>
                                                                                 <Text fontSize="xs" color="gray.500" display="block" mt={0.5}>
@@ -909,53 +728,29 @@ export const CompareQuotations = () => {
                                                                                 </Text>
                                                                             </Box>
                                                                         );
-
                                                                         if (!isMatch) {
                                                                             return (
-                                                                                <Tooltip
-                                                                                    label={`Requested: ${quote.requested_part_number?.name ??
-                                                                                        quote.requested_part_number_id ??
-                                                                                        '—'
-                                                                                        }`}
-                                                                                    placement="top"
-                                                                                    hasArrow
-                                                                                    fontSize="xs"
-                                                                                >
+                                                                                <Tooltip label={`Requested: ${quote.requested_part_number?.name ?? quote.requested_part_number_id ?? '—'}`} placement="top" hasArrow fontSize="xs">
                                                                                     {content}
                                                                                 </Tooltip>
                                                                             );
                                                                         }
-
                                                                         return content;
                                                                     })()}
                                                                 </Td>
                                                                 <Td borderBottom="1px solid" borderRight="1px solid" borderColor={borderColor} py={2.5}>
-                                                                    <Badge fontSize="xs" colorScheme="purple" px={2} py={1}>
-                                                                        {quote.condition ?? '—'}
-                                                                    </Badge>
+                                                                    <Badge fontSize="xs" colorScheme="purple" px={2} py={1}>{quote.condition ?? '—'}</Badge>
                                                                 </Td>
                                                                 <Td borderBottom="1px solid" borderRight="1px solid" borderColor={borderColor} py={2.5}>
                                                                     {quote.lastTimePurchasedPrice !== 0 ? (
-                                                                        <HStack spacing={1}>
-                                                                            <Text fontSize="xs">{quote.lastTimePurchasedPrice}</Text>
-                                                                        </HStack>
+                                                                        <HStack spacing={1}><Text fontSize="xs">{quote.lastTimePurchasedPrice}</Text></HStack>
                                                                     ) : (
                                                                         <Text fontSize="xs" color="gray.400">—</Text>
                                                                     )}
                                                                 </Td>
-                                                                {/* Green section */}
-                                                                <Td
-                                                                    borderBottom="1px solid"
-                                                                    borderRight="1px solid"
-                                                                    borderColor={borderColor}
-                                                                    py={2.5}
-                                                                    bg={isBest ? 'green.50' : undefined}
-                                                                    whiteSpace="nowrap"
-                                                                    minW={150}
-                                                                >
-                                                                    <HStack spacing={1}>
-                                                                        <PriceChip price={quote.unitPrice} isBest={isBest} currency={quote.currencyCode} />
-                                                                    </HStack>
+                                                                {/* FIX 3: Pass isExactMatch to PriceChip */}
+                                                                <Td borderBottom="1px solid" borderRight="1px solid" borderColor={borderColor} py={2.5} bg={isBest ? 'green.50' : undefined} whiteSpace="nowrap" minW={150}>
+                                                                    <PriceChip price={quote.unitPrice} isBest={isBest} isExactMatch={isExactMatch} currency={quote.currencyCode} />
                                                                 </Td>
                                                                 <Td borderBottom="1px solid" borderRight="1px solid" borderColor={borderColor} py={2.5}>
                                                                     <Text fontSize="xs">{quote.recQty ?? '—'}</Text>
@@ -970,16 +765,13 @@ export const CompareQuotations = () => {
                                                                     <Text fontSize="xs" color="gray.600">{quote.delivery_options ?? '—'}</Text>
                                                                 </Td>
                                                                 <Td borderBottom="1px solid" borderColor={borderColor} py={2.5}>
-                                                                    <Text fontSize="xs" color={quote.remark ? 'gray.700' : 'gray.400'}>
-                                                                        {quote.remark || 'N/A'}
-                                                                    </Text>
+                                                                    <Text fontSize="xs" color={quote.remark ? 'gray.700' : 'gray.400'}>{quote.remark || 'N/A'}</Text>
                                                                 </Td>
                                                             </Tr>
                                                         );
                                                     })}
                                                 </React.Fragment>
                                             ))}
-
                                             {groupedQuotations.length === 0 && (
                                                 <Tr>
                                                     <Td colSpan={15} textAlign="center" py={12}>

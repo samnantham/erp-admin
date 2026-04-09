@@ -100,7 +100,7 @@ export const zPartNumberDetailsPayload = z.object({
 });
 export type PartNumberDetailsPayload = z.infer<typeof zPartNumberDetailsPayload>;
 
-export const zPartNumberSaveResponsePayload = 
+export const zPartNumberSaveResponsePayload =
 z.object({
     data: zPartNumber.optional(),
     message: z.string(),
@@ -189,3 +189,15 @@ export const zPartNumberListPayload = z.object({
     status: z.boolean(),
 });
 export type PartNumberListPayload = z.infer<typeof zPartNumberListPayload>;
+
+/* =========================================================
+   Validate Part Numbers By Name
+========================================================= */
+
+export const zValidatePartNumbersByNamePayload = z.object({
+  status: z.boolean(),
+  // Map of { [partNumberName]: PartNumber record }
+  data: z.record(zPartNumber),
+  not_found: z.array(z.string()),
+});
+export type ValidatePartNumbersByNamePayload = z.infer<typeof zValidatePartNumbersByNamePayload>;

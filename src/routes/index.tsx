@@ -73,6 +73,11 @@ import { PRFQForm } from '@/pages/Purchase/RFQ/Form';
 // !<--!! Purchase RFQ Routes Ends !!-->!
 
 // !<--!! Purchase RFQ Routes Starts !!-->!
+import { PurchaseOrderMaster } from '@/pages/Purchase/Order/Master';
+import { PurchaseOrderForm } from '@/pages/Purchase/Order/Form';
+// !<--!! Purchase RFQ Routes Ends !!-->!
+
+// !<--!! Purchase RFQ Routes Starts !!-->!
 import { SupplierPricingUpdateMaster } from '@/pages/Purchase/SupplierPricingUpdate/Master';
 import { SupplierPricingUpdateForm } from '@/pages/Purchase/SupplierPricingUpdate/Form';
 import { CompareQuotations } from '@/pages/Purchase/SupplierPricingUpdate/CompareQuotations';
@@ -240,6 +245,13 @@ export const routes = [
                   { path: 'master', element: <SupplierPricingUpdateMaster /> },
                   { path: 'form/:id?', element: <SupplierPricingUpdateForm /> },
                   { path: 'compare-quotations/:rfqId', element: <CompareQuotations /> },
+                ],
+              },
+              {
+                path: 'order',
+                children: [
+                  { path: 'master', element: <PurchaseOrderMaster /> },
+                  { path: 'form/:id?', element: <PurchaseOrderForm /> },
                 ],
               },
             ],

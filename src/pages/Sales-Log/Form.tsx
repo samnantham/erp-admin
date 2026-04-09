@@ -58,6 +58,7 @@ type SLRow = {
     unit_of_measure_id: any;
     remark: any;
     is_duplicate: boolean;
+    id?: any;
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -174,6 +175,7 @@ export const SalesLogForm = () => {
                 qty: Number(values[`qty_${row.rowKey}`]),
                 unit_of_measure_id: values[`uom_${row.rowKey}`],
                 remark: values[`remark_${row.rowKey}`],
+                ...(row.id && { id: row.id }),
             }));
             saveEndpoint.mutate(
                 isEdit ? { id, ...payload } : payload,
@@ -267,6 +269,7 @@ export const SalesLogForm = () => {
             unit_of_measure_id: item.unit_of_measure_id,
             remark: item.remark ?? "",
             is_duplicate: false,
+            id: item.id,
         }));
         setRows(prefilled);
         applyRowsToForm(prefilled);

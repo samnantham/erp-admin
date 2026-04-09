@@ -2,80 +2,52 @@ import { useRef, useState } from "react";
 import { Button } from "@chakra-ui/react";
 import { LuUpload } from "react-icons/lu";
 import ConfirmationPopup from "@/components/ConfirmationPopup";
-import { useToastError } from "@/components/Toast";
+import { useToastError, useToastWarning } from "@/components/Toast";
 import { parseCSV } from "@/helpers/commonHelper";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-/**
- * Describes one column mapping:
- *  - `csvKey`    : the column header in the CSV file
- *  - `rowKey`    : the key to assign in the output row object
- *  - `transform` : optional function to convert the raw CSV string value
- *                  (e.g. resolve an ID from an options array)
- */
 export type CSVFieldMapping<TRow extends Record<string, any> = Record<string, any>> = {
     csvKey: string;
     rowKey: keyof TRow;
     transform?: (rawValue: string) => any;
 };
 
-/**
- * Configures duplicate detection for a set of row keys.
- *
- * - `keys`         : one or more row keys whose combined value forms the uniqueness key.
- *                    Single key   -> ["part_number_id"]
- *                    Composite    -> ["part_number_id", "condition_id"]
- * - `label`        : human-readable field name used in the error toast.
- *                    e.g. "Part Number" or "Part Number + Condition"
- * - `existingRows` : rows already present in the table. Incoming CSV rows are
- *                    checked against these so re-uploading the same file is blocked.
- */
 export type CSVDuplicateConfig<TRow extends Record<string, any> = Record<string, any>> = {
     keys: (keyof TRow)[];
     label?: string;
     existingRows?: TRow[];
 };
 
+/**
+ * Configuration for server-side part number validation.
+ *
+ * - `rowKey`      : key in TRow holding the raw CSV part number name string
+ * - `resolvedKey` : key in TRow to write the resolved ID into after validation
+ * - `validate`    : async batch function — receives all unique name strings,
+ *                   returns { [name]: { id, ...fields } } for matched ones only.
+ *                   Rows whose name is absent are dropped + listed in a warning toast.
+ * - `onResolved`  : called immediately after a successful validate() with the full
+ *                   resolved map. Use this to seed the parent's options list so that
+ *                   FieldSelect can render the label before reloadSpares completes.
+ *                   Without this, the select shows a blank even though the ID is set.
+ */
+export type CSVPartNumberValidation<TRow extends Record<string, any> = Record<string, any>> = {
+    rowKey: keyof TRow;
+    resolvedKey: keyof TRow;
+    validate: (names: string[]) => Promise<Record<string, { id: any; [key: string]: any }>>;
+    onResolved?: (resolvedMap: Record<string, { id: any; [key: string]: any }>) => void;
+};
+
 export type CSVUploadButtonProps<TRow extends Record<string, any> = Record<string, any>> = {
-    /** Column-to-row mapping configuration */
     fieldMappings: CSVFieldMapping<TRow>[];
-
-    /** Called with the fully mapped rows after the user confirms the upload */
     onUpload: (rows: TRow[]) => void;
-
-    /** Factory for a blank row - gives each parsed row its own defaults/keys */
     createEmptyRow: () => TRow;
-
-    /**
-     * Maximum number of rows allowed.
-     * @default 100
-     */
     maxRows?: number;
-
-    /**
-     * When provided, the component checks for duplicates by the given keys and
-     * fires an error toast listing the offending values instead of uploading.
-     *
-     * Checks TWO scopes:
-     *   1. Within the uploaded CSV itself (intra-file duplicates)
-     *   2. Against `existingRows` already in the table (cross-check)
-     *
-     * Example - block duplicate part numbers:
-     *   duplicateCheck={{ keys: ["part_number_id"], label: "Part Number", existingRows: rows }}
-     *
-     * Example - block duplicate part number + condition combos:
-     *   duplicateCheck={{ keys: ["part_number_id", "condition_id"], label: "Part Number + Condition", existingRows: rows }}
-     */
     duplicateCheck?: CSVDuplicateConfig<TRow>;
-
-    /** Custom text shown in the confirmation dialog body */
+    partNumberValidation?: CSVPartNumberValidation<TRow>;
     confirmBodyText?: string;
-
-    /** Custom text shown in the confirmation dialog header */
     confirmHeaderText?: string;
-
-    /** Chakra Button props forwarded to the trigger button */
     buttonLabel?: string;
     colorScheme?: string;
     size?: string;
@@ -99,6 +71,7 @@ export function CSVUploadButton<TRow extends Record<string, any> = Record<string
     createEmptyRow,
     maxRows = 100,
     duplicateCheck,
+    partNumberValidation,
     confirmBodyText = "Are you sure you want to upload this file? Existing rows with data will be kept.",
     confirmHeaderText = "Upload CSV",
     buttonLabel = "Upload Items",
@@ -106,10 +79,13 @@ export function CSVUploadButton<TRow extends Record<string, any> = Record<string
     size = "sm",
     isDisabled = false,
 }: CSVUploadButtonProps<TRow>) {
-    const toastError = useToastError();
-    const [fileKey, setFileKey] = useState(0);
-    const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+    const toastError   = useToastError();
+    const toastWarning = useToastWarning();
+
+    const [fileKey, setFileKey]                   = useState(0);
+    const [uploadedFile, setUploadedFile]         = useState<File | null>(null);
     const [openConfirmation, setOpenConfirmation] = useState(false);
+    const [isValidating, setIsValidating]         = useState(false);
 
     const inputId = useRef(`csv-upload-${crypto.randomUUID()}`).current;
 
@@ -130,15 +106,13 @@ export function CSVUploadButton<TRow extends Record<string, any> = Record<string
         const parsedRows: TODO = await parseCSV(uploadedFile);
 
         if (parsedRows.length > maxRows) {
-            toastError({
-                title: `Uploaded CSV has more than ${maxRows} rows. Max allowed is ${maxRows}.`,
-            });
+            toastError({ title: `Uploaded CSV has more than ${maxRows} rows. Max allowed is ${maxRows}.` });
             setOpenConfirmation(false);
             return;
         }
 
-        // Map raw CSV rows -> typed TRow objects
-        const mapped: TRow[] = parsedRows.map((raw: TODO) => {
+        // ── Map raw CSV rows -> typed TRow objects ─────────────────────────────
+        let mapped: TRow[] = parsedRows.map((raw: TODO) => {
             const base = createEmptyRow();
             fieldMappings.forEach(({ csvKey, rowKey, transform }) => {
                 const rawValue = raw[csvKey] ?? "";
@@ -147,42 +121,101 @@ export function CSVUploadButton<TRow extends Record<string, any> = Record<string
             return base;
         });
 
+        // ── Part number validation (single batch API call) ─────────────────────
+        if (partNumberValidation) {
+            const { rowKey, resolvedKey, validate, onResolved } = partNumberValidation;
+
+            const rawNames = [
+                ...new Set(
+                    mapped
+                        .map(row => String(row[rowKey] ?? "").trim())
+                        .filter(Boolean)
+                ),
+            ];
+
+            if (rawNames.length === 0) {
+                toastError({ title: "No valid part numbers found in the uploaded CSV." });
+                setOpenConfirmation(false);
+                return;
+            }
+
+            setIsValidating(true);
+            let resolvedMap: Record<string, { id: any; [key: string]: any }> = {};
+
+            try {
+                resolvedMap = await validate(rawNames);
+            } catch {
+                toastError({ title: "Failed to validate part numbers. Please try again." });
+                setOpenConfirmation(false);
+                return;
+            } finally {
+                setIsValidating(false);
+            }
+
+            // Notify parent immediately so it can seed its options list.
+            // This ensures FieldSelect has a matching { value, label } entry
+            // before onUpload triggers a re-render — preventing the blank select bug.
+            onResolved?.(resolvedMap);
+
+            const notFound: string[] = [];
+            const validated: TRow[]  = [];
+
+            mapped.forEach(row => {
+                const name  = String(row[rowKey] ?? "").trim();
+                const match = resolvedMap[name];
+                if (match) {
+                    // Overwrite raw name string with resolved ID
+                    validated.push({ ...row, [resolvedKey]: match.id });
+                } else {
+                    if (name) notFound.push(name);
+                }
+            });
+
+            if (notFound.length > 0) {
+                toastWarning({
+                    title: `${notFound.length} part number(s) not found and were skipped`,
+                    description: notFound.join(", "),
+                });
+            }
+
+            if (validated.length === 0) {
+                toastError({ title: "No valid part numbers matched. Nothing was uploaded." });
+                setOpenConfirmation(false);
+                return;
+            }
+
+            mapped = validated;
+        }
+
         // ── Duplicate detection ────────────────────────────────────────────────
         if (duplicateCheck) {
             const { keys, label = keys.join(" + "), existingRows = [] } = duplicateCheck;
             const readableKey = (k: string) => k.split("||").join(" + ");
 
-            // Seed seen-set with keys already present in the table
             const seen = new Set<string>(
                 existingRows
                     .filter(row => keys.some(k => !!row[k]))
                     .map(row => buildCompositeKey(row, keys))
             );
 
-            const intraDuplicates = new Set<string>(); // duplicates within the CSV
-            const crossDuplicates = new Set<string>(); // CSV rows clashing with existing table rows
+            const intraDuplicates = new Set<string>();
+            const crossDuplicates = new Set<string>();
 
             mapped.forEach(row => {
-                const hasValue = keys.some(k => !!row[k]);
+                const hasValue     = keys.some(k => !!row[k]);
                 if (!hasValue) return;
-
                 const compositeKey = buildCompositeKey(row, keys);
-
                 if (seen.has(compositeKey)) {
                     const isFromExisting = existingRows.some(
                         er => buildCompositeKey(er, keys) === compositeKey
                     );
-                    if (isFromExisting) {
-                        crossDuplicates.add(compositeKey);
-                    } else {
-                        intraDuplicates.add(compositeKey);
-                    }
+                    if (isFromExisting) crossDuplicates.add(compositeKey);
+                    else                intraDuplicates.add(compositeKey);
                 } else {
                     seen.add(compositeKey);
                 }
             });
 
-            // Cross-check errors take priority (more actionable message)
             if (crossDuplicates.size > 0) {
                 toastError({
                     title: `Duplicate ${label} — already exists in the table`,
@@ -195,8 +228,7 @@ export function CSVUploadButton<TRow extends Record<string, any> = Record<string
             if (intraDuplicates.size > 0) {
                 toastError({
                     title: `Duplicate ${label} entries found in the uploaded CSV`,
-                    description: 'Those are not allowed to add to existing'
-                    //[...intraDuplicates].map(readableKey).join(", "),
+                    description: "Those are not allowed to add to existing",
                 });
                 setOpenConfirmation(false);
                 return;
@@ -240,6 +272,7 @@ export function CSVUploadButton<TRow extends Record<string, any> = Record<string
                 onConfirm={handleConfirm}
                 headerText={confirmHeaderText}
                 bodyText={confirmBodyText}
+                isLoading={isValidating}
             />
         </>
     );

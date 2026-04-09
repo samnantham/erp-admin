@@ -190,7 +190,7 @@ const SALES_LOG_DISPLAY_PROPS: DisplayProp[] = [
       { key: 'condition_id', label: 'COndition' },
       { key: 'qty', label: 'Quantity' },
       { key: 'unit_of_measure_id', label: 'UOM' },
-      { key: 'remark', label: 'Remark'},
+      { key: 'remark', label: 'Remark' },
     ],
   },
 ];
@@ -212,7 +212,7 @@ const MATERIAL_REQUEST_DISPLAY_PROPS: DisplayProp[] = [
       { key: 'condition_id', label: 'COndition' },
       { key: 'qty', label: 'Quantity' },
       { key: 'unit_of_measure_id', label: 'UOM' },
-      { key: 'remark', label: 'Remark'},
+      { key: 'remark', label: 'Remark' },
     ],
   },
 ];
@@ -233,9 +233,9 @@ const PRFQ_DISPLAY_PROPS: DisplayProp[] = [
       { key: 'condition_id', label: 'COndition' },
       { key: 'qty', label: 'Quantity' },
       { key: 'unit_of_measure_id', label: 'UOM' },
-      { key: 'remark', label: 'Remark'},
+      { key: 'remark', label: 'Remark' },
     ],
-  },{
+  }, {
     kind: 'array',
     label: 'Vendors',
     key: 'vendors',
@@ -249,13 +249,50 @@ const PRFQ_DISPLAY_PROPS: DisplayProp[] = [
   },
 ];
 
+const PO_DISPLAY_PROPS: DisplayProp[] = [
+  { label: 'ID', key: 'code', showInTable: true },
+  { label: 'Vendor', key: 'customer_id', showInTable: true },
+  { label: 'Contact Manager', key: 'customer_contact_manager_id', showInTable: true },
+  { label: 'Shipping Address', key: 'customer_shipping_address_id', showInTable: false },
+  { label: 'Shipping Type', key: 'ship_type_id', showInTable: false },
+  { label: 'Shipping Mode', key: 'ship_mode_id', showInTable: false },
+  { label: 'Shipping Account', key: 'ship_account_id', showInTable: false },
+  { label: 'Priority', key: 'priority_id', showInTable: true },
+  { label: 'Currency', key: 'currency_id', showInTable: false },
+  { label: 'Payment Mode', key: 'payment_mode_id', showInTable: false },
+  { label: 'Payment Term', key: 'payment_term_id', showInTable: false },
+  { label: 'FOB', key: 'fob_id', showInTable: false },
+  { label: 'Bank Charge', key: 'bank_charge', showInTable: false },
+  { label: 'Freight Charge', key: 'freight', showInTable: false },
+  { label: 'Misc Charge', key: 'miscellaneous_charges', showInTable: false },
+  { label: 'VAT', key: 'vat', showInTable: false },
+  { label: 'Discount', key: 'discount', showInTable: false },
+  { label: 'Remarks', key: 'remarks', showInTable: false },
+  {
+    kind: 'array',
+    label: 'PO Items',
+    key: 'items',
+    showInTable: false,
+    rowKey: 'items',
+    emptyText: 'No Items added',
+    columns: [
+      { key: 'part_number_id', label: 'Part Number' },
+      { key: 'condition_id', label: 'COndition' },
+      { key: 'qty', label: 'Quantity' },
+      { key: 'unit_of_measure_id', label: 'UOM' },
+      { key: 'price', label: 'Price' },
+      { key: 'note', label: 'Note' },
+    ],
+  }
+];
+
 
 /* =========================
    Config Map
 ========================= */
 
 export const MODULE_CONFIG: Record<string, ModuleConfig> = {
-  
+
   // ── Customer ──
   customers: {
     value: 'customers',
@@ -327,17 +364,17 @@ export const MODULE_CONFIG: Record<string, ModuleConfig> = {
       url: `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview.sales_log.replace(":id", row.record_id)}`,
     }),
     preview: {
-    enabled: true,
+      enabled: true,
 
-    getOldPreviewUrl: (row) =>
-      `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview.sales_log.replace(":id", row.record_id)}`,
+      getOldPreviewUrl: (row) =>
+        `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview.sales_log.replace(":id", row.record_id)}`,
 
-    getNewPreviewRequest: (row) => ({
-      url: `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview_post.sales_log}`,
-      method: "POST",
-      body: row.raw_new_data,
-    }),
-  },
+      getNewPreviewRequest: (row) => ({
+        url: `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview_post.sales_log}`,
+        method: "POST",
+        body: row.raw_new_data,
+      }),
+    },
   },
 
   material_requests: {
@@ -351,19 +388,18 @@ export const MODULE_CONFIG: Record<string, ModuleConfig> = {
       url: `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview.material_request.replace(":id", row.record_id)}`,
     }),
     preview: {
-    enabled: true,
-    getOldPreviewUrl: (row) =>
-      `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview.material_request.replace(":id", row.record_id)}`,
+      enabled: true,
+      getOldPreviewUrl: (row) =>
+        `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview.material_request.replace(":id", row.record_id)}`,
 
-    getNewPreviewRequest: (row) => ({
-      url: `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview_post.material_request}`,
-      method: "POST",
-      body: row.raw_new_data,
-    }),
+      getNewPreviewRequest: (row) => ({
+        url: `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview_post.material_request}`,
+        method: "POST",
+        body: row.raw_new_data,
+      }),
+    },
   },
-  },
-
-    prfqs: {
+  prfqs: {
     value: 'prfqs',
     label: 'PRFQ',
     displayProps: PRFQ_DISPLAY_PROPS,
@@ -374,17 +410,40 @@ export const MODULE_CONFIG: Record<string, ModuleConfig> = {
       url: `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview.prfq.replace(":id", row.record_id)}`,
     }),
     preview: {
-    enabled: true,
-    getOldPreviewUrl: (row) =>
-      `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview.prfq.replace(":id", row.record_id)}`,
+      enabled: true,
+      getOldPreviewUrl: (row) =>
+        `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview.prfq.replace(":id", row.record_id)}`,
 
-    getNewPreviewRequest: (row) => ({
-      url: `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview_post.prfq}`,
-      method: "POST",
-      body: row.raw_new_data,
+      getNewPreviewRequest: (row) => ({
+        url: `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview_post.prfq}`,
+        method: "POST",
+        body: row.raw_new_data,
+      }),
+    },
+  },
+
+  purchase_orders: {
+    value: 'purchase_orders',
+    label: 'Purchase Order',
+    displayProps: PO_DISPLAY_PROPS,
+    allowDelete: false,
+    getViewAction: (row) => ({
+      type: 'pdf',
+      title: `Purchase Order Preview - #${row.record?.code}`,
+      url: `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview.purchase_order.replace(":id", row.record_id)}`,
     }),
+    preview: {
+      enabled: true,
+      getOldPreviewUrl: (row) =>
+        `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview.purchase_order.replace(":id", row.record_id)}`,
+
+      getNewPreviewRequest: (row) => ({
+        url: `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview_post.purchase_order}`,
+        method: "POST",
+        body: row.raw_new_data,
+      }),
+    },
   },
-  },
-  
+
 
 };

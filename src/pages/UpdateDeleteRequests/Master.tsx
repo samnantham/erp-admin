@@ -482,7 +482,7 @@ export const UpdateDeleteRequestMaster = () => {
                         onPageSizeChange={(limit) =>
                             setQueryParams((prev: any) => ({ ...prev, limit, page: 1 }))
                         }
-                        // stickyColumns={4}
+                        stickyColumns={4}
                         showtitleBar={false}
                     />
                 </Box>

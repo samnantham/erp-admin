@@ -24,6 +24,7 @@ export const endPoints = {
     material_request: '/purchase/material-request/',
     prfq: '/purchase/rfq/',
     purchase_quotation: '/purchase/quotation/',
+    purchase_order: '/purchase/order',
   },
   list: {
     role:           '/user-access/role',
@@ -41,6 +42,7 @@ export const endPoints = {
     quotation_items : '/purchase/quotation/:id/items',
     alternate_parts: '/spare-management/part-number/:id/alternates',
     quotation_by_rfq: '/purchase/quotation/by-rfq/:id',
+    purchase_order: '/purchase/order/:id',
   },
   info: {
     role:           '/user-access/role/:id',
@@ -57,6 +59,7 @@ export const endPoints = {
     material_request: '/purchase/material-request/:id',
     prfq: '/purchase/rfq/:id',
     purchase_quotation: '/purchase/quotation/:id',
+    purchase_order: '/purchase/order/:id',
   },
   create: {
     role:           '/user-access/role',
@@ -78,7 +81,8 @@ export const endPoints = {
     material_request: '/purchase/material-request/',
     prfq: '/purchase/rfq/',
     purchase_quotation: '/purchase/quotation/',
-    quotation_items: '/purchase/quotation/:id/items'
+    quotation_items: '/purchase/quotation/:id/items',
+    purchase_order: '/purchase/order/',
   },
   update: {
     role:           '/user-access/role/:id',
@@ -101,6 +105,7 @@ export const endPoints = {
     prfq: '/purchase/rfq/:id',
     purchase_quotation: '/purchase/quotation/:id',
     quotation_line_item: '/purchase/quotation/:quotation/line-items/:line_item',
+    purchase_order: '/purchase/order/:id',
   },
   delete: {
     role:           '/user-access/role/:id',
@@ -129,6 +134,7 @@ export const endPoints = {
     material_request: '/purchase/material-request/drop-downs',
     prfq: '/purchase/rfq/drop-downs',
     purchase_quotation: '/purchase/quotation/drop-downs',
+    purchase_order: '/purchase/order/drop-downs',
   },
   others: {
     upload:                    '/media/upload',
@@ -145,6 +151,7 @@ export const endPoints = {
     update_delete_request_history:           '/update-delete-requests/history/:record_id',
     create_alternate_spares:                 '/spare-management/part-number/map-alternates',
     contact_group_members: '/contact-management/contact-group/:id/members',
+    validate_part_numbers_by_name: '/spare-management/part-number/validate-by-names',
   },
   bulk_upload: {
     customer:        '/contact-management/customer/bulk-upload',
@@ -161,11 +168,13 @@ export const endPoints = {
     sales_log:    'preview-pdf/sales-log/:id',
     material_request:    'preview-pdf/material-request/:id',
     prfq: '/preview-pdf/prfq/:id',
+    purchase_order: '/preview-pdf/purchase-order/:id',
   },
     preview_post: {
     sales_log:    'preview-pdf/sales-log',
     material_request:    'preview-pdf/material-request',
-    prfq: '/preview-pdf/prfq/',
+    prfq: '/preview-pdf/prfq',
+    purchase_order: '/preview-pdf/purchase-order',
   },
   search: {
     spare: '/spare-management/part-number/search',

@@ -42,8 +42,9 @@ import {
   FaShoppingBag,
   FaClipboardCheck,
   FaFileContract,
-  FaFileSignature
+  FaFileSignature,
 } from 'react-icons/fa';
+import { TbClipboardListFilled } from "react-icons/tb";
 import {
   FaBox,
   FaBoxOpen,
@@ -204,6 +205,13 @@ const NavigationSections: Array<SectionProps> = [
             icon: FaFileSignature,
             link: '/purchase/supplier-pricing-update/master',
             activeBase: '/purchase/supplier-pricing-update'
+          },
+
+          {
+            name: 'Purchase Order',
+            icon: TbClipboardListFilled,
+            link: '/purchase/order/master',
+            activeBase: '/purchase/order'
           },
 
         ],
