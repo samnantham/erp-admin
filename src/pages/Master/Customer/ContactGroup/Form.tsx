@@ -213,7 +213,8 @@ export const ContactGroupForm = () => {
                                     name="members"
                                     placeholder="Select members..."
                                     options={customerOptions}
-                                    isClearable isMulti
+                                    isClearable 
+                                    isMulti
                                     selectProps={{
                                         isLoading: customerListLoading,
 

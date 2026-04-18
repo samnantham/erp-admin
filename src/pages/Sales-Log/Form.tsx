@@ -38,7 +38,7 @@ import { useUserContext } from "@/services/auth/UserContext";
 import { usePDFPreviewController } from "@/api/hooks/usePDFPreviewController";
 import { endPoints } from "@/api/endpoints";
 import dayjs from "dayjs";
-
+import { v4 as uuidv4 } from "uuid";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const FORM_KEYS = [
@@ -64,7 +64,7 @@ type SLRow = {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const EMPTY_ROW = (): SLRow => ({
-    rowKey: crypto.randomUUID(),
+    rowKey: uuidv4(),
     part_number_id: "",
     condition_id: "",
     qty: "",
@@ -108,7 +108,7 @@ export const SalesLogForm = () => {
     const { data: customerInfo, isLoading: l3 } = useCustomerDetails(selectedCustomerId, { enabled: !!selectedCustomerId });
     const { data: contactManagerList, isLoading: l4, refetch: reloadContactManagers } = useCustomerRelationIndex(selectedCustomerId, "contact-managers");
     const { data: shippingAddressList, isLoading: l5, refetch: reloadShippingAddresses } = useCustomerRelationIndex(selectedCustomerId, "shipping-addresses");
-    const { data: priorityList } = useSubmasterItemIndex("priorities", {});
+    const { data: priorityList, refetch: reloadPriority } = useSubmasterItemIndex("priorities", {});
     const { data: conditionData } = useSubmasterItemIndex("conditions", {});
     const { data: uomData } = useSubmasterItemIndex("unit-of-measures", {});
     const { data: spareSearchData, refetch: reloadSpares } = useSearchPartNumber(queryParams);
@@ -169,6 +169,8 @@ export const SalesLogForm = () => {
                 return;
             }
             const payload: any = Object.fromEntries(FORM_KEYS.map(k => [k, values[k]]));
+            payload.due_date = formatDate(fields['due_date'].value) as string;
+            payload.cust_rfq_date = formatDate(fields['cust_rfq_date'].value) as string;
             payload.items = rows.map(row => ({
                 part_number_id: values[`part_number_${row.rowKey}`],
                 condition_id: values[`condition_${row.rowKey}`],
@@ -241,10 +243,15 @@ export const SalesLogForm = () => {
             setDisabledDatePicker(false);
             form.setValues({ due_date: "" });
         } else {
-            setDisabledDatePicker(true);
-            form.setValues({ due_date: dayjs().add(daysToAdd, "day") });
+            applyDueDate(daysToAdd); 
         }
     };
+
+    const applyDueDate = (daysToAdd: number) => { 
+        setDisabledDatePicker(true);
+        form.setValues({ due_date: dayjs().add(daysToAdd, "day") });
+     };
+
 
     const handleRemarksChange = (value: string) => form.setValues({ remarks: value });
 
@@ -262,7 +269,7 @@ export const SalesLogForm = () => {
 
         if (!s.items?.length) return;
         const prefilled: SLRow[] = s.items.map((item: any) => ({
-            rowKey: crypto.randomUUID(),
+            rowKey: uuidv4(),
             part_number_id: item.part_number_id,
             condition_id: item.condition_id,
             qty: item.qty,
@@ -326,8 +333,13 @@ export const SalesLogForm = () => {
 
                 setTimeout(() => {
                     refetch();
-
                     setTimeout(() => {
+                        if(fieldName === 'priority_id'){
+                            reloadPriority();
+                            setTimeout(() => {
+                                applyDueDate(record?.days ?? 0);
+                            }, 50);
+                        }
                         form.setValues({ [fieldName]: id });
                         options?.onValueChange?.(id, record);
                     }, 50);

@@ -12,8 +12,7 @@ type UsualSelectProps =
   | 'placeholder'
   | 'isMulti'
   | 'autoFocus'
-  | 'menuPortalTarget'
-  | 'size';
+  | 'menuPortalTarget';
 
 type CreateModalComponent = React.ComponentType<{
   isOpen: boolean;
@@ -38,6 +37,7 @@ export type FieldSelectProps<
   FormGroupProps &
   Pick<SelectProps<Option, IsMulti, Group>, UsualSelectProps> & {
     options: Option[];
+    size?: 'sm' | 'md' | 'lg'; 
     maxLength?: number;
     isCaseSensitive?: boolean;
     onlyAlphabets?: boolean;

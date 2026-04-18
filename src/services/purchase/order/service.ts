@@ -46,28 +46,33 @@ export const usePurchaseOrderDetails = (
 
 /* ================= Purchase Order Variables ================= */
 export interface PurchaseOrderVariables {
-    id?: string;
-    customer_contact_manager_id: string;
-    priority_id: string;
-    ship_customer_id?: string;
-    customer_id?: string;
-    ship_customer_shipping_address_id?: string;
-    payment_mode_id: string;
-    payment_term_id: string;
-    fob_id: string;
-    currency_id: string;
-    ship_type_id: string;
-    ship_mode_id: string;
-    ship_account_id: string;
-    remark?: string;
-    bank_charge?: number;
-    freight?: number;
-    discount?: number;
-    miscellaneous_charges?: number;
-    vat?: number;
-    is_closed?: boolean;
-    is_editable?: boolean;
-    update_request_status?: boolean;
+    id?:                              string;
+    customer_contact_manager_id:      string;
+    priority_id:                      string;
+    ship_customer_id?:                string;
+    customer_id?:                     string;
+    customer_shipping_address_id?:    string;
+    payment_mode_id:                  string;
+    payment_term_id:                  string;
+    fob_id:                           string;
+    currency_id:                      string;
+    ship_type_id:                     string;
+    ship_mode_id:                     string;
+    ship_account_id:                  string;
+    remarks?:                         string;
+    bank_charge?:                     number;
+    freight?:                         number;
+    discount?:                        number;
+    miscellaneous_charges?:           number;
+    vat?:                             number;
+    reference_file?:                  string;  // ← added
+    is_closed?:                       boolean;
+    is_editable?:                     boolean;
+    update_request_status?:           boolean;
+    // Relations sent on create/update
+    items?:                           PurchaseOrderItemVariables[];
+    quotation_ids?:                   string[];
+    material_request_ids?:            string[]; // ← added: stored in purchase_order_material_requests
 }
 
 /* ================= Create / Update Purchase Order ================= */
@@ -80,17 +85,17 @@ export const useSavePurchaseOrder = () =>
 
 /* ================= Purchase Order Item Variables ================= */
 export interface PurchaseOrderItemVariables {
-    id?: string;
+    id?:               string;
     purchase_order_id: string;
-    part_number_id: string;
-    condition_id: string;
+    part_number_id:    string;
+    condition_id:      string;
     unit_of_measure_id: string;
     quotation_item_id?: string;
-    qty: number;
-    price: number;
-    note?: string;
-    is_group?: boolean;
-    is_closed?: boolean;
+    qty:               number;
+    price:             number;
+    note?:             string;
+    is_group?:         boolean;
+    is_closed?:        boolean;
 }
 
 /* ================= Purchase Order Dropdowns ================= */
@@ -108,7 +113,7 @@ export const usePurchaseOrderDropdowns = () =>
 
 /* ================= Purchase Order List ================= */
 type UsePurchaseOrderListProps = {
-    enabled?: boolean;
+    enabled?:     boolean;
     queryParams?: QueryParams;
 };
 

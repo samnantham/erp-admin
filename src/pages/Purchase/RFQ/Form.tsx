@@ -34,7 +34,7 @@ import { ContactManagerModal } from "@/components/Modals/CustomerMaster/ContactM
 import { MaterialRequestSearchPopup } from "@/components/Popups/Search/Purchase/MaterialRequest";
 import { useToastError } from '@/components/Toast';
 import ConfirmationPopup from '@/components/ConfirmationPopup';
-
+import { v4 as uuidv4 } from "uuid";
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
 const FORM_KEYS = ["need_by_date", "priority_id", "remarks"];
@@ -63,7 +63,7 @@ type VendorRow = {
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
 const makeEmptyVendor = (): VendorRow => ({
-    rowKey: crypto.randomUUID(), vendor_id: "", customer_contact_manager_id: "",
+    rowKey: uuidv4(), vendor_id: "", customer_contact_manager_id: "",
 });
 
 const recomputeDuplicates = (rows: VendorRow[]): VendorRow[] => {
@@ -280,7 +280,7 @@ export const PRFQForm = () => {
         // Vendors
         if (s.vendors?.length) {
             const prefilled: VendorRow[] = s.vendors.map((v: any) => ({
-                rowKey: crypto.randomUUID(), id: v.id ?? "",
+                rowKey: uuidv4(), id: v.id ?? "",
                 vendor_id: v.vendor_id ?? "", customer_contact_manager_id: v.customer_contact_manager_id ?? "",
                 customer: v.vendor ?? undefined,
                 contact_managers: v.customer_contact_manager ? [v.customer_contact_manager] : [],
@@ -298,7 +298,7 @@ export const PRFQForm = () => {
         // Items/Rows — set directly from API data, bypass MR sync
         if (s.items?.length) {
             const prefilledRows: MRRow[] = s.items.map((item: any) => ({
-                id: item.id ?? "", rowKey: crypto.randomUUID(),
+                id: item.id ?? "", rowKey: uuidv4(),
                 material_request_id: item.material_request_info?.id ?? "",
                 material_request_code: item.material_request_code ?? item.material_request_info?.code ?? "",
                 part_number_id: item.part_number_id ?? "", part_number: item.part_number ?? null,
@@ -387,7 +387,7 @@ export const PRFQForm = () => {
                 (mr.items ?? [])
                     .filter((item: any) => !existingItemIds.has(str(item.id)))
                     .map((item: any) => ({
-                        rowKey: crypto.randomUUID(), material_request_id: mr.id, material_request_code: mr.code,
+                        rowKey: uuidv4(), material_request_id: mr.id, material_request_code: mr.code,
                         part_number_id: item.part_number_id ?? '', part_number: item.part_number,
                         condition_id: item.condition_id ?? '', qty: item.qty ?? '',
                         unit_of_measure_id: item.unit_of_measure_id ?? '', mr_remark: item.remark,
@@ -427,7 +427,7 @@ export const PRFQForm = () => {
         // Add mode: build all rows fresh from MR items
         const newRows = selectedMaterialRequests.flatMap(mr =>
             (mr.items ?? []).map((item: any) => ({
-                rowKey: crypto.randomUUID(), material_request_id: mr.id, material_request_code: mr.code,
+                rowKey: uuidv4(), material_request_id: mr.id, material_request_code: mr.code,
                 part_number_id: item.part_number_id ?? '', part_number: item.part_number,
                 condition_id: item.condition_id ?? '', qty: item.qty ?? '',
                 unit_of_measure_id: item.unit_of_measure_id ?? '', mr_remark: item.remark,
@@ -506,7 +506,7 @@ export const PRFQForm = () => {
         if (members.length === 0) return;
 
         const newVendors: VendorRow[] = members.map((m: any) => ({
-            rowKey: crypto.randomUUID(),
+            rowKey: uuidv4(),
             vendor_id: m.contact_id,
             customer_contact_manager_id: "",
             customer: m.contact,

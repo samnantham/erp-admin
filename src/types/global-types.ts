@@ -6,3 +6,5 @@ export type DepartmentForm = {
   name: string;
   emails: string;
 };
+
+export type SelectOption = { label: string; value: string };

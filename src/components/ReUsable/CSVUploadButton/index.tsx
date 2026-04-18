@@ -4,7 +4,7 @@ import { LuUpload } from "react-icons/lu";
 import ConfirmationPopup from "@/components/ConfirmationPopup";
 import { useToastError, useToastWarning } from "@/components/Toast";
 import { parseCSV } from "@/helpers/commonHelper";
-
+import { v4 as uuidv4 } from "uuid";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type CSVFieldMapping<TRow extends Record<string, any> = Record<string, any>> = {
@@ -87,7 +87,7 @@ export function CSVUploadButton<TRow extends Record<string, any> = Record<string
     const [openConfirmation, setOpenConfirmation] = useState(false);
     const [isValidating, setIsValidating]         = useState(false);
 
-    const inputId = useRef(`csv-upload-${crypto.randomUUID()}`).current;
+    const inputId = useRef(`csv-upload-${uuidv4()}`).current;
 
     // ── Handlers ───────────────────────────────────────────────────────────────
 
