@@ -20,6 +20,7 @@ type PDFPreviewModalProps = {
   pdfUrlOrEndpoint: string;
   isEndpoint?: boolean;
   title?: string;
+  isLoading?: boolean; // ← external loading state for POST flow
 };
 
 export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
@@ -28,13 +29,20 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
   pdfUrlOrEndpoint,
   isEndpoint = true,
   title = 'PDF Preview',
+  isLoading: externalLoading = false,
 }) => {
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [iframeLoading, setIframeLoading] = useState(false);
 
   useEffect(() => {
-    if (!isOpen) return;
+    // If external loading is controlling state (POST flow), skip internal fetch
+    if (externalLoading) {
+      setLoading(true);
+      return;
+    }
+
+    if (!isOpen || !pdfUrlOrEndpoint) return;
 
     const fetchPdf = async () => {
       setLoading(true);
@@ -53,18 +61,14 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
             headers: { Accept: 'application/pdf' },
           });
 
-          const blob = new Blob([response.data], {
-            type: 'application/pdf',
-          });
-
+          const blob = new Blob([response.data], { type: 'application/pdf' });
           const url = URL.createObjectURL(blob);
 
-          // 👇 ensure loader is visible even for fast APIs
           setTimeout(() => {
             setPdfBlobUrl(url);
           }, 200);
         } else {
-          // direct URL case
+          // direct blob URL from POST flow
           setTimeout(() => {
             setPdfBlobUrl(pdfUrlOrEndpoint);
           }, 100);
@@ -78,7 +82,26 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
     };
 
     fetchPdf();
-  }, [isOpen, pdfUrlOrEndpoint, isEndpoint]);
+  }, [isOpen, pdfUrlOrEndpoint, isEndpoint, externalLoading]);
+
+  // Sync external loading → internal loading
+  useEffect(() => {
+    if (externalLoading) {
+      setLoading(true);
+      setPdfBlobUrl(null);
+    } else {
+      setLoading(false);
+    }
+  }, [externalLoading]);
+
+  // When POST flow injects a blob URL (pdfUrlOrEndpoint changes to a blob:// url)
+  useEffect(() => {
+    if (!externalLoading && pdfUrlOrEndpoint?.startsWith("blob:")) {
+      setIframeLoading(true);
+      setPdfBlobUrl(pdfUrlOrEndpoint);
+      setLoading(false);
+    }
+  }, [pdfUrlOrEndpoint, externalLoading]);
 
   const handleClose = () => {
     onClose();
@@ -99,6 +122,8 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
       }
     };
   }, [pdfBlobUrl, isEndpoint]);
+
+  const showSpinner = loading || iframeLoading || externalLoading;
 
   return (
     <Modal
@@ -137,8 +162,8 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
             position="relative"
             boxShadow="md"
           >
-            {/* ✅ Loader */}
-            {(loading || iframeLoading) && (
+            {/* Loader */}
+            {showSpinner && (
               <Flex
                 position="absolute"
                 top="0"
@@ -154,7 +179,7 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
               </Flex>
             )}
 
-            {/* ✅ PDF */}
+            {/* PDF */}
             {pdfBlobUrl ? (
               <iframe
                 key={pdfBlobUrl}
@@ -165,11 +190,11 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
                 style={{ border: 'none', display: 'block' }}
                 onLoad={() => {
                   setIframeLoading(false);
-                  setLoading(false); // 👈 stop loader only after render
+                  setLoading(false);
                 }}
               />
             ) : (
-              !loading && (
+              !showSpinner && (
                 <Flex
                   position="absolute"
                   top="0"

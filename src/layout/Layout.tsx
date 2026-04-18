@@ -43,8 +43,10 @@ import {
   FaClipboardCheck,
   FaFileContract,
   FaFileSignature,
+  FaCcVisa,
+  FaCcAmazonPay,
 } from 'react-icons/fa';
-import { TbClipboardListFilled } from "react-icons/tb";
+import { TbClipboardListFilled } from 'react-icons/tb';
 import {
   FaBox,
   FaBoxOpen,
@@ -67,7 +69,10 @@ import {
   FaReceipt,
   FaRankingStar,
   FaChartLine,
-  FaPeopleGroup
+  FaPeopleGroup,
+  FaMoneyCheckDollar,
+  FaFileInvoiceDollar,
+  FaFileInvoice,
 } from 'react-icons/fa6';
 import { PiListNumbersFill } from 'react-icons/pi';
 import { BiSitemap } from 'react-icons/bi';
@@ -83,6 +88,8 @@ import { useAuthContext } from '@/services/auth/AuthContext';
 import { useUserContext } from '@/services/auth/UserContext';
 import { useProfileInfo } from '@/services/profile/services';
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 interface SectionProps {
   sectionName: string;
   items: LinkItemProps[];
@@ -93,6 +100,7 @@ interface LinkItemProps {
   icon: IconType;
   link?: string;
   activeBase?: string;
+  excludeBase?: string;   // ← new: prevents matching when path starts with this
   state?: any;
   subItems?: LinkItemProps[];
 }
@@ -108,6 +116,8 @@ interface SidebarProps extends BoxProps {
   isSuperAdmin: boolean;
 }
 
+// ─── Navigation Config ────────────────────────────────────────────────────────
+
 const NavigationSections: Array<SectionProps> = [
   {
     sectionName: 'Dashboard',
@@ -117,10 +127,10 @@ const NavigationSections: Array<SectionProps> = [
         name: 'User Access',
         icon: FaUsersGear,
         subItems: [
-          { icon: FaBuildingUser, link: '/user-access/roles', name: 'User Roles' },
-          { icon: FaTableList, link: '/user-access/departments', name: 'Departments' },
-          { icon: FaUserPlus, link: '/user-access/admin-users', name: 'Admin Users' },
-          { icon: FaNotesMedical, link: '/user-access/pages', name: 'Pages/Routes' },
+          { icon: FaBuildingUser, link: '/user-access/roles',       name: 'User Roles' },
+          { icon: FaTableList,    link: '/user-access/departments',  name: 'Departments' },
+          { icon: FaUserPlus,     link: '/user-access/admin-users',  name: 'Admin Users' },
+          { icon: FaNotesMedical, link: '/user-access/pages',        name: 'Pages/Routes' },
         ],
       },
     ],
@@ -132,38 +142,40 @@ const NavigationSections: Array<SectionProps> = [
         name: 'Submaster',
         icon: FaUserShield,
         subItems: [
-          { name: 'Bin Location', icon: FaBoxOpen, link: '/submaster/bin-locations' },
-          { name: 'Business Type', icon: FaBriefcase, link: '/submaster/business-types' },
-          { name: 'Conditions', icon: FaCheckCircle, link: '/submaster/conditions' },
-          { name: 'Contact Type', icon: FaUserFriends, link: '/submaster/contact-types' },
-          { name: 'Currency', icon: FaDollarSign, link: '/submaster/currencies' },
-          { name: 'Custom Entry', icon: FaGlobeAmericas, link: '/submaster/custom-entries' },
-          { name: 'FOB', icon: FaWarehouse, link: '/submaster/fobs' },
-          { name: 'HSC Code', icon: LuBarcode, link: '/submaster/hsc-codes' },
-          { name: 'Mode of Receipt', icon: FaReceipt, link: '/submaster/mode-of-receipts' },
-          { name: 'Package Type', icon: FaBox, link: '/submaster/package-types' },
-          { name: 'Payment Mode', icon: FaCreditCard, link: '/submaster/payment-modes' },
-          { name: 'Payment Terms', icon: FaCalendarAlt, link: '/submaster/payment-terms' },
-          { name: 'Priorities', icon: FaFlag, link: '/submaster/priorities' },
-          { name: 'Rack', icon: FaLayerGroup, link: '/submaster/racks' },
-          { name: 'Ship Accounts', icon: FaShip, link: '/submaster/ship-accounts' },
-          { name: 'Ship Modes', icon: FaTruck, link: '/submaster/ship-modes' },
-          { name: 'Ship Type', icon: FaSailboat, link: '/submaster/ship-types' },
-          { name: 'Ship Via', icon: FaPlane, link: '/submaster/ship-vias' },
-          { name: 'Spare Class', icon: FaCog, link: '/submaster/spare-classes' },
-          { name: 'Spare Model', icon: FaWrench, link: '/submaster/spare-models' },
-          { name: 'Spare Type', icon: FaBox, link: '/submaster/spare-types' },
-          { name: 'UN', icon: PiListNumbersFill, link: '/submaster/uns' },
-          { name: 'Unit of Measurement', icon: FaRulerCombined, link: '/submaster/unit_of_measures' },
-          { name: 'Warehouse', icon: FaWarehouse, link: '/submaster/warehouses' },
+          { name: 'Bin Location',        icon: FaBoxOpen,          link: '/submaster/bin-locations' },
+          { name: 'Business Type',       icon: FaBriefcase,        link: '/submaster/business-types' },
+          { name: 'Conditions',          icon: FaCheckCircle,      link: '/submaster/conditions' },
+          { name: 'Contact Type',        icon: FaUserFriends,      link: '/submaster/contact-types' },
+          { name: 'Currency',            icon: FaDollarSign,       link: '/submaster/currencies' },
+          { name: 'Custom Entry',        icon: FaGlobeAmericas,    link: '/submaster/custom-entries' },
+          { name: 'Financial Charges',   icon: FaBoxOpen,          link: '/submaster/financial-charges' },
+          { name: 'FOB',                 icon: FaWarehouse,        link: '/submaster/fobs' },
+          { name: 'HSC Code',            icon: LuBarcode,          link: '/submaster/hsc-codes' },
+          { name: 'Mode of Receipt',     icon: FaReceipt,          link: '/submaster/mode-of-receipts' },
+          { name: 'Package Type',        icon: FaBox,              link: '/submaster/package-types' },
+          { name: 'Payment Mode',        icon: FaCreditCard,       link: '/submaster/payment-modes' },
+          { name: 'Payment Terms',       icon: FaCalendarAlt,      link: '/submaster/payment-terms' },
+          { name: 'Payment Via',         icon: FaCcVisa,           link: '/submaster/payment-vias' },
+          { name: 'Priorities',          icon: FaFlag,             link: '/submaster/priorities' },
+          { name: 'Rack',                icon: FaLayerGroup,       link: '/submaster/racks' },
+          { name: 'Ship Accounts',       icon: FaShip,             link: '/submaster/ship-accounts' },
+          { name: 'Ship Modes',          icon: FaTruck,            link: '/submaster/ship-modes' },
+          { name: 'Ship Type',           icon: FaSailboat,         link: '/submaster/ship-types' },
+          { name: 'Ship Via',            icon: FaPlane,            link: '/submaster/ship-vias' },
+          { name: 'Spare Class',         icon: FaCog,              link: '/submaster/spare-classes' },
+          { name: 'Spare Model',         icon: FaWrench,           link: '/submaster/spare-models' },
+          { name: 'Spare Type',          icon: FaBox,              link: '/submaster/spare-types' },
+          { name: 'UN',                  icon: PiListNumbersFill,  link: '/submaster/uns' },
+          { name: 'Unit of Measurement', icon: FaRulerCombined,    link: '/submaster/unit_of_measures' },
+          { name: 'Warehouse',           icon: FaWarehouse,        link: '/submaster/warehouses' },
         ],
       },
       {
         name: 'Contact Management',
         icon: FaUsers,
         subItems: [
-          { name: 'Contact Master', icon: FaUsersCog, link: '/contact-management/master' },
-          { name: 'Contact Group', icon: FaPeopleGroup, link: '/contact-management/contact-group' },
+          { name: 'Contact Master', icon: FaUsersCog,    link: '/contact-management/master' },
+          { name: 'Contact Group',  icon: FaPeopleGroup, link: '/contact-management/contact-group' },
         ],
       },
       {
@@ -198,22 +210,20 @@ const NavigationSections: Array<SectionProps> = [
             name: 'RFQ',
             icon: FaFileContract,
             link: '/purchase/rfq/master',
-            activeBase: '/purchase/rfq'
+            activeBase: '/purchase/rfq',
           },
           {
             name: 'Supplier Pricing Update',
             icon: FaFileSignature,
             link: '/purchase/supplier-pricing-update/master',
-            activeBase: '/purchase/supplier-pricing-update'
+            activeBase: '/purchase/supplier-pricing-update',
           },
-
           {
             name: 'Purchase Order',
             icon: TbClipboardListFilled,
             link: '/purchase/order/master',
-            activeBase: '/purchase/order'
+            activeBase: '/purchase/order',
           },
-
         ],
       },
       {
@@ -235,7 +245,43 @@ const NavigationSections: Array<SectionProps> = [
           },
         ],
       },
-      { name: 'Approval Monitor', icon: FaClipboardList, link: '/update-delete-requests/dashboard', activeBase: '/update-delete-requests' },
+      {
+        name: 'Finance',
+        icon: FaMoneyCheckDollar,
+        subItems: [
+          {
+            name: 'Payment Methods',
+            icon: FaCcAmazonPay,
+            link: '/finance/payment-method/banks/master',
+            activeBase: '/finance/payment-method/',
+          },
+          {
+            name: 'Invoice',
+            icon: FaFileInvoiceDollar,
+            link: '/finance/invoice/master',
+            activeBase: '/finance/invoice',
+            excludeBase: '/finance/invoice/proforma', // ← don't highlight when on proforma
+          },
+          {
+            name: 'Proforma Invoice',
+            icon: FaFileInvoice,
+            link: '/finance/invoice/proforma/master',
+            activeBase: '/finance/invoice/proforma',  // ← more specific, wins cleanly
+          },
+          {
+            name: 'Payment Receipt',
+            icon: FaReceipt,
+            link: '/finance/payment-receipt/master',
+            activeBase: '/finance/payment-receipt',
+          },
+        ],
+      },
+      {
+        name: 'Approval Monitor',
+        icon: FaClipboardList,
+        link: '/cud-requests/dashboard',
+        activeBase: '/cud-requests',
+      },
     ],
   },
 ];
@@ -276,46 +322,43 @@ const getFilteredSections = (permissions: string[], isSuperAdmin: boolean): Sect
 
 // ─── Active Link Helper ───────────────────────────────────────────────────────
 
-/**
- * Determines if a nav item is active.
- *
- * When a nav item has a `state` (e.g. { type: 'oe' } vs { type: 'sel' }),
- * two items can share the same pathname but belong to different contexts.
- * In that case we match against location.state so only the correct one
- * highlights — and we do NOT fall back to activeBase/pathname matching,
- * because that would cause both to highlight simultaneously.
- *
- * When no `state` is defined on the item, we use the normal
- * activeBase → exact → prefix rules.
- */
 const isLinkActive = (
   link: string,
   pathname: string,
   locationState: any,
   activeBase?: string,
-  itemState?: any
+  itemState?: any,
+  excludeBase?: string,   // ← new
 ): boolean => {
   const normalize = (p: string) => p.replace(/\/+$/, '').toLowerCase();
   const current = normalize(pathname);
-  const target = normalize(link);
+  const target  = normalize(link);
 
-  // ── State-aware match ──────────────────────────────────────────────────────
+  // ── State-gated match ─────────────────────────────────────────────────────
   if (itemState && Object.keys(itemState).length > 0) {
     const pathMatches = activeBase
       ? current === normalize(activeBase) || current.startsWith(normalize(activeBase) + '/')
       : current === target || current.startsWith(target + '/');
 
     if (!pathMatches) return false;
+    if (!locationState)  return false;
 
-    return Object.entries(itemState).every(
-      ([k, v]) => locationState?.[k] === v
-    );
+    return Object.entries(itemState).every(([k, v]) => locationState?.[k] === v);
   }
 
-  // ── Normal match (no state declared) ──────────────────────────────────────
+  // ── Normal match ──────────────────────────────────────────────────────────
   if (activeBase) {
     const base = normalize(activeBase);
-    return current === base || current.startsWith(base + '/');
+    const matches = current === base || current.startsWith(base + '/');
+    if (!matches) return false;
+
+    // Excluded by a more-specific sibling (e.g. proforma inside invoice)
+    if (excludeBase) {
+      const excl = normalize(excludeBase);
+      if (current === excl || current.startsWith(excl + '/')) return false;
+    }
+
+    return true;
   }
 
   // ── Root path: exact match only ───────────────────────────────────────────
@@ -325,6 +368,7 @@ const isLinkActive = (
 
   return current === target || current.startsWith(target + '/');
 };
+
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
 const SidebarContent = ({ onClose, permissions, isSuperAdmin, ...rest }: SidebarProps) => {
@@ -342,7 +386,7 @@ const SidebarContent = ({ onClose, permissions, isSuperAdmin, ...rest }: Sidebar
       maxHeight="100vh"
       overflowY={'auto'}
       css={{
-        '&::-webkit-scrollbar': { width: '4px' },
+        '&::-webkit-scrollbar':       { width: '4px' },
         '&::-webkit-scrollbar-track': { width: '6px' },
         '&::-webkit-scrollbar-thumb': { background: 'gray', borderRadius: '24px' },
       }}
@@ -372,21 +416,22 @@ const SidebarContent = ({ onClose, permissions, isSuperAdmin, ...rest }: Sidebar
 
 // ─── NavItem ──────────────────────────────────────────────────────────────────
 
-const NavItem = ({ icon, name, link, activeBase, state, subItems, ...rest }: LinkItemProps & FlexProps) => {
+const NavItem = ({
+  icon, name, link, activeBase, excludeBase, state, subItems, ...rest
+}: LinkItemProps & FlexProps) => {
   const { pathname, state: locationState } = useLocation();
 
   const hasSubItems = !!subItems?.length;
 
-  // A child is active only if its path AND state both match
   const hasActiveChild =
     subItems?.some((item) =>
       item.link
-        ? isLinkActive(item.link, pathname, locationState, item.activeBase, item.state)
+        ? isLinkActive(item.link, pathname, locationState, item.activeBase, item.state, item.excludeBase)
         : false
     ) ?? false;
 
   const isActive =
-    (link ? isLinkActive(link, pathname, locationState, activeBase, state) : false) ||
+    (link ? isLinkActive(link, pathname, locationState, activeBase, state, excludeBase) : false) ||
     hasActiveChild;
 
   const [isOpen, setIsOpen] = useState(hasActiveChild);
@@ -456,7 +501,7 @@ const NavItem = ({ icon, name, link, activeBase, state, subItems, ...rest }: Lin
 // ─── MobileNav ────────────────────────────────────────────────────────────────
 
 const MobileNav = ({ userInfo, onOpen, ...rest }: MobileProps) => {
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isProfileModalOpen,  setIsProfileModalOpen]  = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const { logout } = useAuthContext();
 
@@ -530,8 +575,8 @@ const MobileNav = ({ userInfo, onOpen, ...rest }: MobileProps) => {
                       ? userInfo?.is_super_admin === true
                         ? 'Super Admin'
                         : userInfo?.department_role?.department?.name +
-                        ' - ' +
-                        userInfo?.department_role?.role?.name
+                          ' - ' +
+                          userInfo?.department_role?.role?.name
                       : 'Loading...'}
                   </Text>
                 </VStack>
@@ -542,26 +587,20 @@ const MobileNav = ({ userInfo, onOpen, ...rest }: MobileProps) => {
             </MenuButton>
             <MenuList bg={'white'} borderColor={'gray.200'}>
               <MenuItem
-                bg={'white'}
-                color={'gray.800'}
-                _hover={{ bg: 'gray.100' }}
+                bg={'white'} color={'gray.800'} _hover={{ bg: 'gray.100' }}
                 onClick={() => setIsProfileModalOpen(true)}
               >
                 Edit Profile
               </MenuItem>
               <MenuItem
-                bg={'white'}
-                color={'gray.800'}
-                _hover={{ bg: 'gray.100' }}
+                bg={'white'} color={'gray.800'} _hover={{ bg: 'gray.100' }}
                 onClick={() => setIsPasswordModalOpen(true)}
               >
                 Password Update
               </MenuItem>
               <MenuDivider />
               <MenuItem
-                bg={'white'}
-                color={'gray.800'}
-                _hover={{ bg: 'gray.100' }}
+                bg={'white'} color={'gray.800'} _hover={{ bg: 'gray.100' }}
                 onClick={() => logout()}
               >
                 Sign out
@@ -621,8 +660,8 @@ const Layout: FC<React.PropsWithChildren> = ({ children }) => {
     }
   }, [profileData]);
 
-  const permissions: string[] = userInfo?.permissions || [];
-  const isSuperAdmin: boolean = userInfo?.is_super_admin === true;
+  const permissions: string[]  = userInfo?.permissions    || [];
+  const isSuperAdmin: boolean  = userInfo?.is_super_admin === true;
 
   return (
     <Box minH="100vh" bg={'gray.100'}>

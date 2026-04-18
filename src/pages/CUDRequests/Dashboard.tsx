@@ -10,14 +10,16 @@ import {
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { MdArrowBack } from 'react-icons/md';
+import { OverlayScrollbarsComponent } from "overlayscrollbars-react";
+import "overlayscrollbars/overlayscrollbars.css";
 
 import { ResponsiveIconButton } from '@/components/ResponsiveIconButton';
 import { SlideIn } from '@/components/SlideIn';
 import LoadingOverlay from '@/components/LoadingOverlay';
-import { useApprovalsDashboard } from '@/services/update-delete-requests/service';
-import { ModuleApproval, ApprovalCounts } from '@/services/update-delete-requests/schema';
+import { useApprovalsDashboard } from '@/services/cud-requests/service';
+import { ModuleApproval, ApprovalCounts } from '@/services/cud-requests/schema';
 
-export const UpdateDeleteRequestDashboard = () => {
+export const CUDRequestDashboard = () => {
     const navigate = useNavigate();
     const { data, isFetching } = useApprovalsDashboard();
 
@@ -55,16 +57,16 @@ export const UpdateDeleteRequestDashboard = () => {
     );
 };
 
-
 interface ModuleCardProps {
     item: ModuleApproval;
     onNavigate: (path: string) => void;
 }
 
 interface ActionCountsProps {
-    label: "UPDATE" | "DELETE";
+    label: "CREATE" | "UPDATE" | "DELETE";
     counts: ApprovalCounts;
 }
+
 interface CountRowProps {
     dot: string;
     label: string;
@@ -73,15 +75,40 @@ interface CountRowProps {
 
 /* ================= Module Card ================= */
 
+// All cards share this fixed height so the grid rows are uniform.
+// The sections area inside scrolls when content overflows (e.g. Purchase with CREATE+UPDATE+DELETE).
+const CARD_HEIGHT        = "420px";
+const CARD_HEADER_HEIGHT = "130px"; // module name + big number + subtitle
+const SECTIONS_HEIGHT    = `calc(${CARD_HEIGHT} - ${CARD_HEADER_HEIGHT})`;
+
 const ModuleCard = ({ item, onNavigate }: ModuleCardProps) => {
-    const isDisabled = !item.has_link;
-    const totalPending = item.update.pending + item.delete.pending;
+    const isDisabled   = !item.has_link;
+    const hasCreate    = !!item.create;
+    const totalPending =
+        item.update.pending +
+        item.delete.pending +
+        (item.create?.pending ?? 0);
+
+    const sectionContent = (
+        <Box pr={1}>
+            {hasCreate && (
+                <>
+                    <ActionCounts label="CREATE" counts={item.create!} />
+                    <Divider borderColor="whiteAlpha.100" my={3} />
+                </>
+            )}
+            <ActionCounts label="UPDATE" counts={item.update} />
+            <Divider borderColor="whiteAlpha.100" my={3} />
+            <ActionCounts label="DELETE" counts={item.delete} />
+        </Box>
+    );
 
     return (
         <Box
             bg="#0c2556"
             borderRadius="2xl"
             p={5}
+            h={CARD_HEIGHT}
             overflow="hidden"
             position="relative"
             cursor={isDisabled ? "not-allowed" : "pointer"}
@@ -114,6 +141,7 @@ const ModuleCard = ({ item, onNavigate }: ModuleCardProps) => {
                 },
             }}
         >
+            {/* ── Header — never scrolls ── */}
             <Text
                 fontSize="13px"
                 fontWeight="600"
@@ -142,21 +170,50 @@ const ModuleCard = ({ item, onNavigate }: ModuleCardProps) => {
                 {totalPending}
             </Text>
 
-            <Text fontSize="13px" color="gray.600" mb={4} textTransform={'capitalize'}>
+            <Text fontSize="13px" color="gray.600" mb={4} textTransform="capitalize">
                 pending approvals
             </Text>
 
-            <ActionCounts label="UPDATE" counts={item.update} />
-            <Divider borderColor="whiteAlpha.100" my={3} />
-            <ActionCounts label="DELETE" counts={item.delete} />
+            {/* ── Sections — scroll only when create exists ── */}
+            {hasCreate ? (
+                <OverlayScrollbarsComponent
+                    options={{
+                        scrollbars: { autoHide: "scroll", theme: "os-theme-light" },
+                        overflow: { x: "hidden", y: "scroll" },
+                    }}
+                    style={{ height: SECTIONS_HEIGHT }}
+                >
+                    {sectionContent}
+                </OverlayScrollbarsComponent>
+            ) : (
+                sectionContent
+            )}
         </Box>
     );
 };
 
 /* ================= Action Counts ================= */
 
+const ACTION_STYLES: Record<"CREATE" | "UPDATE" | "DELETE", { bg: string; color: string; border: string }> = {
+    CREATE: {
+        bg:     "rgba(16,185,129,0.15)",
+        color:  "green.300",
+        border: "rgba(16,185,129,0.2)",
+    },
+    UPDATE: {
+        bg:     "rgba(59,130,246,0.15)",
+        color:  "blue.300",
+        border: "rgba(59,130,246,0.2)",
+    },
+    DELETE: {
+        bg:     "rgba(239,68,68,0.12)",
+        color:  "red.400",
+        border: "rgba(239,68,68,0.15)",
+    },
+};
+
 const ActionCounts = ({ label, counts }: ActionCountsProps) => {
-    const isUpdate = label === "UPDATE";
+    const styles = ACTION_STYLES[label];
     const approvedPct = counts.total === 0
         ? 0
         : Math.round((counts.approved / counts.total) * 100);
@@ -171,17 +228,17 @@ const ActionCounts = ({ label, counts }: ActionCountsProps) => {
                     px={2}
                     py="2px"
                     borderRadius="full"
-                    bg={isUpdate ? "rgba(59,130,246,0.15)" : "rgba(239,68,68,0.12)"}
-                    color={isUpdate ? "blue.300" : "red.400"}
+                    bg={styles.bg}
+                    color={styles.color}
                     border="1px solid"
-                    borderColor={isUpdate ? "rgba(59,130,246,0.2)" : "rgba(239,68,68,0.15)"}
+                    borderColor={styles.border}
                 >
                     {label}
                 </Badge>
                 <Text fontSize="12px" color="gray.600">{counts.total} total</Text>
             </HStack>
 
-            <CountRow dot="#fbbf24" label="Pending" value={counts.pending} />
+            <CountRow dot="#fbbf24" label="Pending"  value={counts.pending}  />
             <CountRow dot="#34d399" label="Approved" value={counts.approved} />
             <CountRow dot="#f87171" label="Rejected" value={counts.rejected} />
 
@@ -209,4 +266,5 @@ const CountRow = ({ dot, label, value }: CountRowProps) => (
         <Text fontSize="13px" fontWeight="600" color="gray.300">{value}</Text>
     </HStack>
 );
-export default UpdateDeleteRequestDashboard;
+
+export default CUDRequestDashboard;

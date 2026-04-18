@@ -17,6 +17,7 @@ type ModalFormProps = {
   existInfo?: any;
   onSuccess?: (createdValue?: unknown) => void;
   createdInputValue?: string;
+  hideCreate?: boolean;
 };
 
 export function SubMasterModalForm({
@@ -26,18 +27,22 @@ export function SubMasterModalForm({
   model,
   existInfo,
   onSuccess,
-  createdInputValue = ''
+  createdInputValue = '',
+  hideCreate = false,
 }: ModalFormProps) {
   const config = submasterConfig[model ?? ""] ?? submasterConfig.default;
   const title = formatModelTitle(model);
+
   const createMutation = useCreateSubmasterItem(model ?? "");
   const updateMutation = useUpdateSubmasterItem(model ?? "");
+
+  if (hideCreate && !isEdit) return null;
 
   return (
     <CreateUpdateModal<BasicForm>
       isOpen={isOpen}
       onClose={onClose}
-      onSuccess={onSuccess} // ✅ passed down
+      onSuccess={onSuccess}
       title={title}
       isEdit={isEdit}
       existInfo={existInfo}
@@ -48,23 +53,28 @@ export function SubMasterModalForm({
     >
       <Stack spacing={4}>
         {config.fields.map((field: any) => {
-          const Component = field.component || FieldInput;
+          const { component, name, label, placeholder, required, type,
+            maxValue, maxLength, isDisabled, ...rest } = field;  // 👈 rest captures options, radioGroupProps, etc.
+          const Component = component || FieldInput;
+
           return (
             <Component
-              key={field.name}
-              label={field.label}
-              name={field.name}
-              placeholder={field.placeholder}
-              required={field.required}
+              key={name}
+              label={label}
+              name={name}
+              placeholder={placeholder}
+              required={required}
               defaultValue={
-                existInfo?.[field.name] ??
-                (!isEdit && createdInputValue && field.name === 'name'
+                existInfo?.[name] ??
+                (!isEdit && createdInputValue && name === 'name'
                   ? createdInputValue
                   : "")
               }
-              type={field.type ?? 'alpha'}
-              maxValue={field.maxValue ?? undefined}
-              maxLength={field.maxLength ?? undefined}
+              type={type ?? 'alpha'}
+              maxValue={maxValue ?? undefined}
+              maxLength={maxLength ?? undefined}
+              isDisabled={isDisabled ?? false}
+              {...rest}   // ✅ spreads options, radioGroupProps, or anything else
             />
           );
         })}

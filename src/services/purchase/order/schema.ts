@@ -43,18 +43,29 @@ const zPurchaseOrderQuotation = z.object({
     vendor_quotation_no:   z.string().nullable().optional(),
     vendor_quotation_date: z.string().nullable().optional(),
     expiry_date:           z.string().nullable().optional(),
+    code:                  z.string().nullable().optional(),
 });
 export type PurchaseOrderQuotation = z.infer<typeof zPurchaseOrderQuotation>;
 
 /* =========================================================
-   Purchase request reference
+   PRFQ reference
 ========================================================= */
-const zPurchaseRequestRef = z.object({
+const zPRFQRef = z.object({
     id:   z.string().uuid(),
-    ref:  z.string(),
-    type: z.string(),
+    code: z.string().nullable().optional(),
 });
-export type PurchaseRequestRef = z.infer<typeof zPurchaseRequestRef>;
+export type PRFQRef = z.infer<typeof zPRFQRef>;
+
+/* =========================================================
+   Material request reference
+========================================================= */
+const zMaterialRequestRef = z.object({
+    id:   z.string().uuid(),
+    ref:  z.string().nullable().optional(),
+    code: z.string().nullable().optional(),
+    type: z.string().nullable().optional(),
+});
+export type MaterialRequestRef = z.infer<typeof zMaterialRequestRef>;
 
 /* =========================================================
    Purchase Order
@@ -68,6 +79,7 @@ export const zPurchaseOrder = zStandardObject.extend({
     discount:              z.number().nullable().optional(),
     miscellaneous_charges: z.number().nullable().optional(),
     vat:                   z.number().nullable().optional(),
+    reference_file:        z.string().nullable().optional(), // ← added
     // Flags
     is_closed:             z.boolean().nullable().optional(),
     is_editable:           z.boolean().nullable().optional(),
@@ -101,23 +113,21 @@ export const zPurchaseOrder = zStandardObject.extend({
     vat_amount:           z.number().optional(),
     total_price:          z.number().optional(),
     total_price_in_words: z.string().optional(),
-    // Derived
-    rfq_ids: z.array(z.string().uuid()).nullable().optional(),
     // Always-present shallow relations
     priority: zBasicObject.extend({
         name:      z.string(),
         days:      z.number().nullable().optional(),
         is_custom: z.boolean().optional(),
     }).nullable().optional(),
-    customer: zCustomer.nullable().optional(),
-    customer_contact_manager: zCustomerContactManager.nullable().optional(),
+    customer:                  zCustomer.nullable().optional(),
+    customer_contact_manager:  zCustomerContactManager.nullable().optional(),
     customer_shipping_address: zCustomerShippingAddress.nullable().optional(),
-    payment_mode: zBasicObject.nullable().optional(),
+    payment_mode:              zBasicObject.nullable().optional(),
     payment_term: zBasicObject.extend({
         credit_days: z.number().nullable().optional(),
         is_fixed:    z.boolean().optional(),
     }).nullable().optional(),
-    fob:         zBasicObject.nullable().optional(),
+    fob:      zBasicObject.nullable().optional(),
     currency: zBasicObject.extend({
         code:           z.string().nullable().optional(),
         symbol:         z.string().nullable().optional(),
@@ -132,9 +142,11 @@ export const zPurchaseOrder = zStandardObject.extend({
         account_number: z.string().nullable().optional(),
     }).nullable().optional(),
     // Conditional (include_relations=True)
-    items:            z.array(zPurchaseOrderItem).nullable().optional(),
-    quotations:       z.array(zPurchaseOrderQuotation).nullable().optional(),
-    purchase_requests: z.array(zPurchaseRequestRef).nullable().optional(),
+    items:             z.array(zPurchaseOrderItem).nullable().optional(),
+    quotations:        z.array(zPurchaseOrderQuotation).nullable().optional(),
+    prfq_ids:          z.array(z.string().uuid()).nullable().optional(),
+    prfqs:             z.array(zPRFQRef).nullable().optional(),
+    material_requests: z.array(zMaterialRequestRef).nullable().optional(),
 });
 export type PurchaseOrder = z.infer<typeof zPurchaseOrder>;
 

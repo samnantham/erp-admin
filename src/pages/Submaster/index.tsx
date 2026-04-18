@@ -30,27 +30,34 @@ import { useRouterContext } from "@/services/auth/RouteContext";
 
 type ConfirmMode = null | "soft" | "restore" | "permanent";
 
-export const SubmasterPage = () => {
+export const SubmasterPage = ({ }) => {
   const { otherPermissions } = useRouterContext();
 
-  const canCreate = otherPermissions.create === 1;
+  const getOptionLabel = (fieldConfig: any, value: string) => {
+    const option = fieldConfig?.options?.find((opt: any) => opt.value === value);
+    return option?.label ?? value;
+  };
+
+  const queryClient = useQueryClient();
+  const { model } = useParams<{ model: string }>();
+
+  const title = formatModelTitle(model);
+  const config = submasterConfig[model ?? ""] ?? submasterConfig.default;
+  const visibleColumns = config.columns ?? ["name"];
+
+  const hideCreate = config.hideCreate ?? false;
+
+  const canCreate = otherPermissions.create === 1 && !hideCreate;
   const canUpdate = otherPermissions.update === 1;
   const canDelete = otherPermissions.update === 1;
 
-  const queryClient = useQueryClient();
-  const { model }   = useParams<{ model: string }>();
-
-  const title          = formatModelTitle(model);
-  const config         = submasterConfig[model ?? ""] ?? submasterConfig.default;
-  const visibleColumns = config.columns ?? ["name"];
-
-  type ExtraFields     = typeof config.extraFields;
+  type ExtraFields = typeof config.extraFields;
   type ModelDataColumn = DataColumn<ExtraFields>;
 
   const navigate = useNavigate();
-  const [isOpen, toggleModal]   = useState(false);
+  const [isOpen, toggleModal] = useState(false);
   const [selected, setSelected] = useState<ModelDataColumn | null>(null);
-  const [isEdit, toggleEdit]    = useState(false);
+  const [isEdit, toggleEdit] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const [queryParams, setQueryParams] = useState<TODO>({
@@ -59,9 +66,9 @@ export const SubmasterPage = () => {
     limit: itemsPerPage,
   });
 
-  const [sortBy, setSortBy]           = useState("");
+  const [sortBy, setSortBy] = useState("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  const [searchTerm, setSearchTerm]   = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   /* ================= Modal ================= */
 
@@ -102,14 +109,14 @@ export const SubmasterPage = () => {
     refetch: refreshData,
   } = useSubmasterItemIndex(model ?? "", queryParams);
 
-  const paginationData: TODO       = itemList?.pagination ?? {};
-  const data: ModelDataColumn[]    = itemList?.data       ?? [];
+  const paginationData: TODO = itemList?.pagination ?? {};
+  const data: ModelDataColumn[] = itemList?.data ?? [];
 
   /* ================= Delete / Restore ================= */
 
   const [mutatingRowId, setMutatingRowId] = useState<string | number | undefined>(undefined);
-  const [confirmMode, setConfirmMode]     = useState<ConfirmMode>(null);
-  const [activeItem, setActiveItem]       = useState<ModelDataColumn | null>(null);
+  const [confirmMode, setConfirmMode] = useState<ConfirmMode>(null);
+  const [activeItem, setActiveItem] = useState<ModelDataColumn | null>(null);
 
   const deleteItem = useDelete({
     url: endPoints.delete.submaster.replace(":model", model ?? ""),
@@ -122,18 +129,18 @@ export const SubmasterPage = () => {
       { id: item.id },
       {
         onSuccess: () => { closeConfirm(); setMutatingRowId(undefined); },
-        onError:   () => { setMutatingRowId(undefined); },
+        onError: () => { setMutatingRowId(undefined); },
       }
     );
   };
 
-  const openSoft      = (item: ModelDataColumn) => { setActiveItem(item); setConfirmMode("soft"); };
-  const openRestore   = (item: ModelDataColumn) => { setActiveItem(item); setConfirmMode("restore"); };
+  const openSoft = (item: ModelDataColumn) => { setActiveItem(item); setConfirmMode("soft"); };
+  const openRestore = (item: ModelDataColumn) => { setActiveItem(item); setConfirmMode("restore"); };
   const openPermanent = (item: ModelDataColumn) => { setActiveItem(item); setConfirmMode("permanent"); };
-  const closeConfirm  = () => { setConfirmMode(null); setActiveItem(null); };
+  const closeConfirm = () => { setConfirmMode(null); setActiveItem(null); };
 
-  const handleSoftDelete      = mutateItem;
-  const handleRestore         = mutateItem;
+  const handleSoftDelete = mutateItem;
+  const handleRestore = mutateItem;
   const handlePermanentDelete = mutateItem;
 
   /* ================= Status Filter ================= */
@@ -143,7 +150,7 @@ export const SubmasterPage = () => {
 
   /* ================= Columns ================= */
 
-  const baseColumns  = getBaseColumns<ModelDataColumn>();
+  const baseColumns = getBaseColumns<ModelDataColumn>();
 
   const extraColumns = visibleColumns
     .filter((col: string) => col !== "name")
@@ -155,13 +162,14 @@ export const SubmasterPage = () => {
       cell: ({ row }: any) => {
         const value = row.original[col];
         if (typeof value === "boolean") return value ? "Yes" : "No";
-        return value;
+        const fieldConfig = config.fields?.find((f: any) => f.name === col);
+        return getOptionLabel(fieldConfig, value);
       },
     }));
 
   const beforeName = baseColumns.filter((col: any) => col.id === "sNo");
   const nameColumn = baseColumns.find((col: any) => col.id === "name");
-  const afterName  = baseColumns.filter((col: any) =>
+  const afterName = baseColumns.filter((col: any) =>
     ["created_at", "updated_at", "deleted_at"].includes(col.id)
   );
 
@@ -170,27 +178,27 @@ export const SubmasterPage = () => {
   const actionColumnConfig = {
     mutatingRowId,
     actionLoaderStatus: deleteItem.isLoading,
-    openModal:           canUpdate ? openModal     : () => {},
-    openSoftDelete:      canDelete ? openSoft      : () => {},
-    openPermenantDelete: canDelete ? openPermanent : () => {},
-    openRestore:         canUpdate ? openRestore   : () => {},
-    hideEdit:            !canUpdate,
-    hideDelete:          !canDelete,
+    openModal: canUpdate ? openModal : () => { },
+    openSoftDelete: canDelete ? openSoft : () => { },
+    openPermenantDelete: canDelete ? openPermanent : () => { },
+    openRestore: canUpdate ? openRestore : () => { },
+    hideEdit: !canUpdate,
+    hideDelete: !canDelete,
   };
 
   const columns =
     queryParams.status === "trashed"
       ? [
-          ...filteredColumns,
-          getStatusColumn<ModelDataColumn>(),
-          getDeletedColumn<ModelDataColumn>(),
-          getActionColumn<ModelDataColumn>(actionColumnConfig),
-        ]
+        ...filteredColumns,
+        getStatusColumn<ModelDataColumn>(),
+        getDeletedColumn<ModelDataColumn>(),
+        getActionColumn<ModelDataColumn>(actionColumnConfig),
+      ]
       : [
-          ...filteredColumns,
-          getStatusColumn<ModelDataColumn>(),
-          getActionColumn<ModelDataColumn>(actionColumnConfig),
-        ];
+        ...filteredColumns,
+        getStatusColumn<ModelDataColumn>(),
+        getActionColumn<ModelDataColumn>(actionColumnConfig),
+      ];
 
   return (
     <SlideIn>
@@ -248,6 +256,7 @@ export const SubmasterPage = () => {
             existInfo={selected}
             isEdit={isEdit}
             model={model ?? ""}
+            hideCreate={!canCreate}
           />
 
           <ConfirmationPopup
@@ -255,8 +264,8 @@ export const SubmasterPage = () => {
             onClose={closeConfirm}
             onConfirm={() => {
               if (!activeItem) return;
-              if (confirmMode === "restore")   handleRestore(activeItem);
-              if (confirmMode === "soft")      handleSoftDelete(activeItem);
+              if (confirmMode === "restore") handleRestore(activeItem);
+              if (confirmMode === "soft") handleSoftDelete(activeItem);
               if (confirmMode === "permanent") handlePermanentDelete(activeItem);
             }}
             isLoading={!!activeItem && mutatingRowId === activeItem.id && deleteItem.isLoading}

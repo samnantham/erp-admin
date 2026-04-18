@@ -7,7 +7,7 @@ import { zStandardObject, zBasicObject, zPagination, zSelectOption } from "@/ser
 const zQuotationLineItem = zStandardObject.extend({
     quotation_item_id: z.string().uuid(),
     part_number_id: z.string().uuid().nullable().optional(),
-    requested_part_number_id: z.string().uuid().nullable().optional(),   // ← moved here
+    requested_part_number_id: z.string().uuid().nullable().optional(),
     condition_id: z.string().uuid().nullable().optional(),
     unit_of_measure_id: z.string().uuid().nullable().optional(),
     qty: z.number().nullable().optional(),
@@ -21,12 +21,15 @@ const zQuotationLineItem = zStandardObject.extend({
         name: z.string(),
         description: z.string().nullable().optional(),
     }).nullable().optional(),
-    requested_part_number: zBasicObject.extend({                         // ← moved here
+    requested_part_number: zBasicObject.extend({
         name: z.string(),
         description: z.string().nullable().optional(),
     }).nullable().optional(),
     condition: zBasicObject.nullable().optional(),
     unit_of_measure: zBasicObject.nullable().optional(),
+    // Extra fields injected by PurchaseQuotation.to_dict
+    prfq_item_id: z.string().uuid().nullable().optional(),
+    is_item_closed: z.boolean().nullable().optional(),
 });
 export type QuotationLineItem = z.infer<typeof zQuotationLineItem>;
 
@@ -36,7 +39,6 @@ export type QuotationLineItem = z.infer<typeof zQuotationLineItem>;
 const zQuotationItem = zStandardObject.extend({
     quotation_id: z.string().uuid(),
     prfq_item_id: z.string().uuid().nullable().optional(),
-    // ← removed requested_part_number_id
     // Flags
     is_no_quote: z.boolean(),
     is_closed: z.boolean().nullable().optional(),
@@ -49,7 +51,6 @@ const zQuotationItem = zStandardObject.extend({
         ref: z.string().nullable().optional(),
     }).nullable().optional(),
     // Relations
-    // ← removed requested_part_number
     prfq_item: zStandardObject.nullable().optional(),
     lines: z.array(zQuotationLineItem).optional(),
 });
@@ -106,6 +107,8 @@ export const zPurchaseQuotation = zStandardObject.extend({
         type: z.string().nullable().optional(),
         due_date: z.string().nullable().optional(),
     })).optional(),
+    // ─── Flattened line items (all lines across all items) ────────────────
+    line_items: z.array(zQuotationLineItem).optional(),
 });
 export type PurchaseQuotation = z.infer<typeof zPurchaseQuotation>;
 

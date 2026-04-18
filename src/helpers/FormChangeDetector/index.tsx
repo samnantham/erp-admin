@@ -20,14 +20,14 @@ export function isFormFieldsChanged<T>({
       const initial = unwrapFormValue(initialValues[key]);
       const isMatch = deepEqualObjects(current, initial);
       if (!isMatch) {
-        console.log(
-          `COMPARE FIELD: ${String(key)}\n→ current:`,
-          current,
-          `\n→ initial:`,
-          initial,
-          `\n→ match:`,
-          isMatch ? '✅ YES' : '❌ NO'
-        );
+        // console.log(
+        //   `COMPARE FIELD: ${String(key)}\n→ current:`,
+        //   current,
+        //   `\n→ initial:`,
+        //   initial,
+        //   `\n→ match:`,
+        //   isMatch ? '✅ YES' : '❌ NO'
+        // );
       }
 
       return !isMatch;

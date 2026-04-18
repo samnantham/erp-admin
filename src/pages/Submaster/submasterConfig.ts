@@ -2,6 +2,7 @@ import { z } from "zod";
 import { zBasicObject } from "@/services/global-schema";
 import { FieldInput } from "@/components/FieldInput";
 import { FieldCheckbox } from "@/components/FieldCheckbox";
+import { FieldRadios } from "@/components/FieldRadios";
 
 export const submasterConfig: Record<string, any> = {
     default: {
@@ -20,6 +21,46 @@ export const submasterConfig: Record<string, any> = {
         columns: ["name"],
         extraFields: {},
         schema: zBasicObject
+    },
+
+    "financial-charges": {
+        title: "Financial Charge",
+        formType: "modal",
+        fields: [
+            {
+                component: FieldInput,
+                name: "name",
+                placeholder: "Enter Name",
+                required: "Name required",
+                type: "alpha-numeric-with-space",
+                maxLength: 25
+            },
+            {
+                component: FieldRadios,
+                name: "charge_type",
+                defaultValue: "value", 
+                label: "Charge Type",
+                options: [
+                    { value: "value", label: "Fixed Value" },
+                    { value: "percent", label: "Percentage" },
+                ]
+            },
+            {
+                component: FieldRadios,
+                name: "calculation_type",
+                label: "Calculation Type",
+                options: [
+                    { value: "add", label: "Add (+)" },
+                    { value: "subtract", label: "Subtract (-)" },
+                ],
+                defaultValue: "add",
+            }
+        ],
+        columns: ["name", "charge_type", "calculation_type"],
+        extraFields: { charge_type: "Charge Type", calculation_type: "Operation" },
+        schema: zBasicObject.extend({
+            charge_type: z.string(), calculation_type: z.string(),
+        }),
     },
 
     "customer-statuses": {
@@ -90,6 +131,7 @@ export const submasterConfig: Record<string, any> = {
         formType: "modal",
         columns: ["name", "code", "symbol"],
         extraFields: { code: "Code", symbol: "Symbol" },
+        hideCreate: true,
         fields: [
             {
                 component: FieldInput,
@@ -105,7 +147,8 @@ export const submasterConfig: Record<string, any> = {
                 placeholder: "Enter Currency Code",
                 required: "Code Currency required",
                 type: "alpha",
-                maxLength: 3
+                maxLength: 3,
+                isDisabled: true
             },
             {
                 component: FieldInput,
@@ -113,7 +156,8 @@ export const submasterConfig: Record<string, any> = {
                 placeholder: "Enter Currency Symbol",
                 type: "text",
                 required: 'Currency Symbol required',
-                maxLength: 3
+                maxLength: 3,
+                isDisabled: true
             }
         ],
         schema: zBasicObject.extend({
@@ -147,6 +191,37 @@ export const submasterConfig: Record<string, any> = {
         ],
         schema: zBasicObject.extend({
             credit_days: z.number().nullable().optional(),
+            code: z.string().nullable().optional(),
+        }),
+    },
+
+    "payment-vias": {
+        title: "Payment Via",
+        formType: "modal",
+        columns: ["name", "code"],
+        extraFields: { code: "Code" },
+        hideCreate: true,
+        fields: [
+            {
+                component: FieldInput,
+                name: "name",
+                placeholder: "Enter Payment Via",
+                required: "Payment Via required",
+                type: "alpha-numeric-with-space",
+                maxLength: 15
+            },
+            {
+                component: FieldInput,
+                name: "code",
+                placeholder: "Enter Code",
+                required: "Code required",
+                type: "text",
+                maxValue: 4,
+                isDisabled: true
+            },
+        ],
+        schema: zBasicObject.extend({
+            code: z.string().nullable().optional(),
         }),
     },
 

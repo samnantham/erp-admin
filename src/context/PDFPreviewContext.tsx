@@ -3,9 +3,10 @@ import { PDFPreviewModal } from "@/components/PDFPreview";
 
 type PreviewState = {
   isOpen: boolean;
-  pdfUrl: string;
+  pdfUrl: string | null;
   title: string;
   isEndpoint: boolean;
+  loading: boolean;
 };
 
 const PDFPreviewContext = createContext<any>(null);
@@ -13,42 +14,57 @@ const PDFPreviewContext = createContext<any>(null);
 export const PDFPreviewProvider = ({ children }: any) => {
   const [state, setState] = useState<PreviewState>({
     isOpen: false,
-    pdfUrl: "",
+    pdfUrl: null,
     title: "Preview",
-    isEndpoint: false
+    isEndpoint: false,
+    loading: false,
   });
 
-  const openPreview = (pdfUrl: string, title = "Preview") => {
+  // Open modal — pass null as pdfUrl when you want to show spinner first
+  const openPreview = (pdfUrl: string | null, title = "Preview", isEndpoint = false) => {
     setState({
       isOpen: true,
       pdfUrl,
       title,
-      isEndpoint: false
+      isEndpoint,
+      loading: !pdfUrl, // if no URL yet, start loading
     });
   };
 
-  const closePreview = () => {
-    if (state.pdfUrl) URL.revokeObjectURL(state.pdfUrl);
+  // Inject PDF URL after POST fetch completes
+  const setPdfUrl = (url: string | null) => {
+    setState((prev) => ({ ...prev, pdfUrl: url }));
+  };
 
+  // Control spinner manually
+  const setLoading = (loading: boolean) => {
+    setState((prev) => ({ ...prev, loading }));
+  };
+
+  const closePreview = () => {
+    // Revoke blob URLs to free memory
+    if (state.pdfUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(state.pdfUrl);
+    }
     setState({
       isOpen: false,
-      pdfUrl: "",
+      pdfUrl: null,
       title: "Preview",
-      isEndpoint: false
+      isEndpoint: false,
+      loading: false,
     });
   };
 
   return (
-    <PDFPreviewContext.Provider value={{ openPreview, closePreview }}>
+    <PDFPreviewContext.Provider value={{ openPreview, closePreview, setPdfUrl, setLoading }}>
       {children}
-
-      {/* ✅ Global modal here */}
       <PDFPreviewModal
         isOpen={state.isOpen}
         onClose={closePreview}
-        pdfUrlOrEndpoint={state.pdfUrl}
+        pdfUrlOrEndpoint={state.pdfUrl ?? ""}
         isEndpoint={state.isEndpoint}
         title={state.title}
+        isLoading={state.loading}
       />
     </PDFPreviewContext.Provider>
   );

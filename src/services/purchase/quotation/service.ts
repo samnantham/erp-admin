@@ -149,6 +149,22 @@ export const useQuotationList = ({
         enabled,
     });
 
+export const useRelatedQuotationList = (
+    quotationId?: string,
+    { enabled = true }: { enabled?: boolean } = {}
+) =>
+    useQuery({
+        queryKey: ['RelatedQuotationList', quotationId],
+        queryFn: () =>
+            getRequest(
+                endPoints.list.purchase_related_quotations.replace(':id', String(quotationId)),
+                zQuotationListPayload,
+            ),
+        enabled: !!quotationId && enabled,
+        retry: 2,
+        refetchOnWindowFocus: false,
+    });
+
 /* ================= Quotation Items ================= */
 type UseQuotationItemsProps = {
     enabled?: boolean;

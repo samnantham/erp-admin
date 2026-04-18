@@ -20,6 +20,8 @@ type BankModalProps = {
   isView?: boolean;
   existValues?: any;
   customerInfo?: any;
+  createdInputValue?: string;
+  onSuccess?: (createdValue?: unknown) => void;
 };
 
 const KEYS = [
@@ -35,11 +37,15 @@ const REQUIRED_KEYS = new Set([
 
 export function BankModal({
   isOpen, onClose, customerId,
-  isEdit, isView, existValues, customerInfo,
+  isEdit, isView, existValues, customerInfo, createdInputValue,
+  onSuccess
 }: BankModalProps) {
 
   const saveItem = useSaveBank({
-    onSuccess: ({ data }) => onClose(true, data),
+    onSuccess: ({ data }) => {
+      onSuccess?.(data);
+      onClose?.(true, data?.id);
+    },
   });
 
   const form = useForm({
@@ -67,79 +73,80 @@ export function BankModal({
 
   useEffect(() => {
     if (!existValues || !isOpen) return;
-
     const init = Object.fromEntries(KEYS.map((k) => [k, existValues?.[k] ?? '']));
     setInitialValues(init);
-
-    setTimeout(() => {
-      formRef.current.setValues(init);
-    }, 0);
-
+    setTimeout(() => formRef.current.setValues(init), 0);
   }, [existValues, isOpen]);
 
-  const p = (text: string) => (!isView ? text : '');
+  const p  = (text: string) => (!isView ? text : '');
+  const ev = (key: string) => existValues?.[key] ?? '';
 
   return (
     <Modal isOpen={isOpen} onClose={() => onClose(false, 0)} size="md" closeOnOverlayClick={false} closeOnEsc={false}>
       <ModalOverlay />
       <ModalContent maxWidth="60vw">
-        <Formiz autoForm connect={form}>
-          <ModalHeader>
-            Customer Bank Modal{customerInfo ? ` (${customerInfo.business_name} - ${customerInfo.code})` : ''}
-          </ModalHeader>
-          <ModalCloseButton />
+        <div onSubmit={(e) => e.stopPropagation()}>
+          <Formiz autoForm connect={form}>
+            <ModalHeader>
+              Customer Bank Modal{customerInfo ? ` (${customerInfo.business_name} - ${customerInfo.code})` : ''}
+            </ModalHeader>
+            <ModalCloseButton />
 
-          <ModalBody>
-            <Stack spacing={4}>
+            <ModalBody>
+              <Stack spacing={4}>
 
-              <Stack spacing={8} direction={{ base: 'column', md: 'row' }}>
-                <FieldInput label="Type of Account" name="type_of_ac" required="Account Type is required" placeholder={p('Enter account type')} type="alpha-with-space" maxLength={30} isDisabled={isView} />
-                <FieldInput label="Beneficiary Name" name="beneficiary_name" required="Beneficiary Name is required" placeholder={p('Enter beneficiary name')} type="alpha-with-space" maxLength={70} isDisabled={isView} />
-                <FieldInput label="Bank Name" name="name" required="Name is required" placeholder={p('Enter bank name')} type="alpha-with-space" maxLength={70} isDisabled={isView} />
+                <Stack spacing={8} direction={{ base: 'column', md: 'row' }}>
+                  <FieldInput label="Type of Account" name="type_of_ac" required="Account Type is required" placeholder={p('Enter account type')} type="alpha-with-space" maxLength={30} isDisabled={isView} defaultValue={ev('type_of_ac')} />
+                  <FieldInput label="Beneficiary Name" name="beneficiary_name" required="Beneficiary Name is required" placeholder={p('Enter beneficiary name')} type="alpha-with-space" maxLength={70} isDisabled={isView} defaultValue={
+                    existValues?.beneficiary_name ??
+                    (!isEdit && createdInputValue ? createdInputValue : '')
+                  } />
+                  <FieldInput label="Bank Name" name="name" required="Name is required" placeholder={p('Enter bank name')} type="alpha-with-space" maxLength={70} isDisabled={isView} defaultValue={ev('name')} />
+                </Stack>
+
+                <Stack spacing={8} direction={{ base: 'column', md: 'row' }}>
+                  <FieldInput label="Address Line 1" name="address_line1" required="Address is required" placeholder={p('Enter Address Line 1')} maxLength={50} isDisabled={isView} type="text" defaultValue={ev('address_line1')} />
+                  <FieldInput label="Address Line 2" name="address_line2" maxLength={50} isDisabled={isView} type="text" defaultValue={ev('address_line2')} />
+                </Stack>
+
+                <Stack spacing={8} direction={{ base: 'column', md: 'row' }}>
+                  <FieldInput label="Branch" name="branch" required="Branch is required" placeholder={p('Enter bank branch')} type="alpha-with-space" maxLength={35} isDisabled={isView} defaultValue={ev('branch')} />
+                  <FieldInput label="Contact Name" name="contact_name" required="Contact Name is required" placeholder={p('Enter Contact Name')} type="alpha-with-space" maxLength={70} isDisabled={isView} defaultValue={ev('contact_name')} />
+                  <FieldInput label="IBAN Number" name="ac_iban_no" required="IBAN Number is required" placeholder={p('Enter IBAN Number')} type="alpha-numeric" maxLength={34} isDisabled={isView} defaultValue={ev('ac_iban_no')} />
+                </Stack>
+
+                <Stack spacing={8} direction={{ base: 'column', md: 'row' }}>
+                  <FieldInput label="Swift Code" name="swift" required="Swift code is required" placeholder={p('Enter Bank Swift code')} type="alpha-numeric" maxLength={11} isDisabled={isView} defaultValue={ev('swift')} />
+                  <FieldInput label="ABA Routing Number" name="aba_routing_no" placeholder={p('Enter ABA Routing Number')} type="alpha-numeric" maxLength={11} isDisabled={isView} defaultValue={ev('aba_routing_no')} />
+                </Stack>
+
+                <Stack spacing={8} direction={{ base: 'column', md: 'row' }}>
+                  <FieldPhone label="Phone Number" name="phone" placeholder={p('Enter Bank Phone Number')} defaultCountry="AE" isDisabled={isView} defaultValue={ev('phone')} />
+                  <FieldInput label="Fax No" name="fax" placeholder={p('Enter Bank Fax No')} type="phone-number" maxLength={15} isDisabled={isView} defaultValue={ev('fax')} />
+                  <FieldInput label="Mobile Number" name="mobile" placeholder={p('Enter Bank Mobile Number')} type="phone-number" maxLength={15} isDisabled={isView} defaultValue={ev('mobile')} />
+                  <FieldEmailInput label="Email" name="email" placeholder={p('Enter Email')} validations={[{ handler: isEmail(), message: 'Invalid email' }]} maxLength={100} isDisabled={isView} defaultValue={existValues?.email?.toLowerCase() ?? ''} />
+                </Stack>
+
               </Stack>
+            </ModalBody>
 
-              <Stack spacing={8} direction={{ base: 'column', md: 'row' }}>
-                <FieldInput label="Address Line 1" name="address_line1" required="Address is required" placeholder={p('Enter Address Line 1')} maxLength={50} isDisabled={isView} type="text" />
-                <FieldInput label="Address Line 2" name="address_line2" maxLength={50} isDisabled={isView} type="text" />
+            <ModalFooter>
+              <Stack direction="row" spacing={4} justify="center" width="100%" mt={4}>
+                <Button colorScheme="red" onClick={() => onClose(false, 0)}>Close</Button>
+                {!isView && (
+                  <Button
+                    type="submit"
+                    colorScheme="brand"
+                    isLoading={saveItem.isLoading}
+                    isDisabled={!form.isValid || saveItem.isLoading || (isEdit ? !isChanged : false)}
+                  >
+                    {isEdit ? 'Update' : 'Create'} Bank
+                  </Button>
+                )}
               </Stack>
-
-              <Stack spacing={8} direction={{ base: 'column', md: 'row' }}>
-                <FieldInput label="Branch" name="branch" required="Branch is required" placeholder={p('Enter bank branch')} type="alpha-with-space" maxLength={35} isDisabled={isView} />
-                <FieldInput label="Contact Name" name="contact_name" required="Contact Name is required" placeholder={p('Enter Contact Name')} type="alpha-with-space" maxLength={70} isDisabled={isView} />
-                <FieldInput label="IBAN Number" name="ac_iban_no" required="IBAN Number is required" placeholder={p('Enter IBAN Number')} type="alpha-numeric" maxLength={34} isDisabled={isView} />
-              </Stack>
-
-              <Stack spacing={8} direction={{ base: 'column', md: 'row' }}>
-                <FieldInput label="Swift Code" name="swift" required="Swift code is required" placeholder={p('Enter Bank Swift code')} type="alpha-numeric" maxLength={11} isDisabled={isView} />
-                <FieldInput label="ABA Routing Number" name="aba_routing_no" placeholder={p('Enter ABA Routing Number')} type="alpha-numeric" maxLength={11} isDisabled={isView} />
-              </Stack>
-
-              <Stack spacing={8} direction={{ base: 'column', md: 'row' }}>
-                <FieldPhone label="Phone Number" name="phone" placeholder={p('Enter Bank Phone Number')} defaultCountry="AE" isDisabled={isView} />
-                <FieldInput label="Fax No" name="fax" placeholder={p('Enter Bank Fax No')} type="phone-number" maxLength={15} isDisabled={isView} />
-                <FieldInput label="Mobile Number" name="mobile" placeholder={p('Enter Bank Mobile Number')} type="phone-number" maxLength={15} isDisabled={isView} />
-                <FieldEmailInput label="Email" name="email" placeholder={p('Enter Email')} validations={[{ handler: isEmail(), message: 'Invalid email' }]} maxLength={100} isDisabled={isView} />
-              </Stack>
-
-            </Stack>
-          </ModalBody>
-
-          <ModalFooter>
-            <Stack direction="row" spacing={4} justify="center" width="100%" mt={4}>
-              <Button colorScheme="red" onClick={() => onClose(false, 0)}>Close</Button>
-              {!isView && (
-                <Button
-                  type="submit"
-                  colorScheme="brand"
-                  isLoading={saveItem.isLoading}
-                  isDisabled={!form.isValid || saveItem.isLoading || (isEdit ? !isChanged : false)}
-                >
-                  {isEdit ? 'Update' : 'Create'} Bank
-                </Button>
-              )}
-            </Stack>
-          </ModalFooter>
-        </Formiz>
+            </ModalFooter>
+          </Formiz>
+        </div>
       </ModalContent>
     </Modal>
   );

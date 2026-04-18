@@ -4,8 +4,8 @@ import {
     Button, Box, HStack, Text, useDisclosure,
 } from "@chakra-ui/react";
 import { useState } from "react";
-import { DisplayProp } from "@/pages/UpdateDeleteRequests/modules/types";
-import { PreviewChangesModal } from "@/pages/UpdateDeleteRequests/PreviewChangesModal";
+import { DisplayProp } from "@/pages/CUDRequests/modules/types";
+import { PreviewChangesModal } from "@/pages/CUDRequests/PreviewChangesModal";
 
 // ================= Constants =================
 

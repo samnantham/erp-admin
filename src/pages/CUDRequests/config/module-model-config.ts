@@ -17,6 +17,11 @@ export const MODULE_MODEL_OPTIONS: Record<string, { label: string; value: string
         { label: "Material Request",   value: "material_requests" },
         { label: "PRFQ", value: "prfqs" },
         { label: "Purchase Order",   value: "purchase_orders" },
-        // { label: "Sales Enquiry Log",  value: "sel" },
+    ],
+
+    finance: [
+        { label: "Finance Banks",   value: "finance_banks" },
+        { label: "Finance Cards",   value: "finance_cards" },
+        { label: "Finance Cheques", value: "finance_cheques" },
     ],
 };

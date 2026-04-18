@@ -36,6 +36,7 @@ import { CSVUploadButton } from "@/components/ReUsable/CSVUploadButton";
 import { SubMasterModalForm } from '@/pages/Submaster/ModalForm';
 import { PartNumberModal } from '@/components/Modals/SpareMaster';
 import dayjs from 'dayjs';
+import { v4 as uuidv4 } from "uuid";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -67,7 +68,7 @@ type MRRow = {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const EMPTY_ROW = (): MRRow => ({
-    rowKey: crypto.randomUUID(),
+    rowKey: uuidv4(),
     part_number_id: "",
     condition_id: "",
     qty: "",
@@ -119,10 +120,13 @@ export const MaterialRequestForm = () => {
     const { data: dropdownData, isLoading: l1, refetch: reloadDropDowns } = useMaterialRequestDropdowns();
     const { data: itemInfo, isLoading: l2 } = useMaterialRequestDetails(id, { enabled: isEdit });
     const { data: salesLogList, isLoading: l3 } = useSalesLogList({
-        enabled: mrType === "sel",
-        queryParams: { is_purchase_request_fulfilled: false, exist_ids: existingSELIds?.join(",") },
-    });
-    const { data: priorityList } = useSubmasterItemIndex("priorities", {});
+    enabled: mrType === "sel" && (isEdit ? existingSELIds.filter(Boolean).length > 0 : true),
+    queryParams: {
+        ...(!isEdit && { is_purchase_request_fulfilled: false }),
+        exist_ids: existingSELIds.filter(Boolean).join(","),
+    },
+});
+    const { data: priorityList, refetch: reloadPriority } = useSubmasterItemIndex("priorities", {});
     const { data: conditionData } = useSubmasterItemIndex("conditions", {});
     const { data: uomData } = useSubmasterItemIndex("unit-of-measures", {});
     const { data: spareSearchData, refetch: reloadSpares } = useSearchPartNumber(queryParams);
@@ -148,8 +152,7 @@ export const MaterialRequestForm = () => {
             }
         ) =>
             (data: any) => {
-                const record = data?.data ?? data; // 🔥 FIX
-                console.log(record, fieldName)
+                const record = data?.data ?? data;
                 const id = record?.id;
 
                 setTimeout(() => {
@@ -157,6 +160,12 @@ export const MaterialRequestForm = () => {
 
                     setTimeout(() => {
                         form.setValues({ [fieldName]: id });
+                        if(fieldName === 'priority_id'){
+                            reloadPriority();
+                            setTimeout(() => {
+                                applyDueDate(record?.days ?? 0);
+                            }, 50);
+                        }
                         options?.onValueChange?.(id, record);
                     }, 50);
                 }, 100);
@@ -257,9 +266,13 @@ export const MaterialRequestForm = () => {
             setDisabledDatePicker(false);
             form.setValues({ due_date: '' });
         } else {
-            setDisabledDatePicker(true);
-            form.setValues({ due_date: dayjs().add(daysToAdd, 'day') });
+            applyDueDate(daysToAdd); 
         }
+    };
+
+    const applyDueDate = (daysToAdd: number) => { 
+        setDisabledDatePicker(true);
+        form.setValues({ due_date: dayjs().add(daysToAdd, "day") });
     };
 
     // ── Remarks ────────────────────────────────────────────────────────────────
@@ -269,17 +282,19 @@ export const MaterialRequestForm = () => {
     useEffect(() => {
         if (!itemInfo?.data) return;
         const s = itemInfo.data;
+
         setMRType(s.type);
-        setExistingSELIds([s.sales_log_id]);
+        setExistingSELIds(s.sales_log_id ? [s.sales_log_id] : []);
 
         const initValues = Object.fromEntries(FORM_KEYS.map(k => [k, (s as any)[k]]));
         setInitialValues(initValues);
         form.setValues(initValues);
         handleRemarksChange(s.remarks ?? '');
+        console.log('initValues', initValues)
 
         if (!s.items?.length) return;
         const prefilled: MRRow[] = s.items.map((item: any) => ({
-            rowKey: crypto.randomUUID(),
+            rowKey: uuidv4(),
             id: item.id,
             part_number_id: item.part_number_id,
             condition_id: item.condition_id,
@@ -312,7 +327,7 @@ export const MaterialRequestForm = () => {
 
         if (!isEdit) {
             const prefilled: MRRow[] = validItems.map((item: any) => ({
-                rowKey: crypto.randomUUID(),
+                rowKey: uuidv4(),
                 sales_log_item_id: item.id,
                 part_number_id: item.part_number_id,
                 condition_id: item.condition_id,

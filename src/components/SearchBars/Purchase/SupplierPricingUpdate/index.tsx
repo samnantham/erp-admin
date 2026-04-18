@@ -238,16 +238,6 @@ export const SupplierPricingUpdateSearch = (props: Props) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
 
-  // Seed from parent if provided
-  useEffect(() => {
-    if (isModal) {
-      const init = (props as ModalModeProps).initialSelectedId;
-      if (init) {
-        setSelectedId(String(init));
-        setSelectedCode(String(init));
-      }
-    }
-  }, [isModal, (props as ModalModeProps).initialSelectedId]);
 
   const { data: listData, isSuccess: listFetched, isLoading: listDataLoading } =
     usePurchaseQuotationIndex(queryParams);
@@ -255,6 +245,17 @@ export const SupplierPricingUpdateSearch = (props: Props) => {
   const allLoaded = dropdownsFetched && listFetched;
   const data = listData?.data ?? [];
   const paginationData = listData?.pagination;
+
+  useEffect(() => {
+    if (isModal) {
+      const init = (props as ModalModeProps).initialSelectedId;
+      if (init) {
+        setSelectedId(String(init));
+        const match = data.find((row: any) => String(row.id) === String(init));
+        setSelectedCode(match ? String(match.code) : String(init));
+      }
+    }
+  }, [isModal, (props as ModalModeProps).initialSelectedId, data]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -275,7 +276,7 @@ export const SupplierPricingUpdateSearch = (props: Props) => {
 
   const handleToggleSelect = (row: any) => {
     const id = String(row.id);
-    const code = String(row.vendor_quotation_no ?? row.id);
+    const code = String(row.code ?? row.id);
     if (selectedId === id) {
       setSelectedId(null);
       setSelectedCode(null);

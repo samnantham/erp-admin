@@ -19,6 +19,7 @@ export const zModuleApproval = z.object({
   link: z.string().optional().nullable(),
   update: zApprovalCounts,
   delete: zApprovalCounts,
+  create: zApprovalCounts.optional(),           // ← only present for purchase
 });
 
 // ─── Overall stats ────────────────────────────────────────────────────────────
@@ -26,20 +27,24 @@ export const zModuleApproval = z.object({
 export const zOverallStats = z.object({
   update: zApprovalCounts,
   delete: zApprovalCounts,
+  create: zApprovalCounts.optional(),           // ← accumulated from create modules
 });
 
 // ─── Approval log entry ───────────────────────────────────────────────────────
-// new_data / old_data / record are model-specific.
-// Will be replaced with a discriminated union once per-model samples are ready.
 
 export const zApprovalLogEntry = z.object({
   id: z.string().uuid(),
   action: z.enum(["update", "delete", "create"]),
   model_name: z.string(),
-  record_id: z.string().uuid(),
+  record_id: z
+    .string()
+    .transform((val) => (val === "" || val === "None" ? null : val))
+    .pipe(z.string().uuid().nullable())
+    .optional(),
   status: z.enum(["pending", "approved", "rejected"]),
   new_data: z.record(z.unknown()).nullable(),
   old_data: z.record(z.unknown()).nullable(),
+  raw_new_data: z.record(z.unknown()).nullable().optional(),
   record: z.record(z.unknown()),
   approved_by: z.string().nullable(),
   requested_by: z.string().nullable(),
@@ -79,17 +84,21 @@ export const zApprovalActionPayload = z.object({
   message: z.string().optional(),
 });
 
-// schema.ts
+// ─── Approval log history ─────────────────────────────────────────────────────
 
 export const zApprovalLogHistoryItem = z.object({
   id: z.string(),
-  record_id: z.string(),
-  model_name: z.string(),                       // was "model" — actual field is model_name
-  action: z.enum(["update", "delete"]),
+  record_id: z
+    .string()
+    .transform((val) => (val === "" || val === "None" ? null : val))
+    .pipe(z.string().uuid().nullable())
+    .optional(),
+  model_name: z.string(),
+  action: z.enum(["create", "update", "delete"]),
   status: z.enum(["pending", "approved", "rejected"]),
-  record: z.record(z.any()).nullable().optional(),      // current live record
-  old_data: z.record(z.any()).nullable().optional(),      // data before the request
-  new_data: z.record(z.any()).nullable().optional(),      // data in the request
+  record: z.record(z.any()).nullable().optional(),
+  old_data: z.record(z.any()).nullable().optional(),
+  new_data: z.record(z.any()).nullable().optional(),
   raw_new_data: z.record(z.unknown()).nullable().optional(),
   raw_old_data: z.record(z.unknown()).nullable().optional(),
   requested_by: z.string().nullable().optional(),
@@ -100,8 +109,6 @@ export const zApprovalLogHistoryItem = z.object({
   deleted_at: z.string().nullable().optional(),
 });
 
-export type ApprovalLogHistoryItem = z.infer<typeof zApprovalLogHistoryItem>;
-
 export const zApprovalLogHistoryPayload = z.object({
   status: z.boolean(),
   message: z.string(),
@@ -110,12 +117,13 @@ export const zApprovalLogHistoryPayload = z.object({
 
 // ─── Inferred types ───────────────────────────────────────────────────────────
 
-export type ApprovalCounts = z.infer<typeof zApprovalCounts>;
-export type ModuleApproval = z.infer<typeof zModuleApproval>;
-export type OverallStats = z.infer<typeof zOverallStats>;
-export type ApprovalLogEntry = z.infer<typeof zApprovalLogEntry>;
-export type DashboardPayload = z.infer<typeof zDashboardPayload>;
-export type ApprovalLogPayload = z.infer<typeof zApprovalLogPayload>;
-export type ApprovalLogDetailsPayload = z.infer<typeof zApprovalLogDetailsPayload>;
-export type ApprovalActionPayload = z.infer<typeof zApprovalActionPayload>;
-export type ApprovalLogHistoryPayload = z.infer<typeof zApprovalLogHistoryPayload>;
+export type ApprovalCounts             = z.infer<typeof zApprovalCounts>;
+export type ModuleApproval             = z.infer<typeof zModuleApproval>;
+export type OverallStats               = z.infer<typeof zOverallStats>;
+export type ApprovalLogEntry           = z.infer<typeof zApprovalLogEntry>;
+export type DashboardPayload           = z.infer<typeof zDashboardPayload>;
+export type ApprovalLogPayload         = z.infer<typeof zApprovalLogPayload>;
+export type ApprovalLogDetailsPayload  = z.infer<typeof zApprovalLogDetailsPayload>;
+export type ApprovalActionPayload      = z.infer<typeof zApprovalActionPayload>;
+export type ApprovalLogHistoryItem     = z.infer<typeof zApprovalLogHistoryItem>;
+export type ApprovalLogHistoryPayload  = z.infer<typeof zApprovalLogHistoryPayload>;

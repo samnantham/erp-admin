@@ -17,7 +17,7 @@ import {
   zApprovalLogHistoryPayload,
   zDashboardPayload,
   
-} from "@/services/update-delete-requests/schema";
+} from "@/services/cud-requests/schema";
 
 // ─── Query params ─────────────────────────────────────────────────────────────
 
@@ -29,7 +29,7 @@ export interface ApprovalQueryParams {
 
 export interface ApprovalLogParams {
   model: string;
-  action: "update" | "delete";
+  action: "create" | "update" | "delete";
 }
 
 export interface ProcessRequestVariables {
@@ -47,7 +47,7 @@ export const useApprovalsDashboard = (
     queryKey: ["approvalsDashboard"],
     queryFn: () =>
       getRequest(
-        endPoints.others.update_delete_request_dashboard,
+        endPoints.others.cud_request_dashboard,
         zDashboardPayload
       ),
     retry: 2,
@@ -66,7 +66,7 @@ export const useApprovalLogIndex = (
     queryKey: ["approvalLogIndex", model, action, queryParams],
     queryFn: () =>
       getRequest(
-        endPoints.index.update_delete_request
+        endPoints.index.cud_request
           .replace(":model", model)
           .replace(":action", action),
         zApprovalLogPayload,
@@ -78,7 +78,7 @@ export const useApprovalLogIndex = (
     ...options,
   });
 
-  // In /services/update-delete-requests/service.ts
+  // In /services/cud-requests/service.ts
 
 // ── add this alongside useApprovalLogIndex ──
 // service.ts
@@ -91,7 +91,7 @@ export const useApprovalLogHistory = (
         queryKey: ["approvalLogHistory", recordId],
         queryFn: () =>
             getRequest(
-                endPoints.others.update_delete_request_history
+                endPoints.others.cud_request_history
                     .replace(":record_id", recordId!),
                 zApprovalLogHistoryPayload
             ),

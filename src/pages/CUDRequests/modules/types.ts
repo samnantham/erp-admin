@@ -6,7 +6,7 @@ import { ReactNode } from 'react';
 
 type PreviewConfig = {
   enabled?: boolean;
-  getOldPreviewUrl?: (row: any) => string;
+  getOldPreviewUrl?: (row: any) => string | undefined;
   getNewPreviewRequest?: (row: any) => {
     url: string;
     method?: "POST";
@@ -80,4 +80,5 @@ export interface ModuleConfig<T = any> {
   getViewAction?: (row: T) => ViewAction<T> | null;
   preview?: PreviewConfig;
   allowDelete?: boolean;
+  allowCreate?: boolean;
 }

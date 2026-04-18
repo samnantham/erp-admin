@@ -1,4 +1,4 @@
-import { DisplayProp, ModuleConfig, ViewAction } from '@/pages/UpdateDeleteRequests/modules/types';
+import { DisplayProp, ModuleConfig, ViewAction } from '@/pages/CUDRequests/modules/types';
 import { endPoints } from '@/api/endpoints';
 /* =========================
    Helpers
@@ -286,6 +286,88 @@ const PO_DISPLAY_PROPS: DisplayProp[] = [
   }
 ];
 
+const FINANCE_BANK_DISPLAY_PROPS: DisplayProp[] = [
+  { label: 'Bank Name', key: 'name', showInTable: true },
+  { label: 'Account Label', key: 'account_label', showInTable: true },
+  { label: 'Branch', key: 'branch', showInTable: true },
+
+  { label: 'Address Line 1', key: 'address_line1', showInTable: false },
+  { label: 'Address Line 2', key: 'address_line2', showInTable: false },
+
+  { label: 'Account / IBAN No', key: 'ac_iban_no', showInTable: true },
+  { label: 'Type of Account', key: 'type_of_ac', showInTable: false },
+
+  { label: 'Swift Code', key: 'swift', showInTable: false },
+  { label: 'ABA Routing No', key: 'aba_routing_no', showInTable: false },
+  { label: 'IFSC Code', key: 'ifsc_code', showInTable: false },
+
+  { label: 'Contact Name', key: 'contact_name', showInTable: true },
+  { label: 'Phone', key: 'phone', showInTable: true },
+  { label: 'Fax', key: 'fax', showInTable: false },
+  { label: 'Mobile', key: 'mobile', showInTable: false },
+  { label: 'Email', key: 'email', showInTable: true },
+  { label: 'Currency', key: 'currency.code', showInTable: true },
+
+  { label: 'Default', key: 'is_default', showInTable: false },
+  { label: 'Active', key: 'is_active', showInTable: true },
+];
+
+const FINANCE_CARD_DISPLAY_PROPS: DisplayProp[] = [
+  { label: 'Card Label', key: 'card_label', showInTable: true },
+  { label: 'Card Holder', key: 'card_holder_name', showInTable: true },
+
+  { label: 'Card Type', key: 'card_type', showInTable: true },
+  { label: 'Category', key: 'card_category', showInTable: false },
+
+  { label: 'Last 4 Digits', key: 'card_last4', showInTable: true },
+
+  { label: 'Expiry Month', key: 'expiry_month', showInTable: false },
+  { label: 'Expiry Year', key: 'expiry_year', showInTable: false },
+
+  { label: 'Bank Name', key: 'bank_name', showInTable: true },
+
+  { label: 'Address Line 1', key: 'address_line1', showInTable: false },
+  { label: 'Address Line 2', key: 'address_line2', showInTable: false },
+
+  { label: 'Contact Name', key: 'contact_name', showInTable: true },
+  { label: 'Phone', key: 'phone', showInTable: false },
+  { label: 'Mobile', key: 'mobile', showInTable: false },
+  { label: 'Email', key: 'email', showInTable: true },
+
+  // 🔥 Currency (nested)
+  { label: 'Currency', key: 'currency.code', showInTable: true },
+
+  { label: 'Default', key: 'is_default', showInTable: false },
+  { label: 'Active', key: 'is_active', showInTable: true },
+];
+
+const FINANCE_CHEQUE_DISPLAY_PROPS: DisplayProp[] = [
+  { label: 'Name', key: 'name', showInTable: true },
+  { label: 'Account Label', key: 'account_label', showInTable: true },
+  { label: 'Branch', key: 'branch', showInTable: true },
+
+  { label: 'Account No', key: 'ac_no', showInTable: true },
+  { label: 'Type of Account', key: 'type_of_ac', showInTable: false },
+
+  { label: 'Address Line 1', key: 'address_line1', showInTable: false },
+  { label: 'Address Line 2', key: 'address_line2', showInTable: false },
+
+  { label: 'ABA Routing No', key: 'aba_routing_no', showInTable: false },
+  { label: 'IFSC Code', key: 'ifsc_code', showInTable: false },
+  { label: 'MICR Code', key: 'micr_code', showInTable: false },
+
+  { label: 'Contact Name', key: 'contact_name', showInTable: true },
+  { label: 'Phone', key: 'phone', showInTable: false },
+  { label: 'Fax', key: 'fax', showInTable: false },
+  { label: 'Mobile', key: 'mobile', showInTable: false },
+  { label: 'Email', key: 'email', showInTable: true },
+
+  // 🔥 Currency (NOTE: your schema currently uses string, not object)
+  { label: 'Currency', key: 'currency', showInTable: true },
+
+  { label: 'Default', key: 'is_default', showInTable: false },
+  { label: 'Active', key: 'is_active', showInTable: true },
+];
 
 /* =========================
    Config Map
@@ -299,6 +381,7 @@ export const MODULE_CONFIG: Record<string, ModuleConfig> = {
     label: 'Customers',
     displayProps: CUSTOMER_DISPLAY_PROPS,
     allowDelete: true,
+    allowCreate: false,
     getViewAction: (row) => navigateAction(`/contact-management/master/info/${row.record_id}`),
   },
   banks: {
@@ -306,6 +389,7 @@ export const MODULE_CONFIG: Record<string, ModuleConfig> = {
     label: 'Banks',
     displayProps: BANK_DISPLAY_PROPS,
     allowDelete: true,
+    allowCreate: false,
     getViewAction: (row) => modalAction('customer_bank', row),
   },
   contact_managers: {
@@ -313,6 +397,7 @@ export const MODULE_CONFIG: Record<string, ModuleConfig> = {
     label: 'Contact Managers',
     displayProps: CONTACT_MANAGER_DISPLAY_PROPS,
     allowDelete: true,
+    allowCreate: false,
     getViewAction: (row) => modalAction('contact_manager', row),
   },
   shipping_addresses: {
@@ -320,6 +405,7 @@ export const MODULE_CONFIG: Record<string, ModuleConfig> = {
     label: 'Shipping Addresses',
     displayProps: SHIPPING_ADDRESS_DISPLAY_PROPS,
     allowDelete: true,
+    allowCreate: false,
     getViewAction: (row) => modalAction('customer_shipping_address', row),
   },
   principle_owners: {
@@ -327,12 +413,14 @@ export const MODULE_CONFIG: Record<string, ModuleConfig> = {
     label: 'Principle Owners',
     displayProps: PRINCIPLE_OWNER_DISPLAY_PROPS,
     allowDelete: true,
+    allowCreate: false,
     getViewAction: (row) => modalAction('customer_principle_owner', row),
   },
   trader_references: {
     value: 'trader-references',
     label: 'Trader References',
     displayProps: TRADER_REFERENCE_DISPLAY_PROPS,
+    allowCreate: false,
     allowDelete: true,
     getViewAction: (row) => modalAction('customer_trader_references', row),
   },
@@ -342,6 +430,7 @@ export const MODULE_CONFIG: Record<string, ModuleConfig> = {
     value: 'part_numbers',
     label: 'Part Numbers',
     displayProps: PART_NUMBER_DISPLAY_PROPS,
+    allowCreate: false,
     allowDelete: true,
     getViewAction: (row) => navigateAction(`/spare-management/info/${row.record_id}`),
   },
@@ -349,6 +438,7 @@ export const MODULE_CONFIG: Record<string, ModuleConfig> = {
     value: 'alternates',
     label: 'Alternates',
     displayProps: PART_NUMBER_ALTERNATE_DISPLAY_PROPS,
+    allowCreate: false,
     allowDelete: true,
     getViewAction: (row) => modalAction('part_number_alternate', row, 'part_number_id'),
   },
@@ -358,6 +448,7 @@ export const MODULE_CONFIG: Record<string, ModuleConfig> = {
     label: 'Sales Log',
     displayProps: SALES_LOG_DISPLAY_PROPS,
     allowDelete: false,
+    allowCreate: false,
     getViewAction: (row) => ({
       type: 'pdf',
       title: `SEL Preview - #${row.record?.code}`,
@@ -382,6 +473,7 @@ export const MODULE_CONFIG: Record<string, ModuleConfig> = {
     label: 'Material Request',
     displayProps: MATERIAL_REQUEST_DISPLAY_PROPS,
     allowDelete: false,
+    allowCreate: false,
     getViewAction: (row) => ({
       type: 'pdf',
       title: `Material Request Preview - #${row.record?.code}`,
@@ -404,6 +496,7 @@ export const MODULE_CONFIG: Record<string, ModuleConfig> = {
     label: 'PRFQ',
     displayProps: PRFQ_DISPLAY_PROPS,
     allowDelete: false,
+    allowCreate: false,
     getViewAction: (row) => ({
       type: 'pdf',
       title: `Purchase RFQ Preview - #${row.record?.code}`,
@@ -427,6 +520,7 @@ export const MODULE_CONFIG: Record<string, ModuleConfig> = {
     label: 'Purchase Order',
     displayProps: PO_DISPLAY_PROPS,
     allowDelete: false,
+    allowCreate: true,
     getViewAction: (row) => ({
       type: 'pdf',
       title: `Purchase Order Preview - #${row.record?.code}`,
@@ -443,6 +537,33 @@ export const MODULE_CONFIG: Record<string, ModuleConfig> = {
         body: row.raw_new_data,
       }),
     },
+  },
+
+  finance_banks: {
+    value: 'finance_banks',
+    label: 'Finance Banks',
+    displayProps: FINANCE_BANK_DISPLAY_PROPS,
+    allowDelete: true,
+    allowCreate: false,
+    getViewAction: (row) => modalAction('finance_bank', row),
+  },
+
+  finance_cards: {
+    value: 'finance_cards',
+    label: 'Finance Cards',
+    displayProps: FINANCE_CARD_DISPLAY_PROPS,
+    allowCreate: false,
+    allowDelete: true,
+    getViewAction: (row) => modalAction('finance_card', row),
+  },
+
+  finance_cheques: {
+    value: 'finance_cheques',
+    label: 'Finance Cheques',
+    displayProps: FINANCE_CHEQUE_DISPLAY_PROPS,
+    allowCreate: false,
+    allowDelete: true,
+    getViewAction: (row) => modalAction('finance_cheque', row),
   },
 
 

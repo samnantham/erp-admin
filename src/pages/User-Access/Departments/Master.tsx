@@ -42,9 +42,9 @@ export const DepartmentList = () => {
   const queryClient = useQueryClient();
   const navigate    = useNavigate();
 
-  const [isOpen, toggleModal]   = useState(false);
-  const [selected, setSelected] = useState<any | null>(null);
-  const [isEdit, toggleEdit]    = useState(false);
+  const [isOpen, toggleModal]         = useState(false);
+  const [selected, setSelected]       = useState<any | null>(null);
+  const [isEdit, toggleEdit]          = useState(false);
   const [queryParams, setQueryParams] = useState<any>({ status: 'all' });
   const [refreshKey, setRefreshKey]   = useState(0);
   const [sortBy, setSortBy]           = useState('');
@@ -57,6 +57,8 @@ export const DepartmentList = () => {
   const [mutatingRowId, setMutatingRowId] = useState<any>(null);
   const [confirmMode, setConfirmMode]     = useState<ConfirmMode>(null);
   const [activeItem, setActiveItem]       = useState<DataColumn | null>(null);
+
+  /* ================= Modal ================= */
 
   const openModal = (item: any, editStatus?: boolean) => {
     setSelected(item);
@@ -82,18 +84,27 @@ export const DepartmentList = () => {
     setMapRolesOpen(false);
   };
 
+  /* ================= API ================= */
+
   const { data: itemList, isLoading: listLoading, refetch: refreshData } =
     useDepartmentIndex(queryParams);
   const data = itemList?.data ?? [];
 
-  const deleteEndpoint = useDelete({
+  const departmentMutation = useDelete({
     url: endPoints.delete.department,
     invalidate: ['userDepartmentIndex', 'userDepartmentList'],
   });
 
-  const mutateDepartment = (item: DataColumn) => {
+  /* ================= Delete / Restore ================= */
+
+  const openSoft      = (item: DataColumn) => { setActiveItem(item); setConfirmMode('soft'); };
+  const openRestore   = (item: DataColumn) => { setActiveItem(item); setConfirmMode('restore'); };
+  const openPermanent = (item: DataColumn) => { setActiveItem(item); setConfirmMode('permanent'); };
+  const closeConfirm  = () => { setConfirmMode(null); setActiveItem(null); };
+
+  const mutateItem = (item: DataColumn) => {
     setMutatingRowId(item.id);
-    deleteEndpoint.mutate(
+    departmentMutation.mutate(
       { id: item.id },
       {
         onSuccess: () => { closeConfirm(); setMutatingRowId(null); },
@@ -102,14 +113,10 @@ export const DepartmentList = () => {
     );
   };
 
-  const openSoft      = (item: DataColumn) => { setActiveItem(item); setConfirmMode('soft'); };
-  const openRestore   = (item: DataColumn) => { setActiveItem(item); setConfirmMode('restore'); };
-  const openPermanent = (item: DataColumn) => { setActiveItem(item); setConfirmMode('permanent'); };
-  const closeConfirm  = () => { setConfirmMode(null); setActiveItem(null); };
+  /* ================= Columns ================= */
 
   const columnHelper = createColumnHelper<DataColumn>();
 
-  // ── Roles column ───────────────────────────────────────────────
   const rolesColumn = columnHelper.display({
     id: 'roles',
     header: 'Mapped Roles',
@@ -152,16 +159,14 @@ export const DepartmentList = () => {
     },
   });
 
-  // ── Action column ──────────────────────────────────────────────
   const actionColumn = columnHelper.display({
     id: 'actions',
     header: () => <ActionsHeader />,
     cell: (info) => {
-      const item    = info.row.original;
-      const isBusy  = mutatingRowId === item.id && deleteEndpoint.isLoading;
+      const item     = info.row.original;
+      const isBusy   = mutatingRowId === item.id && departmentMutation.isLoading;
       const disabled = isBusy || !!item.is_fixed;
 
-      // No actions available at all — don't render the menu
       if (!canUpdate && !canDelete) return null;
 
       return (
@@ -183,60 +188,31 @@ export const DepartmentList = () => {
             <MenuList width="160px" maxW="160px" minW="160px" boxShadow="md" sx={{ overflow: 'hidden', p: '4px' }}>
               {item.deleted_at === null ? (
                 <>
-                  {/* Edit — shown only if canUpdate */}
                   {canUpdate && (
-                    <MenuItem
-                      icon={<EditIcon fontSize="1rem" />}
-                      onClick={() => openModal(item, true)}
-                      isDisabled={disabled}
-                    >
+                    <MenuItem icon={<EditIcon fontSize="1rem" />} onClick={() => openModal(item, true)} isDisabled={disabled}>
                       Edit
                     </MenuItem>
                   )}
-                  {/* Map Roles — shown only if canUpdate */}
                   {canUpdate && (
-                    <MenuItem
-                      icon={<LuLink fontSize="1rem" />}
-                      onClick={() => openMapRoles(item)}
-                      isDisabled={disabled}
-                    >
+                    <MenuItem icon={<LuLink fontSize="1rem" />} onClick={() => openMapRoles(item)} isDisabled={disabled}>
                       Map Roles
                     </MenuItem>
                   )}
-                  {/* Soft Delete — shown only if canDelete */}
                   {canDelete && (
-                    <MenuItem
-                      icon={<TbTrash fontSize="1rem" />}
-                      onClick={() => openSoft(item)}
-                      isDisabled={disabled}
-                      color="red.500"
-                    >
+                    <MenuItem icon={<TbTrash fontSize="1rem" />} onClick={() => openSoft(item)} isDisabled={disabled} color="red.500">
                       Soft Delete
                     </MenuItem>
                   )}
                 </>
               ) : (
                 <>
-                  {/* Restore — shown only if canUpdate */}
                   {canUpdate && (
-                    <MenuItem
-                      icon={<LuRefreshCw fontSize="1rem" />}
-                      onClick={() => openRestore(item)}
-                      isDisabled={disabled}
-                      color="green.500"
-                    >
+                    <MenuItem icon={<LuRefreshCw fontSize="1rem" />} onClick={() => openRestore(item)} isDisabled={disabled} color="green.500">
                       Restore
                     </MenuItem>
                   )}
-                  {/* Permanent Delete — shown only if canDelete */}
                   {canDelete && (
-                    <MenuItem
-                      icon={<TbTrashX fontSize="1rem" />}
-                      onClick={() => openPermanent(item)}
-                      isDisabled={disabled}
-                      color="red.600"
-                      display="none"
-                    >
+                    <MenuItem icon={<TbTrashX fontSize="1rem" />} onClick={() => openPermanent(item)} isDisabled={disabled} color="red.600" display="none">
                       Delete
                     </MenuItem>
                   )}
@@ -320,13 +296,8 @@ export const DepartmentList = () => {
           <ConfirmationPopup
             isOpen={confirmMode !== null}
             onClose={closeConfirm}
-            onConfirm={() => {
-              if (!activeItem) return;
-              if (confirmMode === 'restore')   openRestore(activeItem);
-              if (confirmMode === 'soft')      mutateDepartment(activeItem);
-              if (confirmMode === 'permanent') mutateDepartment(activeItem);
-            }}
-            isLoading={!!activeItem && mutatingRowId === activeItem.id && deleteEndpoint.isLoading}
+            onConfirm={() => { if (activeItem) mutateItem(activeItem); }}
+            isLoading={!!activeItem && mutatingRowId === activeItem.id && departmentMutation.isLoading}
             headerText={confirmMode === 'restore' ? 'Restore !!' : 'Delete !!'}
             bodyText={
               confirmMode === 'restore'

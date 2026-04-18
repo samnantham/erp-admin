@@ -53,8 +53,8 @@ import { AssignAlternateParts } from '@/pages/Master/Spare/AssignAlternates';
 // !<--!! Spare Management Routes Ends !!-->!
 
 // !<--!! Update Delete Request Routes Starts !!-->!
-import { UpdateDeleteRequestDashboard } from '@/pages/UpdateDeleteRequests/Dashboard';
-import { UpdateDeleteRequestMaster } from '@/pages/UpdateDeleteRequests/Master';
+import { CUDRequestDashboard } from '@/pages/CUDRequests/Dashboard';
+import { CUDRequestMaster } from '@/pages/CUDRequests/Master';
 // !<--!! Update Delete Request Routes Ends !!-->!
 
 // !<--!! Sales Log Routes Starts !!-->!
@@ -74,7 +74,8 @@ import { PRFQForm } from '@/pages/Purchase/RFQ/Form';
 
 // !<--!! Purchase RFQ Routes Starts !!-->!
 import { PurchaseOrderMaster } from '@/pages/Purchase/Order/Master';
-import { PurchaseOrderForm } from '@/pages/Purchase/Order/Form';
+import { DirectPOForm } from '@/pages/Purchase/Order/Form';
+import { PurchaseOrderForm } from '@/pages/Purchase/Order/QuoteForm';
 // !<--!! Purchase RFQ Routes Ends !!-->!
 
 // !<--!! Purchase RFQ Routes Starts !!-->!
@@ -82,6 +83,22 @@ import { SupplierPricingUpdateMaster } from '@/pages/Purchase/SupplierPricingUpd
 import { SupplierPricingUpdateForm } from '@/pages/Purchase/SupplierPricingUpdate/Form';
 import { CompareQuotations } from '@/pages/Purchase/SupplierPricingUpdate/CompareQuotations';
 // !<--!! Purchase RFQ Routes Ends !!-->!
+
+// !<--!!  Finance Routes Starts !!-->!
+// !<--!!  Invoice Routes Starts !!-->!
+import { InvoiceMaster } from '@/pages/Finance/Invoice/Master';
+import { InvoiceForm } from '@/pages/Finance/Invoice/Form';
+// !<--!!  Invoice Routes Ends !!-->!
+
+// !<--!!  Payment Receipt Routes Starts !!-->!
+import { PaymentReceiptMaster } from '@/pages/Finance/Payment-Receipt/Master';
+import { PaymentReceiptForm } from '@/pages/Finance/Payment-Receipt/Form';
+// !<--!! Payment Receipt Routes Ends !!-->!
+
+// !<--!!  Payment Receipt Routes Starts !!-->!
+import { PaymentMethodMaster } from '@/pages/Finance/Payment-Method/Master';
+import { PaymentMethodForm } from '@/pages/Finance/Payment-Method/Form';
+// !<--!!  Finance Routes Ends !!-->!
 
 // !<--!! Preview Routes Starts !!-->!
 import { PRFQPreview } from '@/pages/Preview/PRFQPreview';
@@ -251,16 +268,45 @@ export const routes = [
                 path: 'order',
                 children: [
                   { path: 'master', element: <PurchaseOrderMaster /> },
-                  { path: 'form/:id?', element: <PurchaseOrderForm /> },
+                  { path: 'form/:id?', element: <DirectPOForm /> },
+                  { path: 'quote-form/:id?', element: <PurchaseOrderForm /> },
                 ],
               },
             ],
           },
           {
-            path: 'update-delete-requests',
+            path: 'finance',
             children: [
-              { path: 'dashboard', element: <UpdateDeleteRequestDashboard /> },
-              { path: ':module', element: <UpdateDeleteRequestMaster /> },
+              {
+                path: 'invoice',
+                children: [
+                  { path: 'master', element: <InvoiceMaster type="invoice" /> },
+                  { path: 'proforma/master', element: <InvoiceMaster type="proforma" /> },
+                  { path: 'form/:id?', element: <InvoiceForm /> },
+                  { path: 'proforma/form/:id?', element: <InvoiceForm /> },
+                ],
+              },
+              {
+                path: 'payment-receipt',
+                children: [
+                  { path: 'master', element: <PaymentReceiptMaster /> },
+                  { path: 'form/:id?', element: <PaymentReceiptForm /> },
+                ],
+              },
+              {
+                path: 'payment-method',
+                children: [
+                  { path: ':method/master', element: <PaymentMethodMaster /> },
+                  { path: ':method/form/:id?/:mode?', element: <PaymentMethodForm /> },
+                ],
+              }
+            ],
+          },
+          {
+            path: 'cud-requests',
+            children: [
+              { path: 'dashboard', element: <CUDRequestDashboard /> },
+              { path: ':module', element: <CUDRequestMaster /> },
             ],
           },
         ],

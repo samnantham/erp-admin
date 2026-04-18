@@ -97,6 +97,23 @@ const SummaryCard = ({
     );
 };
 
+const LateEntryBadge = () => (
+    <Badge
+        fontSize="9px"
+        fontWeight="700"
+        textTransform="uppercase"
+        letterSpacing="wider"
+        colorScheme="orange"
+        variant="subtle"
+        px={1.5}
+        py={0.5}
+        borderRadius="sm"
+        lineHeight="1.4"
+    >
+        Late Entry
+    </Badge>
+);
+
 /* ─── Inline price chip with optional "best" highlight ─── */
 const PriceChip = ({
     price,
@@ -140,6 +157,7 @@ const SidebarVendorItem = ({
     isDisabled: boolean;
     onToggle: () => void;
 }) => {
+
     const selectedBg = useColorModeValue('blue.50', 'blue.900');
     const hoverBg = useColorModeValue('gray.50', 'gray.700');
     const borderColor = useColorModeValue('gray.100', 'gray.700');
@@ -175,14 +193,17 @@ const SidebarVendorItem = ({
                 onClick={(e) => e.stopPropagation()}
             />
             <Box flex={1} minW={0}>
-                <Text
-                    fontSize="sm"
-                    fontWeight={isSelected ? '600' : '500'}
-                    color={isSelected ? nameSelected : namePrimary}
-                    noOfLines={1}
-                >
-                    {quote.vendorName}
-                </Text>
+                <HStack spacing={1.5} align="center" flexWrap="wrap">
+                    <Text
+                        fontSize="sm"
+                        fontWeight={isSelected ? '600' : '500'}
+                        color={isSelected ? nameSelected : namePrimary}
+                        noOfLines={1}
+                    >
+                        {quote.vendorName}
+                    </Text>
+                    {quote.isLateEntry && <LateEntryBadge />}
+                </HStack>
                 <HStack spacing={1.5} mt={0.5}>
                     <Text fontSize="xs" color={subTextColor}>
                         {quote.quotationNumber}
@@ -248,6 +269,8 @@ export const CompareQuotations = () => {
         if (prfqData?.data?.material_requests) {
             setMrNo([...new Set(prfqData.data.material_requests.map((item: any) => item?.material_request?.code ?? item?.material_request?.id))]);
         }
+
+        console.log(prfqData?.data)
     }, [prfqData]);
 
     useEffect(() => {
@@ -281,8 +304,8 @@ export const CompareQuotations = () => {
                             currencyId: quotation.currency_id,
                             currencyCode: quotation.currency?.symbol ?? '',
                             quotationNumber: quotation.code ?? quotation.id,
-                            vendorName: quotation.vendor?.business_name ?? '—',
-                            vendorId: quotation.vendor_id,
+                            vendorName: quotation.vendor?.business_name ?? '',
+                            isLateEntry: vendorApprovalMap[quotation.vendor_id] === false, vendorId: quotation.vendor_id,
                             partNumber: line.part_number_id,
                             altPartNumber: '',
                             condition: line.condition?.name,
@@ -314,6 +337,16 @@ export const CompareQuotations = () => {
             setGroupedQuotations(sortedGrouped);
         }
     }, [quotationsData]);
+
+    const vendorApprovalMap = useMemo(() => {
+        const map: Record<string, boolean> = {};
+
+        prfqData?.data?.vendors?.forEach((v: any) => {
+            map[v.vendor_id] = v.is_approved;
+        });
+
+        return map;
+    }, [prfqData]);
 
     /* ─── Derived stats for dashboard ─── */
     const dashboardStats = useMemo(() => {
@@ -713,7 +746,10 @@ export const CompareQuotations = () => {
                                                                     <Text fontSize="xs">{quote.material_request?.ref ?? quote.material_request?.id ?? '—'}</Text>
                                                                 </Td>
                                                                 <Td borderBottom="1px solid" borderRight="1px solid" borderColor={borderColor} py={2.5}>
-                                                                    <Text fontSize="sm" fontWeight="600">{quote.vendorName}</Text>
+                                                                    <VStack spacing={0.5} align="start">
+                                                                        <Text fontSize="sm" fontWeight="600">{quote.vendorName}</Text>
+                                                                        {quote.isLateEntry && <LateEntryBadge />}
+                                                                    </VStack>
                                                                 </Td>
                                                                 <Td borderBottom="1px solid" borderRight="1px solid" borderColor={borderColor} py={2.5} whiteSpace="nowrap">
                                                                     {(() => {

@@ -286,19 +286,26 @@ export function DataTable<Data extends object>({
   const EVEN_ROW_BG = "#ffffff";
   const ODD_ROW_BG  = "#F7FAFC";
 
-  // ── Pre-compute cumulative left offsets for sticky columns ─────────────
-  const allHeaders = table.getHeaderGroups()[0]?.headers ?? [];
+  // ── FIX 1: Stable allHeaders memo — dep on `columns`, not array length ─
+  // Previously allHeaders was derived inline (not memoized), so totalTableWidth
+  // and stickyLeftOffsets only recomputed when the header *count* changed.
+  // Now they recompute whenever the column definitions themselves change.
+  const allHeaders = useMemo(
+    () => table.getHeaderGroups()[0]?.headers ?? [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [columns]
+  );
 
-  // ── Compute explicit table width from column definitions ───────────────
+  // ── FIX 2: totalTableWidth now depends on the stable allHeaders memo ───
   const totalTableWidth = useMemo(() => {
     return allHeaders.reduce((sum, header) => {
       const meta = header.column.columnDef.meta as ColumnMeta | undefined;
       const w = meta?.width ? parseInt(meta.width, 10) : 150;
       return sum + (isNaN(w) ? 150 : w);
     }, 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allHeaders.length]);
+  }, [allHeaders]);
 
+  // ── FIX 3: stickyLeftOffsets now depends on the stable allHeaders memo ─
   const stickyLeftOffsets = useMemo(() => {
     const offsets: number[] = [];
     let accumulated = 0;
@@ -313,8 +320,7 @@ export function DataTable<Data extends object>({
       }
     });
     return offsets;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allHeaders.length, stickyColumns]);
+  }, [allHeaders, stickyColumns]);
 
   // ── Style helpers ──────────────────────────────────────────────────────
   const STICKY_LAST_PAD = "12px";
@@ -426,8 +432,17 @@ export function DataTable<Data extends object>({
           "& th, & td": { borderBottom: "1px solid", borderColor: "gray.200" },
         }}
       >
+        {/*
+          FIX 4: Remove `defer` — deferred init causes OverlayScrollbars to
+          measure content before it paints, missing the true scroll width on
+          first render. Synchronous init sees the correct content dimensions.
+
+          FIX 5: Add `key` tied to loading state + column count. When `loading`
+          flips false, the scroller remounts and re-measures the now-visible
+          content, preventing the "appeared after loading but no scrollbar" case.
+        */}
         <OverlayScrollbarsComponent
-          defer
+          key={`${loading ? "loading" : "loaded"}-${allHeaders.length}`}
           options={{
             scrollbars: {
               autoHide: "move",
@@ -455,12 +470,15 @@ export function DataTable<Data extends object>({
           ) : (
             <>
               {/*
-                FIX: This wrapper div is what OverlayScrollbars measures for overflow.
-                Putting both `width` and `minWidth` here ensures the scroll host sees
-                content that genuinely exceeds the viewport width, triggering the
-                horizontal scrollbar correctly.
+                FIX 6: Use CSS max() instead of a px + minWidth pair.
+                - `width: ${totalTableWidth}px` alone collapses to 0 on first
+                  render when headers haven't populated yet.
+                - `max(${totalTableWidth}px, 100%)` guarantees the wrapper is
+                  always at least as wide as the scroll host, so no phantom
+                  scrollbar appears, AND at least as wide as the table content
+                  when it overflows, so a real scrollbar always appears.
               */}
-              <div style={{ width: `${totalTableWidth}px`, minWidth: "100%" }}>
+              <div style={{ width: `max(${totalTableWidth}px, 100%)` }}>
                 <Table
                   {...tableProps}
                   size={tableProps?.size ?? "sm"}

@@ -25,9 +25,11 @@ export const MaterialRequestMaster = () => {
                             variant="@primary"
                             icon={<LuPlus />}
                             size={{ base: 'sm', md: 'md' }}
-                            onClick={() => navigate('/purchase/material-request/form', {
-                                state: state?.type ? { type: state.type } : undefined,
-                            })}
+                            onClick={() => 
+                                navigate('/purchase/material-request/form', {
+                                    state: { type: state?.type ?? 'oe' },
+                                })
+                            }
                         >
                             Add New
                         </ResponsiveIconButton>

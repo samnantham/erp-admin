@@ -253,7 +253,7 @@ export const PurchaseOrderSearch = (props: Props) => {
 
     const handleOpenPreview = (row: any) => {
         const url = `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview.purchase_order.replace(':id', row.id)}`;
-        openPreview(url, `Purchase Order Preview - #${row.code}`, true);
+        openPreview(url, `Purchase Order Preview - #${row.code}${row.version && row.version > 0 ? 'R' + row.version : ''}`, true);
     };
 
     const handleToggleSelect = (row: any) => {
@@ -288,7 +288,7 @@ export const PurchaseOrderSearch = (props: Props) => {
                 key: 'code',
                 header: 'PO No.',
                 meta: { sortable: true, sortParam: 'code', fontWeight: 'bold' },
-                render: (info: any) => <Text fontWeight={'bold'}>{info.code}{info.version && info.version > 0 ? '-R' + info.version : ''}</Text>,
+                render: (info: any) => <Text fontWeight={'bold'}>{info.code}{info.version && info.version > 0 ? 'R' + info.version : ''}</Text>,
             },
             {
                 key: 'customer.business_name',
@@ -351,7 +351,13 @@ export const PurchaseOrderSearch = (props: Props) => {
                                 label: 'Edit',
                                 icon: <BiEdit />,
                                 isDisabled: (row: any) => !!row.has_pending_request || !!row.is_closed || !row.is_editable,
-                                onClick: (row: any) => navigate(`/purchase/order/form/${row.id}`),
+                                onClick: (row: any) => {
+                                    const hasQuotations = Array.isArray(row.prfq_ids) && row.prfq_ids.length > 0;
+                                    navigate(hasQuotations
+                                        ? `/purchase/order/quote-form/${row.id}`
+                                        : `/purchase/order/form/${row.id}`
+                                    );
+                                },
                                 disabledTooltip: (row: any) =>
                                     row.is_closed ? 'Purchase Order is closed'
                                         : !row.is_editable ? 'Purchase Order is not editable'

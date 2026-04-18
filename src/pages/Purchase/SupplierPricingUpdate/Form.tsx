@@ -196,7 +196,7 @@ export const SupplierPricingUpdateForm = () => {
                 const vendor = v.vendor;
                 return {
                     value: vendor.id,
-                    label: `${vendor.business_name}${v.is_approved === false ? ' (Un Approved)' : ''
+                    label: `${vendor.business_name}${v.is_approved === false ? ' (Late Entry)' : ''
                         }`,
                 };
             }),
