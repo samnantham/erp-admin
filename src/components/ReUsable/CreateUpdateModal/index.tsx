@@ -51,10 +51,14 @@ export function CreateUpdateModal<TFormValues extends object>({
 
   const form = useForm<TFormValues>({
     onValidSubmit(values) {
-      const payload = transformValues ? transformValues(values) : values;
+      let payload = transformValues ? transformValues(values) : { ...values };
+
+      // ✅ FIX: ensure "name" is always string
+      if ("name" in payload) {
+        payload.name = payload.name != null ? String(payload.name) : "";
+      }
 
       if (isEdit) {
-        // ── UPDATE ── onSuccess not needed here (edit doesn't trigger addNew flow)
         updateMutation.mutate(
           {
             id: existInfo?.id as string | number,
@@ -70,19 +74,17 @@ export function CreateUpdateModal<TFormValues extends object>({
           }
         );
       } else {
-        // ── CREATE ── fire onSuccess with the new id after creation
         createMutation.mutate(payload, {
           onSuccess: (data) => {
-            console.log(data)
             invalidateKeys.forEach((key) =>
               queryClient.invalidateQueries([key])
             );
-            onSuccess?.(data?.id ?? data?.data); // ✅ notify parent with created value
+            onSuccess?.(data?.id ?? data?.data);
             onClose();
           },
         });
       }
-    },
+    }
   });
 
   const [initialValues, setInitialValues] = useState<
@@ -119,31 +121,31 @@ export function CreateUpdateModal<TFormValues extends object>({
       <ModalOverlay />
       <ModalContent>
         <div onSubmit={(e) => e.stopPropagation()}>
-        <Formiz key={existInfo?.id ?? 'create'} autoForm connect={form}>
-          <ModalHeader>
-            {isEdit ? 'Update' : 'Create'} {title}
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>{children}</ModalBody>
-          <ModalFooter>
-            <Button
-              type="submit"
-              colorScheme="brand"
-              mr={3}
-              isLoading={
-                createMutation.isLoading || updateMutation.isLoading
-              }
-              isDisabled={
-                createMutation.isLoading ||
-                updateMutation.isLoading ||
-                (isEdit ? !isFormValuesChanged : false)
-              }
-            >
-              {isEdit ? 'Update' : 'Create'}
-            </Button>
-            <Button onClick={onClose}>Cancel</Button>
-          </ModalFooter>
-        </Formiz>
+          <Formiz key={existInfo?.id ?? 'create'} autoForm connect={form}>
+            <ModalHeader>
+              {isEdit ? 'Update' : 'Create'} {title}
+            </ModalHeader>
+            <ModalCloseButton />
+            <ModalBody pb={6}>{children}</ModalBody>
+            <ModalFooter>
+              <Button
+                type="submit"
+                colorScheme="brand"
+                mr={3}
+                isLoading={
+                  createMutation.isLoading || updateMutation.isLoading
+                }
+                isDisabled={
+                  createMutation.isLoading ||
+                  updateMutation.isLoading ||
+                  (isEdit ? !isFormValuesChanged : false)
+                }
+              >
+                {isEdit ? 'Update' : 'Create'}
+              </Button>
+              <Button onClick={onClose}>Cancel</Button>
+            </ModalFooter>
+          </Formiz>
         </div>
       </ModalContent>
     </Modal>

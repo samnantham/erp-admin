@@ -1,5 +1,5 @@
 import { z } from "zod";
-
+import { useMemo } from "react";
 import { useQuery, UseQueryOptions } from "react-query";
 import { useCreateUpdateService } from "@/services/global-service";
 import { getRequest, putRequest, postRequest } from "@/api/client";
@@ -313,37 +313,31 @@ type UseCustomerListProps = {
 };
 
 export const useCustomerList = ({
-  enabled = true,
-  contact_type_id,
-  queryParams,
+    enabled = true,
+    contact_type_id,
+    queryParams,
 }: UseCustomerListProps = {}) => {
-  // normalize to array
-  const normalizedContactTypeIds = contact_type_id
-    ? Array.isArray(contact_type_id)
-      ? contact_type_id
-      : [contact_type_id]
-    : undefined;
 
-  // merge into query params
-  const finalParams = {
-    ...queryParams,
-    contact_type_id: normalizedContactTypeIds,
-  };
+    const normalizedContactTypeIds = contact_type_id
+        ? Array.isArray(contact_type_id)
+            ? contact_type_id
+            : [contact_type_id]
+        : undefined;
 
-  return useQuery({
-    queryKey: ['customerList', finalParams], // ✅ cache-safe
-    queryFn: () =>
-      getRequest(
-        endPoints.list.customer,
-        zCustomerListPayload,
-        finalParams
-      ),
-    retry: 2,
-    refetchOnWindowFocus: false,
-    enabled,
-  });
+    // ✅ Memoize so the object reference only changes when values actually change
+    const finalParams = useMemo(() => ({
+        ...queryParams,
+        contact_type_id: normalizedContactTypeIds,
+    }), [JSON.stringify(queryParams), JSON.stringify(normalizedContactTypeIds)]);
+
+    return useQuery({
+        queryKey: ['customerList', finalParams],
+        queryFn: () => getRequest(endPoints.list.customer, zCustomerListPayload, finalParams),
+        retry: 2,
+        refetchOnWindowFocus: false,
+        enabled,
+    });
 };
-
 export const getCustomerById = (id: string) =>
   getRequest(
     endPoints.info.customer.replace(":id", id),

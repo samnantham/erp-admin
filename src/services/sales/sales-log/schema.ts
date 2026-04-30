@@ -74,7 +74,7 @@ export const zSalesLog = zStandardObject.extend({
   priority:                  zBasicObject.nullable().optional(),
   customer_contact_manager:  zCustomerContactManager.nullable().optional(),
   customer_shipping_address: zCustomerShippingAddress.nullable().optional(),
-  currency:                  zBasicObject.nullable().optional(),
+  currency:                  zBasicObject.extend({ code: z.string().optional(), symbol: z.string().optional() }).nullable().optional(),
   fob:                       zBasicObject.nullable().optional(),
   payment_mode:              zBasicObject.nullable().optional(),
   payment_term:              zBasicObject.nullable().optional(),

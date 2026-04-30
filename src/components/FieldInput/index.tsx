@@ -94,6 +94,11 @@ export const FieldInput = <FormattedValue = Value,>(
       return;
     }
 
+    if (value.startsWith(' ')) return;
+
+    // ✅ Block more than 2 consecutive spaces
+    if (/\s{3,}/.test(value)) return;
+
     const escapedSpecials = allowedSpecialChars.map((c) => `\\${c}`).join('');
     const specialsPattern = escapedSpecials || '\\-\\/'; // default
 
@@ -116,6 +121,15 @@ export const FieldInput = <FormattedValue = Value,>(
         const startsWithSpecial = new RegExp(`^[${specialsPattern}]`);
         if (startsWithSpecial.test(value)) return;
         if (!pattern.test(value)) return;
+        break;
+      }
+      case 'alpha-numeric-special-with-space': {
+        const pattern = new RegExp(`^[a-zA-Z0-9${specialsPattern} ]*$`);
+        const startsWithSpecial = new RegExp(`^[${specialsPattern}]`);
+
+        if (startsWithSpecial.test(value)) return;
+        if (!pattern.test(value)) return;
+
         break;
       }
       case 'alpha-numeric-with-space':

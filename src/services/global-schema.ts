@@ -95,7 +95,7 @@ export const zDataColumn = zBasicObject.extend({
 /* ================= List ================= */
 
 export const zListPayload = z.object({
-  items: z.record(z.string()),
+  data: z.array(zSelectOption),
   status: z.boolean(),
 });
 
@@ -127,6 +127,11 @@ export interface QueryParams {
   contact_type_id?: string;
   prfq_id?: string;
   vendor_id? : string;
+  reference_type?: string;
+  refer_type?: string;
+  reference_id?: string;
+  order_reference_id?: string;
+  is_receipt_created?: boolean;
 }
 
 

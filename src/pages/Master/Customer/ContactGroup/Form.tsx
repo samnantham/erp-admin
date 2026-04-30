@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronRightIcon } from "@chakra-ui/icons";
 import {
     Breadcrumb,
@@ -28,7 +28,6 @@ import LoadingOverlay from "@/components/LoadingOverlay";
 export const ContactGroupForm = () => {
     const navigate = useNavigate();
     const { id, mode } = useParams<{ id?: string; mode?: string }>();
-    const [queryParams, setQueryParams] = useState<any>({});
     const isEdit = mode === "edit";
     const isView = mode === "view";
 
@@ -37,27 +36,22 @@ export const ContactGroupForm = () => {
 
     const [openConfirmation, setOpenConfirmation] = useState(false);
     const [pendingContactType, setPendingContactType] = useState<any>(null);
-    const [prevContactType, setPrevContactType] = useState<any>(null);
+
+    // The committed/active contact_type_id — drives the customer list query directly
+    const [activeContactTypeId, setActiveContactTypeId] = useState<any>(null);
+
+    // Tracks the last committed value for revert on cancel
+    const committedContactType = useRef<any>(null);
+
+    // Prevents the watcher from reacting to our own programmatic setValues calls
+    const skipNextWatch = useRef(false);
+
+    // Prevents the watcher from firing on initial prefill
+    const isPrefilling = useRef(false);
 
     const saveContactGroup = useSaveContactGroup();
     const contactTypeOptions = dropdownData?.contact_types ?? [];
     const [initialValues, setInitialValues] = useState<any>(null);
-
-    const handleConfirm = () => {
-        form.setValues({ "contact_type_id": pendingContactType, "members": [] });
-
-        setPrevContactType(pendingContactType);
-        setPendingContactType(null);
-        setOpenConfirmation(false);
-    };
-
-    const handleClose = () => {
-        // revert to previous value
-        form.setValues({ "contact_type_id": prevContactType });
-
-        setPendingContactType(null);
-        setOpenConfirmation(false);
-    };
 
     const form = useForm({
         onValidSubmit: (values) => {
@@ -68,8 +62,6 @@ export const ContactGroupForm = () => {
                     contact_id: m,
                 })),
             };
-
-            console.log(payload)
 
             saveContactGroup.mutate(
                 isEdit ? { id, ...payload } : payload,
@@ -86,50 +78,84 @@ export const ContactGroupForm = () => {
             const initial = {
                 name: group.name,
                 contact_type_id: group.contact_type_id,
-
-                // ✅ set members directly in form (UI format)
-                members: (group.members ?? []).map((m: any) => m.contact_id)
+                members: (group.members ?? []).map((m: any) => m.contact_id),
             };
 
-            console.log(initial)
-
             setInitialValues(initial);
+            committedContactType.current = group.contact_type_id;
+            setActiveContactTypeId(group.contact_type_id); // ← triggers customer list fetch
+
+            isPrefilling.current = true;
             form.setValues(initial);
         }
     }, [groupData]);
 
     const fields = useFormFields({ connect: form });
+    const contactTypeId = fields?.contact_type_id?.value;
+    const members: any[] = fields?.members?.value ?? [];
+
+    /* ---------- Watch contact_type_id field changes ---------- */
+    useEffect(() => {
+        if (contactTypeId === undefined || contactTypeId === null) return;
+
+        if (skipNextWatch.current) {
+            skipNextWatch.current = false;
+            return;
+        }
+
+        if (isPrefilling.current) {
+            isPrefilling.current = false;
+            return;
+        }
+
+        if (contactTypeId === committedContactType.current) return;
+
+        if (members.length > 0) {
+            // Stage and ask for confirmation
+            setPendingContactType(contactTypeId);
+            setOpenConfirmation(true);
+
+            // Revert the field immediately
+            skipNextWatch.current = true;
+            form.setValues({ contact_type_id: committedContactType.current });
+        } else {
+            // Commit directly — update both ref and state
+            committedContactType.current = contactTypeId;
+            setActiveContactTypeId(contactTypeId); // ← primitive state, stable reference
+        }
+    }, [contactTypeId]);
+
+    // Pass contact_type_id as a primitive — no object reference instability
+    const { data: customerListData, isLoading: customerListLoading } =
+        useCustomerList({
+            contact_type_id: activeContactTypeId,
+            enabled: !!activeContactTypeId,
+        });
+
+    const customerOptions = customerListData?.data ?? [];
+
     const isFormValuesChanged = isFormFieldsChanged({
         fields,
         initialValues,
         keys: ["name", "contact_type_id"],
     });
 
-    const contactTypeId = fields?.contact_type_id?.value;
+    const handleConfirm = () => {
+        committedContactType.current = pendingContactType;
+        setActiveContactTypeId(pendingContactType); // ← triggers refetch with new type
 
-    const { data: customerListData, isLoading: customerListLoading } =
-        useCustomerList({
-            queryParams,
-        });
+        skipNextWatch.current = true;
+        form.setValues({ contact_type_id: pendingContactType, members: [] });
 
-    const customerOptions = customerListData?.data ?? [];
+        setPendingContactType(null);
+        setOpenConfirmation(false);
+    };
 
-    useEffect(() => {
-        if (contactTypeId) {
-            setQueryParams({
-                contact_type_id: contactTypeId,
-            });
-        } else {
-            setQueryParams({}); // ✅ important
-        }
-    }, [contactTypeId]);
-
-    useEffect(() => {
-        if (fields?.contact_type_id?.value && prevContactType === null) {
-            setPrevContactType(fields.contact_type_id.value);
-        }
-    }, [fields?.contact_type_id?.value]);
-
+    const handleClose = () => {
+        // Field already reverted in the watcher — just close
+        setPendingContactType(null);
+        setOpenConfirmation(false);
+    };
 
     return (
         <SlideIn>
@@ -186,23 +212,15 @@ export const ContactGroupForm = () => {
                                 <FieldSelect
                                     label="Contact Type"
                                     name="contact_type_id"
-                                    placeholder={(isView && !initialValues.contact_type_id) ? ' - ' : "Select contact type"}
+                                    placeholder={
+                                        isView && !initialValues?.contact_type_id
+                                            ? " - "
+                                            : "Select contact type"
+                                    }
                                     options={contactTypeOptions}
                                     selectProps={{ isLoading: dropdownLoading }}
                                     isDisabled={isView}
                                     className={isView ? "disabled-input" : ""}
-                                    onValueChange={(val) => {
-                                        const currentMembers = fields?.members?.value ?? [];
-
-                                        // 👉 if members already selected → ask confirmation
-                                        if (currentMembers.length > 0) {
-                                            setPendingContactType(val);
-                                            setOpenConfirmation(true);
-                                        } else {
-                                            form.setValues({ "contact_type_id": val });
-                                            setPrevContactType(val);
-                                        }
-                                    }}
                                 />
                             </Stack>
 
@@ -213,11 +231,10 @@ export const ContactGroupForm = () => {
                                     name="members"
                                     placeholder="Select members..."
                                     options={customerOptions}
-                                    isClearable 
+                                    isClearable
                                     isMulti
                                     selectProps={{
                                         isLoading: customerListLoading,
-
                                     }}
                                     required={"Group Members required"}
                                     isDisabled={isView}

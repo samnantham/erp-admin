@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { symbol, z } from "zod";
 import { zBasicObject } from "@/services/global-schema";
 import { FieldInput } from "@/components/FieldInput";
 import { FieldCheckbox } from "@/components/FieldCheckbox";
@@ -7,6 +7,42 @@ import { FieldRadios } from "@/components/FieldRadios";
 export const submasterConfig: Record<string, any> = {
     default: {
         title: "Master",
+        formType: "modal",
+        fields: [
+            {
+                component: FieldInput,
+                name: "name",
+                placeholder: "Enter Name",
+                required: "Name required",
+                type: "alpha-numeric-with-special",
+                maxLength: 10
+            },
+        ],
+        columns: ["name"],
+        extraFields: {},
+        schema: zBasicObject
+    },
+
+    "fobs": {
+        title: "FOB",
+        formType: "modal",
+        fields: [
+            {
+                component: FieldInput,
+                name: "name",
+                placeholder: "Enter Name",
+                required: "Name required",
+                type: "alpha-numeric-with-special",
+                maxLength: 15
+            },
+        ],
+        columns: ["name"],
+        extraFields: {},
+        schema: zBasicObject
+    },
+
+    "spare-classes": {
+        title: "Spare Class",
         formType: "modal",
         fields: [
             {
@@ -23,6 +59,153 @@ export const submasterConfig: Record<string, any> = {
         schema: zBasicObject
     },
 
+    "spare-types": {
+        title: "Spare Type",
+        formType: "modal",
+        fields: [
+            {
+                component: FieldInput,
+                name: "name",
+                placeholder: "Enter Name",
+                required: "Name required",
+                type: "alpha-numeric-with-space",
+                maxLength: 15
+            },
+        ],
+        columns: ["name"],
+        extraFields: {},
+        schema: zBasicObject
+    },
+
+    "spare-models": {
+        title: "Spare Model",
+        formType: "modal",
+        fields: [
+            {
+                component: FieldInput,
+                name: "name",
+                placeholder: "Enter Name",
+                required: "Name required",
+                type: "alpha-numeric-special-with-space",
+                maxLength: 15
+            },
+        ],
+        columns: ["name"],
+        extraFields: {},
+        schema: zBasicObject
+    },
+
+
+    "ship-modes": {
+        title: "Ship Mode",
+        formType: "modal",
+        fields: [
+            {
+                component: FieldInput,
+                name: "name",
+                placeholder: "Enter Name",
+                required: "Name required",
+                type: "alpha-with-space",
+                maxLength: 20
+            },
+        ],
+        columns: ["name"],
+        extraFields: {},
+        schema: zBasicObject
+    },
+
+    "ship-types": {
+        title: "Ship Type",
+        formType: "modal",
+        fields: [
+            {
+                component: FieldInput,
+                name: "name",
+                placeholder: "Enter Name",
+                required: "Name required",
+                type: "alpha-with-space",
+                maxLength: 15
+            },
+        ],
+        columns: ["name"],
+        extraFields: {},
+        schema: zBasicObject
+    },
+
+    
+    "package-types": {
+        title: "Package Type",
+        formType: "modal",
+        fields: [
+            {
+                component: FieldInput,
+                name: "name",
+                placeholder: "Enter Name",
+                required: "Name required",
+                type: "alpha-with-space",
+                maxLength: 15
+            },
+        ],
+        columns: ["name"],
+        extraFields: {},
+        schema: zBasicObject
+    },
+
+        "business-types": {
+        title: "Business Type",
+        formType: "modal",
+        fields: [
+            {
+                component: FieldInput,
+                name: "name",
+                placeholder: "Enter Name",
+                required: "Name required",
+                type: "alpha",
+                maxLength: 15
+            },
+        ],
+        columns: ["name"],
+        extraFields: {},
+        schema: zBasicObject
+    },
+
+    "unit-of-measures": {
+        title: "UOM",
+        formType: "modal",
+        fields: [
+            {
+                component: FieldInput,
+                name: "name",
+                placeholder: "Enter Name",
+                required: "Name required",
+                type: "alpha",
+                maxLength: 5
+            },
+        ],
+        columns: ["name"],
+        extraFields: {},
+        schema: zBasicObject
+    },
+
+
+     "conditions": {
+        title: "Condition",
+        formType: "modal",
+        fields: [
+            {
+                component: FieldInput,
+                name: "name",
+                placeholder: "Enter Name",
+                required: "Name required",
+                type: "alpha",
+                maxLength: 3
+            },
+        ],
+        columns: ["name"],
+        extraFields: {},
+        schema: zBasicObject
+    },
+
     "financial-charges": {
         title: "Financial Charge",
         formType: "modal",
@@ -32,13 +215,13 @@ export const submasterConfig: Record<string, any> = {
                 name: "name",
                 placeholder: "Enter Name",
                 required: "Name required",
-                type: "alpha-numeric-with-space",
-                maxLength: 25
+                type: "alpha-with-space",
+                maxLength: 20
             },
             {
                 component: FieldRadios,
                 name: "charge_type",
-                defaultValue: "value", 
+                defaultValue: "value",
                 label: "Charge Type",
                 options: [
                     { value: "value", label: "Fixed Value" },
@@ -59,7 +242,7 @@ export const submasterConfig: Record<string, any> = {
         columns: ["name", "charge_type", "calculation_type"],
         extraFields: { charge_type: "Charge Type", calculation_type: "Operation" },
         schema: zBasicObject.extend({
-            charge_type: z.string(), calculation_type: z.string(),
+            charge_type: z.string(), calculation_type: z.string(), is_vat: z.boolean(),
         }),
     },
 
@@ -91,7 +274,7 @@ export const submasterConfig: Record<string, any> = {
                 name: "name",
                 placeholder: "Enter Name",
                 required: "Name required",
-                type: "alpha-numeric-with-space",
+                type: "integer",
                 maxLength: 15
             },
         ],
@@ -112,7 +295,7 @@ export const submasterConfig: Record<string, any> = {
                 placeholder: "Enter Contact Type",
                 required: "Contact Type required",
                 type: "alpha-numeric-with-space",
-                maxLength: 15
+                maxLength: 16
             },
             {
                 component: FieldInput,
@@ -161,8 +344,8 @@ export const submasterConfig: Record<string, any> = {
             }
         ],
         schema: zBasicObject.extend({
-            code: z.string(),
-            symbol: z.string(),
+            code: z.string().nullable().optional(),
+            symbol: z.string().nullable().optional(),
         }),
     },
 
@@ -178,7 +361,7 @@ export const submasterConfig: Record<string, any> = {
                 placeholder: "Enter Payment Term",
                 required: "Payment Term required",
                 type: "alpha-numeric-with-space",
-                maxLength: 15
+                maxLength: 6
             },
             {
                 component: FieldInput,
@@ -188,6 +371,27 @@ export const submasterConfig: Record<string, any> = {
                 type: "integer",
                 maxValue: 999
             },
+        ],
+        schema: zBasicObject.extend({
+            credit_days: z.number().nullable().optional(),
+            code: z.string().nullable().optional(),
+        }),
+    },
+
+    "payment-modes": {
+        title: "Payment Mode",
+        formType: "modal",
+        columns: ["name"],
+        extraFields: {},
+        fields: [
+            {
+                component: FieldInput,
+                name: "name",
+                placeholder: "Enter Payment Term",
+                required: "Payment Term required",
+                type: "alpha-numeric-with-space",
+                maxLength: 15
+            }
         ],
         schema: zBasicObject.extend({
             credit_days: z.number().nullable().optional(),
@@ -236,7 +440,7 @@ export const submasterConfig: Record<string, any> = {
                 name: "name",
                 placeholder: "Enter Priority Name",
                 required: "Priority Name required",
-                type: "alpha-numeric-with-space",
+                type: "alpha-numeric-with-special",
                 maxLength: 10
             },
             {
@@ -272,13 +476,13 @@ export const submasterConfig: Record<string, any> = {
                 component: FieldInput,
                 name: "account_number",
                 placeholder: "Enter Account No",
-                required: "Account No required",
+                // required: "Account No required",
                 type: "integer",
                 maxLength: 15
             },
         ],
         schema: zBasicObject.extend({
-            account_number: z.string(),
+            account_number: z.string().nullable().optional(),
         }),
     },
 
@@ -319,7 +523,7 @@ export const submasterConfig: Record<string, any> = {
                 placeholder: "Enter Name",
                 required: "Name required",
                 type: "alpha-numeric-with-space",
-                maxLength: 15
+                maxLength: 9
             },
             {
                 component: FieldInput,

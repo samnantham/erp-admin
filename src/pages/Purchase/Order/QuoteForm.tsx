@@ -4,7 +4,7 @@ import {
     Breadcrumb, BreadcrumbItem, BreadcrumbLink,
     Button, FormControl, FormLabel, HStack, Heading,
     IconButton, Stack, Table, TableContainer, Tbody,
-    Td, Text, Th, Thead, Tooltip, Tr, Grid, Box, useDisclosure
+    Td, Text, Th, Thead, Tooltip, Tr, Grid, Box, useDisclosure, Tfoot
 } from "@chakra-ui/react";
 import { Formiz, useForm, useFormFields } from "@formiz/core";
 import { HiArrowNarrowLeft } from "react-icons/hi";
@@ -919,16 +919,29 @@ export const PurchaseOrderForm = () => {
                                                 );
                                             })}
                                         </Tbody>
+                                        <Tfoot>
+                                            <Tr bg="gray.100" fontWeight="bold">
+                                                <Td/>
+                                                <Td colSpan={2}>
+                                                    <Text fontSize="xs">
+                                                        Total Line Item{totalItems !== 1 ? 's' : ''} {totalItems}
+                                                    </Text>
+                                                </Td>
+                                                <Td fontSize="xs">Total Qty:  {totalQty}</Td>
+                                                <Td />
+                                                <Td />
+                                                <Td fontSize="xs">
+                                                   Total Value:  {currencySymbol && (
+                                                        <Text as="span" color="gray.500" mr={1}>{currencySymbol}</Text>
+                                                    )}
+                                                    {grandTotal.toFixed(2)}
+                                                </Td>
+                                                <Td />
+                                                <Td />
+                                            </Tr>
+                                        </Tfoot>
                                     </Table>
                                 </TableContainer>
-
-                                {/* ── Totals row ── */}
-                                <HStack mt={3}>
-                                    <Text>Total Qty: <Text as="span" ml={3} fontWeight="bold">{totalQty}</Text></Text>
-                                    <Text ml={3}>Total Line Items: <Text as="span" ml={3} fontWeight="bold">{totalItems}</Text></Text>
-                                    <Text ml={3}>Total: <Text as="span" ml={3} fontWeight="bold">{grandTotal.toFixed(2)}</Text></Text>
-                                </HStack>
-
                                 {/* ── Charges ── */}
                                 <Stack spacing={8} direction={{ base: 'column', md: 'row' }} {...sectionStyle} display={'none'}>
                                     <FieldDisplay label="Sub Total" value={subTotal.toFixed(2)} size="sm" style={{ backgroundColor: '#fff' }} leftElement={currencySymbol || undefined} />

@@ -11,7 +11,7 @@ import {
   zSalesLogDetailsPayload,
   zSalesLogSaveResponsePayload,
   zSalesLogListPayload
-} from '@/services/sales-log/schema';
+} from '@/services/sales/sales-log/schema';
 
 /* ================= Sales Log Index ================= */
 

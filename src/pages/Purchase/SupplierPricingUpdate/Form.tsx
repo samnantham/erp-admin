@@ -446,8 +446,8 @@ export const SupplierPricingUpdateForm = () => {
             prfq_id: id,
             vendor_id: '',
             vendor_quotation_no: '',
-            vendor_quotation_date: undefined,
-            expiry_date: undefined,
+            vendor_quotation_date: '',
+            expiry_date: '',
             quotation_file: undefined,
         }), 0);
     }, [headerForm]);
@@ -458,8 +458,8 @@ export const SupplierPricingUpdateForm = () => {
         headerForm.setValues({
             quotation_id: '',
             vendor_quotation_no: '',
-            vendor_quotation_date: undefined,
-            expiry_date: undefined,
+            vendor_quotation_date: '',
+            expiry_date: '',
             quotation_file: undefined,
         });
     }, [headerForm]);

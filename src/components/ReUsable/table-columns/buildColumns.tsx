@@ -36,6 +36,7 @@ export type DynamicColumn<T> = {
   isNumeric?: boolean;
   size?: number;
   isDisabled?: (row: T) => boolean;
+  disabledTooltip?: (row: T) => string | undefined;
   meta?: Record<string, any>;
 };
 
@@ -74,10 +75,7 @@ export function buildColumns<T extends object>(
         id: col.key,
         header: "Action",
         size: col.size,
-        meta: {
-          isNumeric: col.isNumeric,
-          ...col.meta,
-        },
+        meta: { isNumeric: col.isNumeric, ...col.meta },
         cell: (info) => {
           const row = info.row.original;
 
@@ -87,62 +85,70 @@ export function buildColumns<T extends object>(
 
           if (!visibleActions?.length) return null;
 
+          const menuDisabled = col.isDisabled?.(row);
+          const menuTooltip = col.disabledTooltip?.(row);  // ← new
+
           return (
-            <Menu placement="bottom-end" strategy="fixed" isLazy>
-              <MenuButton
-                as={Button}
-                size="sm"
-                bg="#0C2556"
-                color="white"
-                _hover={{ color: "#0C2556", bg: "#fff" }}
-                _active={{ color: "#0C2556", bg: "#fff" }}
-                rightIcon={<FiChevronDown />}
-                onClick={(e) => e.stopPropagation()}
-                isDisabled={col.isDisabled?.(row)}
-              >
-                Actions
-              </MenuButton>
+            <Tooltip
+              label={menuDisabled ? menuTooltip : ''}
+              isDisabled={!menuDisabled || !menuTooltip}
+              hasArrow
+              placement="left"
+              bg="orange.500"
+            >
+              {/* span needed — Tooltip requires a non-disabled child to attach */}
+              <span>
+                <Menu placement="bottom-end" strategy="fixed" isLazy>
+                  <MenuButton
+                    as={Button}
+                    size="sm"
+                    bg={menuDisabled ? "gray.300" : "#0C2556"}
+                    color={menuDisabled ? "gray.500" : "white"}
+                    _hover={{ color: menuDisabled ? "gray.500" : "#0C2556", bg: menuDisabled ? "gray.300" : "#fff" }}
+                    _active={{ color: menuDisabled ? "gray.500" : "#0C2556", bg: menuDisabled ? "gray.300" : "#fff" }}
+                    rightIcon={<FiChevronDown />}
+                    onClick={(e) => e.stopPropagation()}
+                    isDisabled={menuDisabled}
+                    cursor={menuDisabled ? "not-allowed" : "pointer"}
+                  >
+                    Actions
+                  </MenuButton>
 
-              <MenuList
-                zIndex={9999}
-                width="120px"
-                maxW="120px"
-                minW="120px"
-                boxShadow="md"
-                sx={{ overflow: "hidden", padding: "4px" }}
-              >
-                {visibleActions.map((action, index) => {
-                  const disabled = action.isDisabled?.(row);
-                  const tooltip = action.disabledTooltip?.(row);
-
-                  return (
-                    <Tooltip
-                      key={index}
-                      label={disabled ? tooltip : ""}
-                      isDisabled={!disabled || !tooltip}
-                      placement="left"
-                      hasArrow
-                      bg="red.600"
-                    >
-                      <span>
-                        <MenuItem
-                          color={action.color}
-                          onClick={() => action.onClick(row)}
-                          isDisabled={disabled}
+                  <MenuList
+                    zIndex={9999}
+                    width="150px" maxW="150px" minW="150px"
+                    boxShadow="md"
+                    sx={{ overflow: "hidden", padding: "4px" }}
+                  >
+                    {visibleActions.map((action, index) => {
+                      const disabled = action.isDisabled?.(row);
+                      const tooltip = action.disabledTooltip?.(row);
+                      return (
+                        <Tooltip
+                          key={index}
+                          label={disabled ? tooltip : ""}
+                          isDisabled={!disabled || !tooltip}
+                          placement="left"
+                          hasArrow
+                          bg="red.600"
                         >
-                          {action.icon && (
-                            <span style={{ marginRight: 6 }}>
-                              {action.icon}
-                            </span>
-                          )}
-                          {action.label}
-                        </MenuItem>
-                      </span>
-                    </Tooltip>
-                  );
-                })}
-              </MenuList>
-            </Menu>
+                          <span>
+                            <MenuItem
+                              color={action.color}
+                              onClick={() => action.onClick(row)}
+                              isDisabled={disabled}
+                            >
+                              {action.icon && <span style={{ marginRight: 6 }}>{action.icon}</span>}
+                              {action.label}
+                            </MenuItem>
+                          </span>
+                        </Tooltip>
+                      );
+                    })}
+                  </MenuList>
+                </Menu>
+              </span>
+            </Tooltip>
           );
         },
       });

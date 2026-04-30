@@ -4,7 +4,7 @@ import {
     Breadcrumb, BreadcrumbItem, BreadcrumbLink,
     Button, FormControl, FormLabel, HStack, Heading,
     IconButton, Stack, Table, TableContainer, Tbody,
-    Td, Text, Th, Thead, Tooltip, Tr,
+    Td, Text, Th, Thead, Tooltip, Tr, Tfoot
 } from "@chakra-ui/react";
 import { Formiz, useForm, useFormFields } from "@formiz/core";
 import { HiArrowNarrowLeft, HiOutlinePlus } from "react-icons/hi";
@@ -30,9 +30,9 @@ import { ContactManagerModal } from "@/components/Modals/CustomerMaster/ContactM
 import { CustomerShippingAddressModal } from "@/components/Modals/CustomerMaster/ShippingAddress";
 import { PartNumberModal } from '@/components/Modals/SpareMaster';
 
-import { useSaveSalesLog, useSalesLogDetails, useSalesLogDropdowns } from "@/services/sales-log/service";
+import { useSaveSalesLog, useSalesLogDetails, useSalesLogDropdowns } from "@/services/sales/sales-log/service";
 import { useCustomerRelationIndex, useCustomerDetails } from "@/services/master/customer/service";
-import { useSearchPartNumber } from "@/services/master/spare/service";
+import { useSearchPartNumber, validatePartNumbersByName } from "@/services/master/spare/service";
 import { useSubmasterItemIndex } from "@/services/submaster/service";
 import { useUserContext } from "@/services/auth/UserContext";
 import { usePDFPreviewController } from "@/api/hooks/usePDFPreviewController";
@@ -53,6 +53,7 @@ const FORM_KEYS = [
 type SLRow = {
     rowKey: string;
     part_number_id: any;
+    part_number_name?: string;
     condition_id: any;
     qty: any;
     unit_of_measure_id: any;
@@ -66,6 +67,7 @@ type SLRow = {
 const EMPTY_ROW = (): SLRow => ({
     rowKey: uuidv4(),
     part_number_id: "",
+    part_number_name: '',
     condition_id: "",
     qty: "",
     unit_of_measure_id: "",
@@ -83,8 +85,12 @@ export const SalesLogForm = () => {
     const { userInfo } = useUserContext();
     const [queryParams, setQueryParams] = useState<any>({});
     const [partNumberQuery, setPartNumberQuery] = useState("");
-
+    const { data: contactTypeData } = useSubmasterItemIndex("contact-types", {});
     const [existingPartIDs, setExistingPartIDs] = useState<string[]>([]);
+
+    const custContactTypeId = contactTypeData?.data
+        ?.find((item: any) => item.code === 'CUS')
+        ?.id;
 
     const [disabledDatePicker, setDisabledDatePicker] = useState(true);
     const [isCustomerChanged, setIsCustomerChanged] = useState(false);
@@ -243,14 +249,14 @@ export const SalesLogForm = () => {
             setDisabledDatePicker(false);
             form.setValues({ due_date: "" });
         } else {
-            applyDueDate(daysToAdd); 
+            applyDueDate(daysToAdd);
         }
     };
 
-    const applyDueDate = (daysToAdd: number) => { 
+    const applyDueDate = (daysToAdd: number) => {
         setDisabledDatePicker(true);
         form.setValues({ due_date: dayjs().add(daysToAdd, "day") });
-     };
+    };
 
 
     const handleRemarksChange = (value: string) => form.setValues({ remarks: value });
@@ -334,7 +340,7 @@ export const SalesLogForm = () => {
                 setTimeout(() => {
                     refetch();
                     setTimeout(() => {
-                        if(fieldName === 'priority_id'){
+                        if (fieldName === 'priority_id') {
                             reloadPriority();
                             setTimeout(() => {
                                 applyDueDate(record?.days ?? 0);
@@ -445,7 +451,7 @@ export const SalesLogForm = () => {
                                             isLoading: l1,
                                         }}
                                     />
-                                    <FieldInput label="Customer RFQ No" name="cust_rfq_no" placeholder="Enter RFQ No" required="RFQ No is required" type="alpha-numeric-with-special" maxLength={20} size="sm" />
+                                    <FieldInput label="Customer RFQ No" name="cust_rfq_no" placeholder="Enter RFQ No" required="RFQ No is required" type="alpha-numeric-with-special" maxLength={10} size="sm" />
                                     <FieldDayPicker label="RFQ Date" name="cust_rfq_date" placeholder="Select RFQ date" required="RFQ Date is required" disabledDays={{ after: new Date() }} size="sm" />
                                     <FieldSelect
                                         label="Priority" name="priority_id" placeholder="Select..."
@@ -494,8 +500,6 @@ export const SalesLogForm = () => {
                                                     onClose={() => {
                                                         p.onClose?.();
                                                     }}
-
-
                                                     onSuccess={(data) => {
                                                         handleAddNewSuccess(
                                                             'customer_id',
@@ -505,6 +509,7 @@ export const SalesLogForm = () => {
                                                             }
                                                         )(data);
                                                     }}
+                                                    defaultType={custContactTypeId}
                                                 />
                                             )
                                         }}
@@ -683,20 +688,43 @@ export const SalesLogForm = () => {
                                         <CSVUploadButton<SLRow>
                                             createEmptyRow={EMPTY_ROW}
                                             fieldMappings={[
-                                                { csvKey: "part_number_id", rowKey: "part_number_id", transform: v => getOptionValue(v, spareOptions) ?? "" },
-                                                { csvKey: "condition_id", rowKey: "condition_id", transform: v => getOptionValue(v, conditionOptions) ?? "" },
-                                                { csvKey: "qty", rowKey: "qty" },
-                                                { csvKey: "unit_of_measure_id", rowKey: "unit_of_measure_id", transform: v => getOptionValue(v, uomOptions) ?? "" },
-                                                { csvKey: "remark", rowKey: "remark" },
+                                                {
+                                                    csvKey: "part_number_id",   // ← CSV column header
+                                                    rowKey: "part_number_name", // ← goes into staging key, NOT part_number_id
+                                                    // no transform — keep raw name string
+                                                },
+                                                {
+                                                    csvKey: "condition_id",
+                                                    rowKey: "condition_id",
+                                                    transform: (v) => getOptionValue(v, conditionOptions) ?? "",
+                                                },
+                                                {
+                                                    csvKey: "qty",
+                                                    rowKey: "qty",
+                                                },
+                                                {
+                                                    csvKey: "unit_of_measure_id",
+                                                    rowKey: "unit_of_measure_id",
+                                                    transform: (v) => getOptionValue(v, uomOptions) ?? "",
+                                                },
+                                                {
+                                                    csvKey: "remark",
+                                                    rowKey: "remark",
+                                                },
                                             ]}
+                                            partNumberValidation={{
+                                                rowKey: "part_number_name", // reads raw name from staging key
+                                                resolvedKey: "part_number_id",   // writes UUID here
+                                                validate: validatePartNumbersByName, // ← function from service, not the schema type
+                                            }}
                                             duplicateCheck={{
                                                 keys: ["part_number_id"],
                                                 label: "Part Number",
                                                 existingRows: rows,
                                             }}
-                                            onUpload={(mapped) =>
-                                                setRows(prev => [...prev.filter(r => r.part_number_id), ...mapped])
-                                            }
+                                            onUpload={(mapped) => {
+                                                setRows(prev => [...prev.filter(r => r.part_number_id), ...mapped]);
+                                            }}
                                             confirmHeaderText="Upload Items CSV"
                                             confirmBodyText="Are you sure you want to upload this file? Existing rows with part numbers will be kept."
                                             buttonLabel="Upload Items"
@@ -816,7 +844,7 @@ export const SalesLogForm = () => {
                                                                 size="sm" required="Quantity is required"
                                                                 type="integer" placeholder="Qty"
                                                                 defaultValue={row.qty || ""}
-                                                                width="100px" maxLength={9}
+                                                                width="100px" maxLength={7}
                                                                 isDisabled={!isPartSelected}
                                                                 onValueChange={(v) => handleInputChange("qty", v, index)}
                                                             />
@@ -865,7 +893,7 @@ export const SalesLogForm = () => {
                                                                     name={`remark_${row.rowKey}`}
                                                                     size="sm" placeholder="Remark"
                                                                     defaultValue={row.remark || ""}
-                                                                    maxLength={60}
+                                                                    maxLength={35}
                                                                     isDisabled={!isPartSelected}
                                                                 />
                                                             </Td>
@@ -884,14 +912,21 @@ export const SalesLogForm = () => {
                                                 );
                                             })}
                                         </Tbody>
+                                        <Tfoot>
+                                            <Tr bg="gray.100" fontWeight="bold">
+                                                <Td />
+                                                <Td colSpan={2}>
+                                                    <Text fontSize="xs">
+                                                        Total Line Item{totalItems !== 1 ? 's' : ''}: {totalItems}
+                                                    </Text>
+                                                </Td>
+
+                                                <Td fontSize="xs">Total Qty:  {totalQty}</Td>
+                                                <Td colSpan={4} />
+                                            </Tr>
+                                        </Tfoot>
                                     </Table>
                                 </TableContainer>
-
-                                {/* ── Totals ── */}
-                                <HStack mt={3}>
-                                    <Text>Total Qty: <Text as="span" ml={3} fontWeight="bold">{totalQty}</Text></Text>
-                                    <Text ml={3}>Total Line Items: <Text as="span" ml={3} fontWeight="bold">{totalItems}</Text></Text>
-                                </HStack>
 
                                 {/* ── Remarks editor ── */}
                                 <Stack>
@@ -899,7 +934,7 @@ export const SalesLogForm = () => {
                                         <FormLabel>Remarks</FormLabel>
                                         <FieldHTMLEditor
                                             onValueChange={handleRemarksChange}
-                                            maxLength={import.meta.env.VITE_ELABORATE_REMARKS_LENGTH}
+                                            maxLength={100}
                                             placeHolder="Enter Remarks Here"
                                             defaultValue={isEdit && itemInfo?.data?.remarks ? itemInfo.data.remarks : ""}
                                         />

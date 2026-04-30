@@ -150,8 +150,8 @@ export const SpareForm = () => {
 
               {/* Part Number + Description */}
               <Stack spacing={8} direction={{ base: "column", md: "row" }} mb={3}>
-                <FieldInput label="Part Number" name="name" placeholder="Enter part number" required="Part Number is required" type="all-capital" maxLength={50} />
-                <FieldInput label="Description" name="description" placeholder="Enter description" required="Description is required" type="all-capital" maxLength={50} />
+                <FieldInput label="Part Number" name="name" placeholder="Enter part number" required="Part Number is required" type="all-capital" maxLength={35} />
+                <FieldInput label="Description" name="description" placeholder="Enter description" required="Description is required" type="all-capital" maxLength={35} />
               </Stack>
 
               {/* UOM + ATA + Manufacturer + Cage Code */}
@@ -165,7 +165,7 @@ export const SpareForm = () => {
               {/* Spare Type + Model + HSC Code */}
               <Stack spacing={8} direction={{ base: "column", md: "row" }} mb={3}>
                 <FieldSelect label="Spare Type" name="spare_type_id" placeholder="Select..." options={spareTypeOptions} required="Spare Type is required" selectProps={{ isLoading: dropdownLoading }} />
-                <FieldSelect label="Spare Model" name="spare_model_id" placeholder="Select..." options={spareModelOptions} selectProps={{ isLoading: dropdownLoading }} />
+                <FieldSelect label="Spare Model" name="spare_model_id" placeholder="Select..." options={spareModelOptions} selectProps={{ isLoading: dropdownLoading }} required="Spare Model is required"/>
                 <FieldSelect label="HSC Code" name="hsc_code_id" placeholder="Select..." options={hscCodeOptions} required="HSC Code is required" selectProps={{ isLoading: dropdownLoading }} />
               </Stack>
 

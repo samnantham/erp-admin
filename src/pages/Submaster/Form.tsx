@@ -56,8 +56,13 @@ export const SubmasterForm = () => {
       const payload: any = {};
 
       fieldsConfig.forEach((field: any) => {
-        payload[field.name] = values[field.name];
+        payload[field.name] =
+          field.name === "name"
+            ? String(values[field.name] ?? "")
+            : values[field.name];
       });
+
+      console.log(payload)
 
       if (isEdit) {
         updateEndpoint.mutate({

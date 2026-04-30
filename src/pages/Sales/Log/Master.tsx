@@ -15,7 +15,7 @@ import { ResponsiveIconButton } from '@/components/ResponsiveIconButton';
 import { SlideIn } from '@/components/SlideIn';
 import { buildColumns, DynamicColumn } from '@/components/ReUsable/table-columns/buildColumns';
 import { useRouterContext } from '@/services/auth/RouteContext';
-import { useSalesLogIndex, useSalesLogDropdowns } from '@/services/sales-log/service';
+import { useSalesLogIndex, useSalesLogDropdowns } from '@/services/sales/sales-log/service';
 import { usePDFPreview } from "@/context/PDFPreviewContext";
 import { endPoints } from '@/api/endpoints';
 

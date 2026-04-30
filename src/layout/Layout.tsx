@@ -26,7 +26,8 @@ import {
 } from '@chakra-ui/react';
 import Axios from 'axios';
 import { IconType } from 'react-icons';
-import { HiMiniWrenchScrewdriver } from 'react-icons/hi2';
+import { HiMiniWrenchScrewdriver, HiOutlineReceiptRefund  } from 'react-icons/hi2';
+import { MdRequestQuote } from "react-icons/md";
 import {
   FaCalendarAlt,
   FaCheckCircle,
@@ -44,7 +45,7 @@ import {
   FaFileContract,
   FaFileSignature,
   FaCcVisa,
-  FaCcAmazonPay,
+  FaCcAmazonPay 
 } from 'react-icons/fa';
 import { TbClipboardListFilled } from 'react-icons/tb';
 import {
@@ -166,7 +167,7 @@ const NavigationSections: Array<SectionProps> = [
           { name: 'Spare Model',         icon: FaWrench,           link: '/submaster/spare-models' },
           { name: 'Spare Type',          icon: FaBox,              link: '/submaster/spare-types' },
           { name: 'UN',                  icon: PiListNumbersFill,  link: '/submaster/uns' },
-          { name: 'Unit of Measurement', icon: FaRulerCombined,    link: '/submaster/unit_of_measures' },
+          { name: 'Unit of Measurement', icon: FaRulerCombined,    link: '/submaster/unit-of-measures' },
           { name: 'Warehouse',           icon: FaWarehouse,        link: '/submaster/warehouses' },
         ],
       },
@@ -224,6 +225,12 @@ const NavigationSections: Array<SectionProps> = [
             link: '/purchase/order/master',
             activeBase: '/purchase/order',
           },
+          {
+            name: 'Return Order',
+            icon: HiOutlineReceiptRefund,
+            link: '/purchase/return-order/master',
+            activeBase: '/purchase/return-order',
+          },
         ],
       },
       {
@@ -242,7 +249,18 @@ const NavigationSections: Array<SectionProps> = [
             link: '/purchase/material-request/master',
             activeBase: '/purchase/material-request',
             state: { type: 'sel' },
+          },{
+            name: 'Sales Quotation',
+            icon: FaFileInvoice,
+            link: '/sales-management/quotation/master',
+            activeBase: '/sales-management/quotation'
+          },{
+            name: 'Sales Order',
+            icon:  MdRequestQuote,
+            link: '/sales-management/order/master',
+            activeBase: '/sales-management/order'
           },
+          
         ],
       },
       {
@@ -255,19 +273,12 @@ const NavigationSections: Array<SectionProps> = [
             link: '/finance/payment-method/banks/master',
             activeBase: '/finance/payment-method/',
           },
-          {
-            name: 'Invoice',
-            icon: FaFileInvoiceDollar,
-            link: '/finance/invoice/master',
-            activeBase: '/finance/invoice',
-            excludeBase: '/finance/invoice/proforma', // ← don't highlight when on proforma
-          },
-          {
-            name: 'Proforma Invoice',
-            icon: FaFileInvoice,
-            link: '/finance/invoice/proforma/master',
-            activeBase: '/finance/invoice/proforma',  // ← more specific, wins cleanly
-          },
+        {
+    name: 'Invoice Entry',
+    icon: FaFileInvoiceDollar,
+    link: '/finance/invoice/master',
+    activeBase: '/finance/invoice',
+},
           {
             name: 'Payment Receipt',
             icon: FaReceipt,

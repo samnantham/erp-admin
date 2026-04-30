@@ -64,7 +64,7 @@ export const CustomerMaster = () => {
     const { openPreview } = usePDFPreview();
     const handleOpenPreview = (itemInfo: any) => {
         const url = `${import.meta.env.VITE_PUBLIC_API_URL}${endPoints.preview.customer.replace(":id", itemInfo.id)}`;
-        openPreview(url, `SEL Preview - #${itemInfo.code}`, true);
+        openPreview(url, `Contact Preview - #${itemInfo.code}`, true);
     };
 
     const handleDownloadSampleFunction = (value: DownloadSampleKeys) => {

@@ -7,6 +7,7 @@ import {
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import { CountryCode } from "libphonenumber-js";
 import "react-phone-number-input/style.css";
+import { forwardRef } from "react";
 
 import { FormGroup, FormGroupProps } from "@/components/FormGroup";
 
@@ -17,7 +18,14 @@ export type FieldPhoneProps = FieldProps<Value> &
     placeholder?: string;
     defaultCountry?: CountryCode;
     size?: any;
+    maxLength?: number;
   };
+
+// ✅ forwardRef is required for react-phone-number-input custom input
+const CustomInput = forwardRef<HTMLInputElement, any>(({ maxLength, ...props }, ref) => (
+  <input {...props} ref={ref} maxLength={maxLength} />
+));
+CustomInput.displayName = "CustomInput";
 
 export const FieldPhone = (props: FieldPhoneProps) => {
   const field = useField({
@@ -36,12 +44,12 @@ export const FieldPhone = (props: FieldPhoneProps) => {
     defaultCountry = "AE",
     isDisabled,
     size = "md",
+    maxLength = 16,
     ...rest
   } = field.otherProps;
 
   const borderColor = useColorModeValue("gray.200", "gray.600");
 
-  /** Normalize Chakra responsive size */
   const normalizedSize =
     typeof size === "string"
       ? size
@@ -110,7 +118,13 @@ export const FieldPhone = (props: FieldPhoneProps) => {
             value={field.value as string | undefined}
             placeholder={placeholder || "Enter phone number"}
             disabled={isDisabled}
-            onChange={(value) => field.setValue(value ?? "")}
+            inputComponent={CustomInput}
+            numberInputProps={{ maxLength }}  // ✅ passed to CustomInput as prop
+            onChange={(value) => {
+              if (!value || value.length <= maxLength) {
+                field.setValue(value ?? "");
+              }
+            }}
             onBlur={() => field.setIsTouched(true)}
           />
         </Box>

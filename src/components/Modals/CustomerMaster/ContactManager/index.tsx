@@ -97,7 +97,7 @@ export function ContactManagerModal({
                   existValues?.attention ??
                   (!isEdit && createdInputValue ? createdInputValue : "")
                 } />
-                <FieldPhone label="Phone Number" name="phone" placeholder={p("Enter Phone Number")} defaultCountry="AE" isDisabled={isView} defaultValue={ev("phone")} />
+                <FieldPhone label="Phone Number" name="phone" placeholder={p("Enter Phone Number")} required="Phone  is required"  defaultCountry="AE" isDisabled={isView} defaultValue={ev("phone")} />
                 <FieldEmailInput label="Email" name="email" placeholder={p("Enter Email")} required="Email is required"  validations={[{ handler: isEmail(), message: "Invalid email" }]} maxLength={100} isDisabled={isView} defaultValue={existValues?.email?.toLowerCase() ?? ""} />
               </Stack>
 

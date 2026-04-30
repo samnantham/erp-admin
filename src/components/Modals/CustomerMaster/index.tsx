@@ -26,6 +26,7 @@ type CustomerModalProps = {
     isEdit?: boolean;
     isView?: boolean;
     existValues?: any;
+    defaultType?: string;
     createdInputValue?: string;
     onSuccess?: (createdValue?: unknown) => void;
 };
@@ -49,6 +50,7 @@ const REQUIRED_KEYS = new Set([
 export function CustomerModal({
     isOpen, onClose,
     isEdit, isView, existValues,
+    defaultType = '',
     createdInputValue,
     onSuccess
 }: CustomerModalProps) {
@@ -86,7 +88,7 @@ export function CustomerModal({
                     ([k, v]) => !REQUIRED_KEYS.has(k) && v !== null && v !== ''
                 )
             );
-            const payload: any = {...required, ...optional };
+            const payload: any = { ...required, ...optional };
             if (isEdit) payload.id = existValues.id;
             saveItem.mutate(payload);
         },
@@ -128,7 +130,7 @@ export function CustomerModal({
                 <div onSubmit={(e) => e.stopPropagation()}>
                     <Formiz autoForm connect={form}>
                         <ModalHeader>
-                            Customer Modal
+                            Contact Modal
                         </ModalHeader>
                         <ModalCloseButton />
 
@@ -143,11 +145,13 @@ export function CustomerModal({
                                         required="Type of Contact is required"
                                         placeholder="Select type of contact"
                                         options={contactTypeOptions}
-                                        isDisabled={isView}
+                                        isDisabled={isView || defaultType !== ''}
                                         selectProps={{
                                             noOptionsMessage: () => 'No options found',
                                             isLoading: dropdownLoading,
                                         }}
+                                        className={(defaultType !== '' || isView) ? 'disabled-input' : ''}
+                                        defaultValue={defaultType ?? ''}
                                     />
                                     <FieldInput
                                         label="Business Name"

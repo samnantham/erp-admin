@@ -644,6 +644,7 @@ export const CustomerBulkUpload = () => {
                                   defaultValue={item.currency_id?.toString() ?? ''}
                                   onValueChange={(v) => handleInputChange(v, 'currency_id', index)}
                                   isDisabled={isExisting}
+                                  width={150}
                                 />
                               </Td>
 
@@ -657,6 +658,7 @@ export const CustomerBulkUpload = () => {
                                   defaultValue={item.payment_mode_id?.toString() ?? ''}
                                   onValueChange={(v) => handleInputChange(v, 'payment_mode_id', index)}
                                   isDisabled={isExisting}
+                                  width={120}
                                 />
                               </Td>
 

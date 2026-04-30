@@ -109,6 +109,17 @@ export const putRequest = async <T, V>(
   return parseWithSchema(data, schema);
 };
 
+/* ================= PATCH ================= */
+
+export const patchRequest = async <T, V>(
+  url: string,
+  body: V,
+  schema: z.ZodType<T>
+): Promise<T> => {
+  const { data } = await apiClient.patch(url, body);
+  return parseWithSchema(data, schema);
+};
+
 /* ================= DELETE ================= */
 
 export const deleteRequest = async <T>(

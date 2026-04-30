@@ -51,7 +51,7 @@ import { formatDate } from '@/helpers/commonHelper';
 const TABS = [
   "Contact Details",
   "Quality / Other Docs",
-  "Contact Managers",
+  "Contacts",
   "Shipping Addresses",
   "Customer Banks",
   "Principle of Owners",
@@ -154,7 +154,7 @@ export const CustomerForm = () => {
         });
       } else {
         saveCustomer.mutate(payload, {
-          onSuccess: ({data}) => navigate(`/contact-management/master/info/${data?.id}?preview=true`),
+          onSuccess: ({ data }) => navigate(`/contact-management/master/info/${data?.id}?preview=true`),
         });
       }
     },
@@ -166,7 +166,7 @@ export const CustomerForm = () => {
     const existData = userData.data;
 
     const init = Object.fromEntries(keys.map((key) => [key, (existData as any)?.[key] ?? ""]));
-    init.is_foreign_entity = existData.is_foreign_entity.toString();
+    init.is_foreign_entity = existData?.is_foreign_entity ? existData?.is_foreign_entity.toString() : 'false';
     init.business_since = existData.year_of_business
       ? dayjs(`${new Date().getFullYear() - Number(existData.year_of_business)}-01-01`) : null;
     init.license_trade_exp_date = existData.license_trade_exp_date
@@ -238,7 +238,7 @@ export const CustomerForm = () => {
   const tabUnlocked = useMemo(() => [
     true,                                                         // Tab 0: Contact Details — always
     formValid,                                                    // Tab 1: Quality / Other Docs
-    formValid,                                                    // Tab 2: Contact Managers
+    formValid,                                                    // Tab 2: Contacts
     formValid && hasContactManagers,                              // Tab 3: Shipping Addresses
     formValid && hasContactManagers && hasShippingAddresses,      // Tab 4: Customer Banks
     formValid && hasContactManagers && hasShippingAddresses,      // Tab 5: Principle of Owners
@@ -247,33 +247,33 @@ export const CustomerForm = () => {
 
   const tabLockReason = useMemo(() => [
     "",
-    !formValid ? "Complete Contact Details first" : "",
-    !formValid ? "Complete Contact Details first" : "",
+    !formValid ? "Complete Contact Details" : "",
+    !formValid ? "Complete Contact Details" : "",
     !formValid
-      ? "Complete Contact Details first"
+      ? "Complete Contact Details"
       : !hasContactManagers
-        ? "Add at least 1 Contact Manager first"
+        ? "Add minimum one Contact"
         : "",
     !formValid
-      ? "Complete Contact Details first"
+      ? "Complete Contact Details"
       : !hasContactManagers
-        ? "Add at least 1 Contact Manager first"
+        ? "Add minimum one Contact"
         : !hasShippingAddresses
-          ? "Add at least 1 Shipping Address first"
+          ? "Add minimum one Shipping Address"
           : "",
     !formValid
-      ? "Complete Contact Details first"
+      ? "Complete Contact Details"
       : !hasContactManagers
-        ? "Add at least 1 Contact Manager first"
+        ? "Add minimum one Contact"
         : !hasShippingAddresses
-          ? "Add at least 1 Shipping Address first"
+          ? "Add minimum one Shipping Address"
           : "",
     !formValid
-      ? "Complete Contact Details first"
+      ? "Complete Contact Details"
       : !hasContactManagers
-        ? "Add at least 1 Contact Manager first"
+        ? "Add minimum one Contact"
         : !hasShippingAddresses
-          ? "Add at least 1 Shipping Address first"
+          ? "Add minimum one Shipping Address"
           : "",
   ], [formValid, hasContactManagers, hasShippingAddresses]);
 
@@ -284,12 +284,20 @@ export const CustomerForm = () => {
     return !tabUnlocked[nextTab];
   }, [activeTab, tabUnlocked]);
 
-  // ── renderTabNavigationButtons: plain render function (NOT a component) ────
-  // Using a render function instead of a React component is critical here.
-  // An inner component (const Foo = () => ...) gets a new identity every render,
-  // causing React to remount it and read stale closure values on the first click.
-  // A plain function called as {renderTabNavigationButtons()} always executes in
-  // the current render scope and reads the latest isNextDisabled value directly.
+  const tabButtonLabel = useMemo(() => {
+    const tabDataCounts: Record<number, number> = {
+      1: qcFields.length,              // Quality / Other Docs
+      2: contactManagerFields.length,  // Contacts
+      3: shippingAddressFields.length, // Shipping Addresses
+      4: bankFields.length,            // Customer Banks
+      5: principleOfOwnerFields.length,// Principle of Owners
+      // Tab 6 is last tab, no Next button
+    };
+    const count = tabDataCounts[activeTab];
+    // If count is defined (i.e. we're on a tab that has data) and > 0 → "Next", else "Skip/Next"
+    return count !== undefined ? (count > 0 ? "Next" : "Skip/Next") : "Next";
+  }, [activeTab, qcFields, contactManagerFields, shippingAddressFields, bankFields, principleOfOwnerFields])
+
   const renderTabNavigationButtons = () => (
     <Stack direction={{ base: "column", md: "row" }} justify="center" alignItems="center" mt={6}>
       {isFirstTab ? (
@@ -318,7 +326,7 @@ export const CustomerForm = () => {
                 pointerEvents={isNextDisabled ? "none" : "auto"}
                 rightIcon={<FaChevronRight />}
               >
-                Skip/Next
+                Next
               </Button>
             </Box>
           </Tooltip>
@@ -373,7 +381,7 @@ export const CustomerForm = () => {
                 pointerEvents={isNextDisabled ? "none" : "auto"}
                 rightIcon={<FaChevronRight />}
               >
-                Skip/Next
+                {tabButtonLabel}
               </Button>
             </Box>
           </Tooltip>
@@ -688,7 +696,7 @@ export const CustomerForm = () => {
                     </Box>
                   </TabPanel>
 
-                  {/* ── Tab 3: Contact Managers ── */}
+                  {/* ── Tab 3: Contacts ── */}
                   <TabPanel p={0}>
                     <Box p={4}>
                       <CustomerContactManagers

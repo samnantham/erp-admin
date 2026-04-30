@@ -76,7 +76,7 @@ export function BankModal({
   return (
     <Modal isOpen={isOpen} onClose={() => onClose(false, !!isEdit, null)} size="md" closeOnOverlayClick={false} closeOnEsc={false}>
       <ModalOverlay />
-      <ModalContent maxWidth="60vw">
+      <ModalContent maxWidth="70vw">
         <Formiz autoForm connect={form}>
           <ModalHeader>
             Customer Bank{customerInfo ? ` (${customerInfo.business_name} - ${customerInfo.code})` : ''}

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { zStandardObject, zBasicObject, zPagination, zSelectOption } from "@/services/global-schema";
-import { zSalesLog } from "@/services/sales-log/schema";
+import { zSalesLog } from "@/services/sales/sales-log/schema";
 
 /* =========================================================
 Sub Models

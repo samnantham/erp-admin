@@ -366,6 +366,24 @@ export const CUDRequestMaster = () => {
                                     })()}
                                 </MenuItem>
                             )}
+                            {activeAction === "create" && row.original.status === "pending" && (
+                                <>
+                                    <MenuItem
+                                        fontSize="sm"
+                                        color="green.600"
+                                        onClick={() => openConfirm("single-approve", row.original)}
+                                    >
+                                        Approve
+                                    </MenuItem>
+                                    <MenuItem
+                                        fontSize="sm"
+                                        color="red.600"
+                                        onClick={() => openConfirm("single-reject", row.original)}
+                                    >
+                                        Reject
+                                    </MenuItem>
+                                </>
+                            )}
                             {row.original.action !== "create" && (
                                 <MenuItem
                                     fontSize="sm"

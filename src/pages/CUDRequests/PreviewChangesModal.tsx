@@ -66,10 +66,10 @@ function diffArrayRows(oldRows: any[], newRows: any[], cols: ArrayColumn[]): Dif
 }
 
 const ROW_COLORS: Record<RowDiffStatus, { bg: string; badge: string; label: string }> = {
-    added:     { bg: "green.50",  badge: "green",  label: "Added"    },
-    deleted:   { bg: "red.50",    badge: "red",     label: "Deleted"  },
-    modified:  { bg: "orange.50", badge: "orange",  label: "Modified" },
-    unchanged: { bg: "white",     badge: "gray",    label: ""         },
+    added: { bg: "green.50", badge: "green", label: "Added" },
+    deleted: { bg: "red.50", badge: "red", label: "Deleted" },
+    modified: { bg: "orange.50", badge: "orange", label: "Modified" },
+    unchanged: { bg: "white", badge: "gray", label: "" },
 };
 
 // ================= Cell Renderer =================
@@ -136,19 +136,19 @@ const RenderArrayFieldDiff = ({
     const cols = field.columns ?? [];
     const diffed = diffArrayRows(oldRows, newRows, cols);
 
-    const addedCount    = diffed.filter((d) => d.status === "added").length;
-    const deletedCount  = diffed.filter((d) => d.status === "deleted").length;
+    const addedCount = diffed.filter((d) => d.status === "added").length;
+    const deletedCount = diffed.filter((d) => d.status === "deleted").length;
     const modifiedCount = diffed.filter((d) => d.status === "modified").length;
-    const hasChanges    = addedCount + deletedCount + modifiedCount > 0;
+    const hasChanges = addedCount + deletedCount + modifiedCount > 0;
 
     return (
         <Box mb={6}>
             <HStack mb={2} spacing={2} flexWrap="wrap">
                 <Text fontSize="sm" fontWeight="600" color="gray.600">{label}</Text>
-                {addedCount    > 0 && <Badge colorScheme="green"  fontSize="xs">{addedCount} added</Badge>}
-                {deletedCount  > 0 && <Badge colorScheme="red"    fontSize="xs">{deletedCount} deleted</Badge>}
+                {addedCount > 0 && <Badge colorScheme="green" fontSize="xs">{addedCount} added</Badge>}
+                {deletedCount > 0 && <Badge colorScheme="red" fontSize="xs">{deletedCount} deleted</Badge>}
                 {modifiedCount > 0 && <Badge colorScheme="orange" fontSize="xs">{modifiedCount} modified</Badge>}
-                {!hasChanges       && <Badge colorScheme="gray"   fontSize="xs">No changes</Badge>}
+                {!hasChanges && <Badge colorScheme="gray" fontSize="xs">No changes</Badge>}
             </HStack>
 
             {diffed.length === 0 ? (
@@ -284,87 +284,91 @@ export const PreviewChangesModal = ({
     };
 
     const handlePrint = () => {
-        const printWindow = window.open("", "_blank", "width=900,height=650");
+        const printWindow = window.open("", "_blank", "width=1100,height=750");
         if (!printWindow || !printRef.current) return;
 
         const content = printRef.current.innerHTML;
 
         printWindow.document.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Preview Changes</title>
-                <style>
-                    * { box-sizing: border-box; margin: 0; padding: 0; }
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Preview Changes</title>
+            <style>
+                * { box-sizing: border-box; margin: 0; padding: 0; }
 
-                    @page {
-                        size: A4 portrait;
-                        margin: 15mm;
-                    }
+                @page {
+                    size: A4 landscape;   /* ← landscape gives ~277mm usable width */
+                    margin: 10mm;
+                }
 
-                    body {
-                        font-family: Arial, sans-serif;
-                        font-size: 10pt;
-                        color: #000;
-                        background: white;
-                        padding: 10mm;
-                    }
+                body {
+                    font-family: Arial, sans-serif;
+                    font-size: 8pt;       /* ← smaller base font for dense tables */
+                    color: #000;
+                    background: white;
+                    padding: 5mm;
+                }
 
-                    table {
-                        width: 100%;
-                        border-collapse: collapse;
-                        table-layout: fixed;
-                        margin-bottom: 12mm;
-                    }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    table-layout: auto;   /* ← let columns size to their content */
+                    margin-bottom: 10mm;
+                }
 
-                    /* Repeat header row on every printed page */
-                    thead { display: table-header-group; }
-                    tfoot { display: table-footer-group; }
+                thead { display: table-header-group; }
+                tfoot { display: table-footer-group; }
 
-                    th, td {
-                        border: 1px solid #bbb;
-                        padding: 7pt 9pt;
-                        font-size: 10pt;
-                        line-height: 1.5;
-                        word-break: break-word;
-                        vertical-align: middle;
-                    }
+                th, td {
+                    border: 1px solid #bbb;
+                    padding: 4pt 6pt;
+                    font-size: 8pt;
+                    line-height: 1.4;
+                    word-break: normal;         /* ← don't break mid-word */
+                    white-space: nowrap;        /* ← keep each cell on one line */
+                    vertical-align: middle;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    max-width: 120pt;           /* ← safety cap on very wide cells */
+                }
 
-                    th {
-                        background: #f0f0f0;
-                        font-weight: 700;
-                        text-align: left;
-                        text-transform: uppercase;
-                        font-size: 9pt;
-                        letter-spacing: 0.03em;
-                    }
+                th {
+                    background: #f0f0f0;
+                    font-weight: 700;
+                    text-align: left;
+                    text-transform: uppercase;
+                    font-size: 7.5pt;
+                    letter-spacing: 0.03em;
+                    white-space: nowrap;
+                }
 
-                    tr { page-break-inside: avoid; }
+                tr { page-break-inside: avoid; }
 
-                    tr.print-row-modified td { background: #fff7ed; }
-                    tr.print-row-added    td { background: #f0fdf4; }
-                    tr.print-row-deleted  td { background: #fef2f2; }
+                tr.print-row-modified td { background: #fff7ed; }
+                tr.print-row-added    td { background: #f0fdf4; }
+                tr.print-row-deleted  td { background: #fef2f2; }
 
-                    td.print-cell-old,
-                    td.print-cell-old span { color: #b91c1c !important; }
+                td.print-cell-old,
+                td.print-cell-old span { color: #b91c1c !important; }
 
-                    td.print-cell-new,
-                    td.print-cell-new span { color: #15803d !important; }
+                td.print-cell-new,
+                td.print-cell-new span { color: #15803d !important; }
 
-                    a, button { display: none !important; }
+                a, button { display: none !important; }
 
-                    .chakra-badge {
-                        display: inline-block;
-                        padding: 1pt 5pt;
-                        border-radius: 3pt;
-                        font-size: 8pt;
-                        font-weight: 600;
-                    }
-                </style>
-            </head>
-            <body>${content}</body>
-            </html>
-        `);
+                .chakra-badge {
+                    display: inline-block;
+                    padding: 1pt 4pt;
+                    border-radius: 3pt;
+                    font-size: 7pt;
+                    font-weight: 600;
+                }
+            </style>
+        </head>
+        <body>${content}</body>
+        </html>
+    `);
 
         printWindow.document.close();
         printWindow.focus();
@@ -373,13 +377,12 @@ export const PreviewChangesModal = ({
             printWindow.close();
         }, 500);
     };
-
     const scalarProps = displayProps.filter((p) => !p.kind || p.kind === "scalar");
-    const arrayProps  = displayProps.filter((p) => p.kind === "array") as Extract<DisplayProp, { kind: "array" }>[];
+    const arrayProps = displayProps.filter((p) => p.kind === "array") as Extract<DisplayProp, { kind: "array" }>[];
 
-    const isChanged    = (key: string) => String(oldRecord[key] ?? "") !== String(newRecord[key] ?? "");
+    const isChanged = (key: string) => String(oldRecord[key] ?? "") !== String(newRecord[key] ?? "");
     const changedCount = scalarProps.filter((p) => isChanged(p.key)).length;
-    const isPending    = previewRow?.status === "pending";
+    const isPending = previewRow?.status === "pending";
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} size="5xl" scrollBehavior="inside">

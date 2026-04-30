@@ -37,7 +37,7 @@ export type FieldSelectProps<
   FormGroupProps &
   Pick<SelectProps<Option, IsMulti, Group>, UsualSelectProps> & {
     options: Option[];
-    size?: 'sm' | 'md' | 'lg'; 
+    size?: 'sm' | 'md' | 'lg';
     maxLength?: number;
     isCaseSensitive?: boolean;
     onlyAlphabets?: boolean;
@@ -103,14 +103,34 @@ export const FieldSelect = <
 
   const [createdInput, setCreatedInput] = useState('');
 
+  // Bumped on modal cancel — forces react-select to remount and clear its
+  // internal selected state when field.setValue(null) alone isn't enough.
+  const [selectKey, setSelectKey] = useState(0);
+
+  // Ref-based snapshot of field value captured just before the modal opens.
+  // Using a ref (not state) guarantees the latest value is always available
+  // synchronously inside closeModal — no stale closure risk.
+  const previousValueRef = useRef<unknown>(null);
+
   const openModal = useCallback(() => {
+    // Synchronously snapshot current field value before opening
+    // Store null explicitly when field is empty so closeModal resets correctly
+    previousValueRef.current = (field.value !== undefined && field.value !== ADD_NEW_VALUE) ? field.value : null;
     isModalOpenRef.current = true;
     setIsModalOpen(true);
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [field.value]);
 
   const closeModal = useCallback(() => {
     isModalOpenRef.current = false;
     setIsModalOpen(false);
+    // If there was a previous value, restore it.
+    // If there was no previous value (field was empty before opening), reset to null/empty.
+    field.setValue((previousValueRef.current ?? null) as any);
+    // Bump the key to force react-select to remount and clear its internal
+    // selected-option state — field.setValue alone doesn't reset it.
+    setSelectKey(k => k + 1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const {
@@ -131,6 +151,17 @@ export const FieldSelect = <
     addNew,
     ...rest
   } = field.otherProps;
+
+  // Guard onValueChange — never fire it with the ADD_NEW sentinel value.
+  // onValueChange comes from FieldProps (Formiz), accessed via props directly.
+  // The underlying Select component calls it when an option is selected, which
+  // bypasses our onChange intercept and was causing the sentinel to reach callers.
+  const onValueChange = props.onValueChange
+    ? (value: any, ...args: any[]) => {
+        if (value === ADD_NEW_VALUE) return;
+        (props.onValueChange as any)(value, ...args);
+      }
+    : undefined;
 
   const labelSize = getLabelSize(size?.toString() || 'md') as
     | 'sm'
@@ -166,15 +197,18 @@ export const FieldSelect = <
         ) ?? [];
 
       const created = getCreatedValues();
-
       const all = [...selectedOptions, ...created];
-
       const fixed = all.filter((o) => o.isFixed);
       const nonFixed = all.filter((o) => !o.isFixed);
 
-      return [...fixed, ...nonFixed]; // 🔥 FIXED FIRST
+      return [...fixed, ...nonFixed];
     })()
-    : options?.find((option) => option.value === fieldValue) ?? undefined;
+    // Never display the sentinel as the selected value — if field.value is the
+    // ADD_NEW_VALUE sentinel (can happen briefly before openModal fires or after
+    // a cancelled modal before closeModal restores), show nothing instead.
+    : fieldValue === ADD_NEW_VALUE
+      ? undefined
+      : options?.find((option) => option.value === fieldValue) ?? undefined;
 
   // Append "+ Add New" option only when addNew prop is provided.
   // Memoized so the options array reference is stable across re-renders
@@ -209,7 +243,10 @@ export const FieldSelect = <
         isOpen={isModalOpen}
         onClose={closeModal}
         onSuccess={(createdValue) => {
-          closeModal();
+          // Success path — close without restoring the previous value.
+          // We bypass closeModal intentionally so the restore logic doesn't fire.
+          isModalOpenRef.current = false;
+          setIsModalOpen(false);
           addNew.onSuccess?.(createdValue);
         }}
         createdInputValue={createdInput}
@@ -217,8 +254,6 @@ export const FieldSelect = <
       document.body
     );
     // Only re-create the portal tree when these values actually change.
-    // Intentionally excluded: addNew.CreateModal (should be stable reference),
-    // closeModal (useCallback — stable), addNew.onSuccess (caller's concern).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isModalOpen, createdInput]);
 
@@ -226,6 +261,8 @@ export const FieldSelect = <
     <FormGroup {...formGroupProps}>
       <Select<Option, IsMulti, Group>
         {...selectProps}
+        {...(onValueChange !== undefined && { onValueChange })}
+        key={selectKey}
         isOptionDisabled={(option) => !!option.isDisabled}
         autoFocus={!isReadOnly && autoFocus}
         isClearable={!isReadOnly && isClearable}
@@ -260,13 +297,15 @@ export const FieldSelect = <
         onChange={(fieldValue) => {
           if (isReadOnly) return;
 
-          // Intercept the sentinel before any form-state logic
+          // Intercept the sentinel before any form-state logic.
+          // We do NOT write ADD_NEW_VALUE to form state — openModal snapshots
+          // the current value and we restore it on cancel via closeModal.
           if (
             !isMultiValue(fieldValue) &&
             (fieldValue as Option | null)?.value === ADD_NEW_VALUE
           ) {
             openModal();
-            return; // sentinel never reaches form state
+            return;
           }
 
           if (isMultiValue<Option>(fieldValue)) {
@@ -336,7 +375,7 @@ export const FieldSelect = <
       />
       {children}
 
-      {/* Stable portal — memoized above, only updates on isModalOpen / createdInput changes */}
+      {/* Stable portal — memoized above, only updates on isModalOpen / createdInput / closeModal changes */}
       {modalPortal}
     </FormGroup>
   );

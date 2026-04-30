@@ -105,7 +105,7 @@ export function CustomerShippingAddressModal({
               </Stack>
 
               <Stack spacing={8} direction={{ base: 'column', md: 'row' }}>
-                <FieldPhone label="Phone Number" name="phone" placeholder={p('Enter Phone Number')} defaultValue={ev('phone')} defaultCountry="AE" isDisabled={isView} />
+                <FieldPhone label="Phone Number" name="phone" placeholder={p('Enter Phone Number')} defaultValue={ev('phone')} defaultCountry="AE" isDisabled={isView} required={"Phone Number Required"}/>
                 <FieldInput label="Fax No" name="fax" placeholder={p('Enter Fax No')} type="phone-number" maxLength={15} isDisabled={isView} defaultValue={ev('fax')} />
                 <FieldInput label="City" name="city" placeholder={p('Enter city')} type="alpha-numeric-with-space" maxLength={40} isDisabled={isView} defaultValue={ev('city')} />
               </Stack>

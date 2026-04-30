@@ -78,7 +78,7 @@ export function ContactManagerModal({
     return (
         <Modal isOpen={isOpen} onClose={() => onClose(false, !!isEdit, null)} size="md" closeOnOverlayClick={false} closeOnEsc={false}>
             <ModalOverlay />
-            <ModalContent maxWidth="60vw">
+            <ModalContent maxWidth="70vw">
                 <Formiz autoForm connect={form}>
                     <ModalHeader>
                         Contact Manager{customerInfo ? ` (${customerInfo.business_name} - ${customerInfo.code})` : ''}
@@ -165,6 +165,7 @@ export function ContactManagerModal({
                                     placeholder={p('Enter phone number')}
                                     defaultCountry="AE"
                                     isDisabled={isView}
+                                    required="Phone number is required"
                                 />
                                 <FieldInput
                                     label="Fax No"
@@ -177,6 +178,7 @@ export function ContactManagerModal({
                                 <FieldEmailInput
                                     label="Email"
                                     name="email"
+                                    required="Email is required"
                                     placeholder={p('Enter email')}
                                     validations={[{ handler: isEmail(), message: 'Invalid email' }]}
                                     maxLength={100}

@@ -52,7 +52,7 @@ export const zUser = z.object({
   first_name: z.string(),
   last_name: z.string(),
   full_name: z.string(),
-  email: z.string().email(),
+  email: z.string().nullable().optional(),
   phone: z.string().nullable().optional(),
   department_role_id: z.string().uuid().nullable().optional(),
   department_role: zDepartmentRole.optional().nullable(),

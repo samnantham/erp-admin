@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { BiEdit, BiSolidFilePdf } from 'react-icons/bi';
 import { LuCheck, LuX } from 'react-icons/lu';
 import {
-    Box, Button, HStack, Icon, IconButton, Stack, Tag, TagCloseButton, TagLabel, Text,
+    Box, Button, HStack, Icon, IconButton, Stack, Tag, TagCloseButton, TagLabel, Text, Tooltip
 } from '@chakra-ui/react';
 import { Formiz, useForm } from '@formiz/core';
 import { HiRefresh, HiOutlineSearch } from 'react-icons/hi';
@@ -288,7 +288,22 @@ export const PurchaseOrderSearch = (props: Props) => {
                 key: 'code',
                 header: 'PO No.',
                 meta: { sortable: true, sortParam: 'code', fontWeight: 'bold' },
-                render: (info: any) => <Text fontWeight={'bold'}>{info.code}{info.version && info.version > 0 ? 'R' + info.version : ''}</Text>,
+                render: (row: any) => (
+                    <Tooltip
+                        label={!row.is_approved ? 'Not Approved Yet' : ''}
+                        isDisabled={row.is_approved}
+                        hasArrow
+                        bg="orange.500"
+                        color="white"
+                    >
+                        <Text
+                            fontWeight="bold"
+                            color={!row.is_approved ? 'orange.500' : undefined}
+                        >
+                            {row.code}{row.version && row.version > 0 ? 'R' + row.version : ''}
+                        </Text>
+                    </Tooltip>
+                ),
             },
             {
                 key: 'customer.business_name',
@@ -329,6 +344,8 @@ export const PurchaseOrderSearch = (props: Props) => {
             {
                 key: 'actions',
                 header: isModal ? 'Select' : 'Actions',
+                isDisabled: (row: any) => !row.is_approved,
+                disabledTooltip: (row: any) => !row.is_approved ? 'Not Approved Yet' : undefined,
                 ...(isModal
                     ? {
                         render: (row: any) => {
@@ -340,6 +357,7 @@ export const PurchaseOrderSearch = (props: Props) => {
                                     icon={isSelected ? <LuX /> : <LuCheck />}
                                     size="xs"
                                     onClick={() => handleToggleSelect(row)}
+                                    isDisabled={!row.is_approved}
                                 />
                             );
                         },

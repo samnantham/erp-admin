@@ -4,7 +4,7 @@ import {
     Breadcrumb, BreadcrumbItem, BreadcrumbLink,
     Button, FormControl, FormLabel, HStack, Heading,
     IconButton, Stack, Table, TableContainer, Tbody,
-    Td, Text, Th, Thead, Tooltip, Tr,
+    Td, Text, Th, Thead, Tooltip, Tr, Tfoot
 } from "@chakra-ui/react";
 import { Formiz, useForm, useFormFields } from "@formiz/core";
 import { HiArrowNarrowLeft, HiOutlinePlus } from "react-icons/hi";
@@ -21,13 +21,13 @@ import LoadingOverlay from "@/components/LoadingOverlay";
 import { isFormFieldsChanged } from "@/helpers/FormChangeDetector";
 import { useToastError } from "@/components/Toast";
 import { getOptionValue, handleDownload, formatDate } from "@/helpers/commonHelper";
-import { useSalesLogList, useSalesLogDetails } from '@/services/sales-log/service';
+import { useSalesLogList, useSalesLogDetails } from '@/services/sales/sales-log/service';
 import {
     useSaveMaterialRequest,
     useMaterialRequestDetails,
     useMaterialRequestDropdowns,
 } from "@/services/purchase/material-request/service";
-import { useSearchPartNumber } from "@/services/master/spare/service";
+import { useSearchPartNumber, validatePartNumbersByName } from "@/services/master/spare/service";
 import { useSubmasterItemIndex } from "@/services/submaster/service";
 import { usePDFPreviewController } from "@/api/hooks/usePDFPreviewController";
 import { endPoints } from "@/api/endpoints";
@@ -56,6 +56,7 @@ type MRRow = {
     rowKey: string;
     id?: any;
     part_number_id: any;
+    part_number_name?: string;
     condition_id: any;
     qty: any;
     unit_of_measure_id: any;
@@ -70,6 +71,7 @@ type MRRow = {
 const EMPTY_ROW = (): MRRow => ({
     rowKey: uuidv4(),
     part_number_id: "",
+    part_number_name:  "", 
     condition_id: "",
     qty: "",
     unit_of_measure_id: "",
@@ -120,12 +122,12 @@ export const MaterialRequestForm = () => {
     const { data: dropdownData, isLoading: l1, refetch: reloadDropDowns } = useMaterialRequestDropdowns();
     const { data: itemInfo, isLoading: l2 } = useMaterialRequestDetails(id, { enabled: isEdit });
     const { data: salesLogList, isLoading: l3 } = useSalesLogList({
-    enabled: mrType === "sel" && (isEdit ? existingSELIds.filter(Boolean).length > 0 : true),
-    queryParams: {
-        ...(!isEdit && { is_purchase_request_fulfilled: false }),
-        exist_ids: existingSELIds.filter(Boolean).join(","),
-    },
-});
+        enabled: mrType === "sel" && (isEdit ? existingSELIds.filter(Boolean).length > 0 : true),
+        queryParams: {
+            ...(!isEdit && { is_purchase_request_fulfilled: false }),
+            exist_ids: existingSELIds.filter(Boolean).join(","),
+        },
+    });
     const { data: priorityList, refetch: reloadPriority } = useSubmasterItemIndex("priorities", {});
     const { data: conditionData } = useSubmasterItemIndex("conditions", {});
     const { data: uomData } = useSubmasterItemIndex("unit-of-measures", {});
@@ -160,7 +162,7 @@ export const MaterialRequestForm = () => {
 
                     setTimeout(() => {
                         form.setValues({ [fieldName]: id });
-                        if(fieldName === 'priority_id'){
+                        if (fieldName === 'priority_id') {
                             reloadPriority();
                             setTimeout(() => {
                                 applyDueDate(record?.days ?? 0);
@@ -266,11 +268,11 @@ export const MaterialRequestForm = () => {
             setDisabledDatePicker(false);
             form.setValues({ due_date: '' });
         } else {
-            applyDueDate(daysToAdd); 
+            applyDueDate(daysToAdd);
         }
     };
 
-    const applyDueDate = (daysToAdd: number) => { 
+    const applyDueDate = (daysToAdd: number) => {
         setDisabledDatePicker(true);
         form.setValues({ due_date: dayjs().add(daysToAdd, "day") });
     };
@@ -283,7 +285,7 @@ export const MaterialRequestForm = () => {
         if (!itemInfo?.data) return;
         const s = itemInfo.data;
 
-        setMRType(s.type);
+        setMRType(s?.type);
         setExistingSELIds(s.sales_log_id ? [s.sales_log_id] : []);
 
         const initValues = Object.fromEntries(FORM_KEYS.map(k => [k, (s as any)[k]]));
@@ -405,7 +407,7 @@ export const MaterialRequestForm = () => {
     useEffect(() => {
         const ids = rows
             .map((row) => row.part_number_id)
-            .filter((id) => !!id); // remove empty/null
+            .filter((id) => !!id);
 
         setExistingPartIDs([...new Set(ids)]);
     }, [rows]);
@@ -523,47 +525,52 @@ export const MaterialRequestForm = () => {
 
                                             {/* ── Reusable CSV Upload ── */}
                                             <CSVUploadButton<MRRow>
-                                                createEmptyRow={EMPTY_ROW}
-                                                fieldMappings={[
-                                                    {
-                                                        csvKey: "part_number_id",
-                                                        rowKey: "part_number_id",
-                                                        transform: (v) => getOptionValue(v, spareOptions) ?? "",
-                                                    },
-                                                    {
-                                                        csvKey: "condition_id",
-                                                        rowKey: "condition_id",
-                                                        transform: (v) => getOptionValue(v, conditionOptions) ?? "",
-                                                    },
-                                                    {
-                                                        csvKey: "qty",
-                                                        rowKey: "qty",
-                                                    },
-                                                    {
-                                                        csvKey: "unit_of_measure_id",
-                                                        rowKey: "unit_of_measure_id",
-                                                        transform: (v) => getOptionValue(v, uomOptions) ?? "",
-                                                    },
-                                                    {
-                                                        csvKey: "remark",
-                                                        rowKey: "remark",
-                                                    },
-                                                ]}
-                                                duplicateCheck={{
-                                                    keys: ["part_number_id"],
-                                                    label: "Part Number",
-                                                    existingRows: rows,
-                                                }}
-                                                onUpload={(mapped) =>
-                                                    setRows(prev => [...prev.filter(r => r.part_number_id), ...mapped])
-                                                }
-                                                confirmHeaderText="Upload Items CSV"
-                                                confirmBodyText="Are you sure you want to upload this file? Existing rows with part numbers will be kept."
-                                                buttonLabel="Upload Items"
-                                                colorScheme="green"
-                                                size="sm"
-                                                maxRows={100}
-                                            />
+    createEmptyRow={EMPTY_ROW}
+    fieldMappings={[
+        {
+            csvKey: "part_number_id",   // ← CSV column header
+            rowKey: "part_number_name", // ← goes into staging key, NOT part_number_id
+            // no transform — keep raw name string
+        },
+        {
+            csvKey: "condition_id",
+            rowKey: "condition_id",
+            transform: (v) => getOptionValue(v, conditionOptions) ?? "",
+        },
+        {
+            csvKey: "qty",
+            rowKey: "qty",
+        },
+        {
+            csvKey: "unit_of_measure_id",
+            rowKey: "unit_of_measure_id",
+            transform: (v) => getOptionValue(v, uomOptions) ?? "",
+        },
+        {
+            csvKey: "remark",
+            rowKey: "remark",
+        },
+    ]}
+    partNumberValidation={{
+        rowKey:      "part_number_name", // reads raw name from staging key
+        resolvedKey: "part_number_id",   // writes UUID here
+        validate:    validatePartNumbersByName, // ← function from service, not the schema type
+    }}
+    duplicateCheck={{
+        keys:         ["part_number_id"],
+        label:        "Part Number",
+        existingRows: rows,
+    }}
+    onUpload={(mapped) => {
+        setRows(prev => [...prev.filter(r => r.part_number_id), ...mapped]);
+    }}
+    confirmHeaderText="Upload Items CSV"
+    confirmBodyText="Are you sure you want to upload this file? Existing rows with part numbers will be kept."
+    buttonLabel="Upload Items"
+    colorScheme="green"
+    size="sm"
+    maxRows={100}
+/>
                                         </HStack>
                                     </HStack>
                                 )}
@@ -759,14 +766,24 @@ export const MaterialRequestForm = () => {
                                                 );
                                             })}
                                         </Tbody>
+                                        <Tfoot>
+                                            <Tr bg="gray.100" fontWeight="bold">
+                                                <Td />
+                                                <Td colSpan={2}>
+                                                    <Text fontSize="xs">
+                                                        Total Line Item{totalItems !== 1 ? 's' : ''}: {totalItems}
+                                                    </Text>
+                                                </Td>
+                                                <Td fontSize="xs">Total Qty:  {totalQty}</Td>
+                                                <Td />
+                                                <Td />
+
+                                                <Td />
+                                                <Td />
+                                            </Tr>
+                                        </Tfoot>
                                     </Table>
                                 </TableContainer>
-
-                                {/* ── Totals ── */}
-                                <HStack mt={3}>
-                                    <Text>Total Qty: <Text as="span" ml={3} fontWeight="bold">{totalQty}</Text></Text>
-                                    <Text ml={3}>Total Line Items: <Text as="span" ml={3} fontWeight="bold">{totalItems}</Text></Text>
-                                </HStack>
 
                                 {/* ── Remarks editor ── */}
                                 <Stack>

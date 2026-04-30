@@ -5,7 +5,7 @@ import {
     Button, FormControl, FormLabel, HStack, Heading,
     IconButton, Stack, Table, TableContainer, Tbody,
     Td, Text, Th, Thead, Tooltip, Tr, Grid, GridItem,
-    useDisclosure, Input
+    useDisclosure, Input, Tfoot
 } from "@chakra-ui/react";
 import { Formiz, useForm, useFormFields } from "@formiz/core";
 import { HiArrowNarrowLeft, HiOutlinePlus } from "react-icons/hi";
@@ -131,6 +131,10 @@ export const PRFQForm = () => {
     const filteredContactTypeIds = contactTypeData?.data
         .filter((item: any) => filterContactTypeCodes.includes(item.code))
         .map((item: any) => item.id);
+
+    const custContactTypeId = contactTypeData?.data
+        ?.find((item: any) => item.code === 'SUP')
+        ?.id;
 
     const { data: customerList, isLoading: l4, refetch: reloadCustomers } = useCustomerList({ contact_type_id: filteredContactTypeIds });
 
@@ -617,7 +621,7 @@ export const PRFQForm = () => {
 
     // ── Derived Totals ─────────────────────────────────────────────────────────
     const totalQty = rows.reduce((acc, row) => acc + (Number(fields[`qty_${row.rowKey}`]?.value) || 0), 0);
-    const totalItems = rows.filter(row => fields[`part_number_${row.rowKey}`]?.value).length;
+    const totalItems = rows.length;
 
     const mkSelectProps = (isLoadingFlag?: boolean) => ({
         type: 'creatable' as const,
@@ -785,6 +789,7 @@ export const PRFQForm = () => {
                                                                                 form.setValues({ [`vendor_id_${vendor.rowKey}`]: newId });
                                                                                 handleVendorSelect(newId, index);
                                                                             }}
+                                                                            defaultType={custContactTypeId}
                                                                         />
                                                                     ),
                                                                 }}
@@ -904,7 +909,7 @@ export const PRFQForm = () => {
                                                                 isDisabled={str(fields[`remark_${row.rowKey}`]?.value ?? "").length <= 20}>
                                                                 <Td>
                                                                     <FieldInput name={`remark_${row.rowKey}`} size="sm" placeholder="Remark"
-                                                                        defaultValue={row.remark || ""} maxLength={60}
+                                                                        defaultValue={row.remark || ""} maxLength={60} width={100}
                                                                     />
                                                                 </Td>
                                                             </Tooltip>
@@ -922,16 +927,26 @@ export const PRFQForm = () => {
                                                         </Tr>
                                                     ))}
                                                 </Tbody>
+                                                <Tfoot>
+                                                    <Tr bg="gray.100" fontWeight="bold">
+                                                        <Td />
+                                                        <Td colSpan={2}>
+                                                            <Text fontSize="xs">
+                                                                Total Line Item{totalItems !== 1 ? 's' : ''}: {totalItems}
+                                                            </Text>
+                                                        </Td>
+                                                        <Td />
+                                                        <Td />
+
+                                                        <Td fontSize="xs">Total Qty:  {totalQty}</Td>
+
+                                                        <Td colSpan={4}/>
+                                                    </Tr>
+                                                </Tfoot>
                                             </Table>
                                         </TableContainer>
                                     </Box>
                                 )}
-
-                                {/* ── Totals ── */}
-                                <HStack mt={3}>
-                                    <Text>Total Qty: <Text as="span" ml={3} fontWeight="bold">{totalQty}</Text></Text>
-                                    <Text ml={3}>Total Line Items: <Text as="span" ml={3} fontWeight="bold">{totalItems}</Text></Text>
-                                </HStack>
 
                                 {/* ── Remarks ── */}
                                 <FormControl>

@@ -5,7 +5,7 @@ import {
     Button, FormControl, FormLabel, HStack, Heading,
     IconButton, Stack, Table, TableContainer, Tbody,
     Td, Text, Th, Thead, Tooltip, Tr, Grid, GridItem,
-    useDisclosure,
+    useDisclosure, Tfoot
 } from "@chakra-ui/react";
 import { Formiz, useForm, useFormFields } from "@formiz/core";
 import { HiArrowNarrowLeft } from "react-icons/hi";
@@ -118,8 +118,6 @@ export const DirectPOForm = () => {
     const { data: contactTypeData } = useSubmasterItemIndex("contact-types", {});
     const { data: currencyData } = useSubmasterItemIndex("currencies", {});
     const { data: materialRequestList } = useMaterialRequestList();
-
-    const handleDoubleClick = (field: string) => setActiveInput(field);
 
     const filteredContactTypeIds = contactTypeData?.data
         ?.filter((item: any) => ['SUP', 'PUR'].includes(item.code))
@@ -403,7 +401,7 @@ export const DirectPOForm = () => {
         const popupVariables: any = { user_id: userInfo.id };
         Object.keys(fields).forEach(key => { popupVariables[key] = fields[key].value; });
         popupVariables.items = rows.map(row => ({
-            part_number_id: fields[`part_number_${row.rowKey}`]?.value,
+            part_number_id:     row.part_number_id,           
             condition_id: fields[`condition_${row.rowKey}`]?.value,
             qty: Number(fields[`qty_${row.rowKey}`]?.value),
             unit_of_measure_id: fields[`uom_${row.rowKey}`]?.value,
@@ -568,8 +566,8 @@ export const DirectPOForm = () => {
                                     <GridItem>
                                         <Box rounded="md" h="100%">
                                             <TableContainer rounded="md" overflow="auto" border="1px" borderColor="gray.500" borderRadius="md" boxShadow="md">
-                                    <Table variant="striped" size="sm">
-                                        <Thead bg="gray.500">
+                                                <Table variant="striped" size="sm">
+                                                    <Thead bg="gray.500">
                                                         <Tr>
                                                             <Th color="white">MR Reference</Th>
                                                             <Th color="white">MR Type</Th>
@@ -883,28 +881,43 @@ export const DirectPOForm = () => {
                                                 </Tr>
                                             ))}
                                             {rows.length === 0 && (
-                                            <Tr><Td colSpan={10} textAlign="center" color="gray.400">No Items found</Td></Tr>
+                                                <Tr><Td colSpan={10} textAlign="center" color="gray.400">No Items found</Td></Tr>
                                             )}
                                         </Tbody>
+                                        <Tfoot>
+                                            <Tr bg="gray.100" fontWeight="bold">
+                                                <Td />
+                                                <Td colSpan={2}>
+                                                    <Text fontSize="xs">
+                                                        Total Line Item{totalItems !== 1 ? 's' : ''} {totalItems}
+                                                    </Text>
+                                                </Td>
+                                                <Td fontSize="xs">Total Qty:  {totalQty}</Td>
+                                                <Td />
+                                                <Td />
+                                                <Td fontSize="xs">
+                                                    Total Value:  {currencySymbol && (
+                                                        <Text as="span" color="gray.500" mr={1}>{currencySymbol}</Text>
+                                                    )}
+                                                    {grandTotal.toFixed(2)}
+                                                </Td>
+                                                <Td />
+                                                <Td />
+                                            </Tr>
+                                        </Tfoot>
                                     </Table>
                                 </TableContainer>
 
-                                {/* ── Totals ── */}
-                                <HStack mt={3}>
-                                    <Text>Total Qty: <Text as="span" ml={3} fontWeight="bold">{totalQty}</Text></Text>
-                                    <Text ml={3}>Total Line Items: <Text as="span" ml={3} fontWeight="bold">{rows.length}</Text></Text>
-                                    <Text ml={3}>Total Amount: <Text as="span" ml={3} fontWeight="bold">{grandTotal.toFixed(2)}</Text></Text>
-                                </HStack>
 
                                 {/* ── Charges ── */}
                                 <Stack spacing={8} direction={{ base: 'column', md: 'row' }} {...sectionStyle} display={'none'}>
                                     <FieldDisplay label="Sub Total" value={subTotal.toFixed(2)} size="sm" style={{ backgroundColor: '#fff' }} leftElement={currencySymbol || undefined} />
                                     <FieldInput label="Bank Charges" name="bank_charge" size="sm" type="decimal" maxLength={9} leftElement={currencySymbol || undefined} isDisabled />
                                     <FieldInput label="Freight Charges" name="freight" size="sm" type="decimal" maxLength={9} leftElement={currencySymbol || undefined} isDisabled />
-                                    <FieldInput label="Misc Charges" name="miscellaneous_charges" size="sm" type="decimal" maxLength={9} leftElement={currencySymbol || undefined} isDisabled/>
-                                    <FieldInput label="VAT" name="vat" size="sm" type="decimal" rightElement="%" maxLength={6} maxValue={999} isDisabled/>
+                                    <FieldInput label="Misc Charges" name="miscellaneous_charges" size="sm" type="decimal" maxLength={9} leftElement={currencySymbol || undefined} isDisabled />
+                                    <FieldInput label="VAT" name="vat" size="sm" type="decimal" rightElement="%" maxLength={6} maxValue={999} isDisabled />
                                     <FieldDisplay label="VAT Amount" value={vatAmount.toFixed(2)} size="sm" style={{ backgroundColor: '#fff' }} leftElement={currencySymbol || undefined} />
-                                    <FieldInput label="Discount" name="discount" size="sm" type="decimal" maxLength={9} leftElement={currencySymbol || undefined} isDisabled/>
+                                    <FieldInput label="Discount" name="discount" size="sm" type="decimal" maxLength={9} leftElement={currencySymbol || undefined} isDisabled />
                                     <FieldDisplay label="Total Amount" value={totalPayableAmount.toFixed(2)} size="sm" style={{ backgroundColor: '#fff' }} leftElement={currencySymbol || undefined} />
                                 </Stack>
 

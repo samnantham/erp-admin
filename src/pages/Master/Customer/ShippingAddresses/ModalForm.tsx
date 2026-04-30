@@ -78,7 +78,7 @@ export function ShippingAddressModal({
     return (
         <Modal isOpen={isOpen} onClose={() => onClose(false, !!isEdit, null)} size="md" closeOnOverlayClick={false} closeOnEsc={false}>
             <ModalOverlay />
-            <ModalContent maxWidth="60vw">
+            <ModalContent maxWidth="70vw">
                 <Formiz autoForm connect={form}>
                     <ModalHeader>
                         Shipping Address{customerInfo ? ` (${customerInfo.business_name} - ${customerInfo.code})` : ''}
@@ -95,7 +95,7 @@ export function ShippingAddressModal({
                                     required="Attention is required"
                                     placeholder={p('Enter attention')}
                                     type="alpha-with-space"
-                                    maxLength={40}
+                                    maxLength={35}
                                     isDisabled={isView}
                                 />
                                 <FieldInput
@@ -103,8 +103,8 @@ export function ShippingAddressModal({
                                     name="consignee_name"
                                     required="Consignee Name is required"
                                     placeholder={p('Enter consignee name')}
-                                    type="alpha-with-space"
-                                    maxLength={40}
+                                    type="alpha-with-special"
+                                    maxLength={35}
                                     isDisabled={isView}
                                 />
                             </Stack>
@@ -115,17 +115,17 @@ export function ShippingAddressModal({
                                     name="address_line1"
                                     required="Address is required"
                                     placeholder={p('Enter address line 1')}
-                                    type="text"
                                     maxLength={50}
                                     isDisabled={isView}
+                                    type="alpha-numeric-with-special" 
                                 />
                                 <FieldInput
                                     label="Address Line 2"
                                     name="address_line2"
                                     placeholder={p('Enter address line 2')}
-                                    type="text"
                                     maxLength={50}
                                     isDisabled={isView}
+                                    type="alpha-numeric-with-special" 
                                 />
                             </Stack>
 
@@ -142,7 +142,7 @@ export function ShippingAddressModal({
                                     label="State"
                                     name="state"
                                     placeholder={p('Enter state')}
-                                    type="alpha-with-space"
+                                    type="alpha-numeric-with-space" 
                                     maxLength={40}
                                     isDisabled={isView}
                                 />
@@ -154,9 +154,7 @@ export function ShippingAddressModal({
                                     maxLength={8}
                                     isDisabled={isView}
                                 />
-                            </Stack>
-
-                            <Stack spacing={8} direction={{ base: 'column', md: 'row' }}>
+                                
                                 <FieldSelect
                                     label="Country"
                                     name="country"
@@ -174,6 +172,7 @@ export function ShippingAddressModal({
                                     placeholder={p('Enter phone number')}
                                     defaultCountry="AE"
                                     isDisabled={isView}
+                                    required="Phone number is required"
                                 />
                                 <FieldInput
                                     label="Fax No"

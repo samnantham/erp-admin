@@ -76,7 +76,7 @@ export function TraderReferenceModal({
     return (
         <Modal isOpen={isOpen} onClose={() => onClose(false, !!isEdit, null)} size="md" closeOnOverlayClick={false} closeOnEsc={false}>
             <ModalOverlay />
-            <ModalContent maxWidth="60vw">
+            <ModalContent maxWidth="70vw">
                 <Formiz autoForm connect={form}>
                     <ModalHeader>
                         Trader Reference{customerInfo ? ` (${customerInfo.business_name} - ${customerInfo.code})` : ''}
@@ -152,9 +152,7 @@ export function TraderReferenceModal({
                                     maxLength={8}
                                     isDisabled={isView}
                                 />
-                            </Stack>
-
-                            <Stack spacing={8} direction={{ base: 'column', md: 'row' }}>
+                                
                                 <FieldSelect
                                     label="Country"
                                     name="country"
